@@ -19,7 +19,9 @@
   :url "https://github.com/rogerallen/hello_lwjgl"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.4.0"]
+  :dependencies [[org.clojure/clojure "1.5.1"]
+                 [criterium "0.4.1"]
+                 [com.taoensso/timbre "1.6.0"]
                  [org.lwjgl.lwjgl/lwjgl "2.8.5"]
                  [org.lwjgl.lwjgl/lwjgl_util "2.8.5"]
                  [org.lwjgl.lwjgl/lwjgl-platform "2.8.5" 

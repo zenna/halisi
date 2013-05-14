@@ -1,3 +1,14 @@
+;0. Make soft measure of convexity
+; -- Two reason 1. We want
+; -- We might imagine a function
+; which takes anotehr function and some patterns
+; a
+
+; The objective is to have a test which might be easier to synthesise, and to look at the gradient
+;1 Go to an optimisation method which allows search through arbitrary spaces.
+;2 Find bottlenecks which are making code slow
+;3 Noisify program, (automatically?)
+
 (ns relax.query
   (:use relax.render)
   (:use relax.graphics)
@@ -22,14 +33,19 @@
       (Math/log
         (normal (nth proposal-img i) (nth data-img i) 0.8)))))
 
+; (defn boolean-compare
+;   "Sum up 1s if matching 0 otherwise"
+;   [proposal-img data-img]
+;   {:pre [(= (count proposal-img) (count data-img))]}
+;   (sum
+;   (map
+;     #(Math/abs (- (first %) (second %)))
+;     (partition 2 (interleave proposal-img data-img)))))
+
 (defn boolean-compare
   "Sum up 1s if matching 0 otherwise"
   [proposal-img data-img]
-  {:pre [(= (count proposal-img) (count data-img))]}
-  (sum
-  (map
-    #(Math/abs (- (first %) (second %)))
-    (partition 2 (interleave proposal-img data-img)))))
+  (apply + (map bit-xor proposal-img data-img)))
 
 (defn gen-cost-f
   "Generate a cost func wrt data (an img)"
@@ -52,10 +68,10 @@
 
 (defn inv-poly
   [data]
-  (let [init-poly (vec (flatten (gen-convex-poly (:width data) (:height data) 10)))
+  (let [init-poly (vec (flatten (gen-unconstrained-poly (:width data) (:height data) 10)))
         ;pvar (println "init-poly" (count init-poly) init-poly)
         ]
-  ; (println (read-line))
+  (println (read-line))
   (nelder-mead (gen-cost-f data)
                init-poly)))
 
@@ -70,8 +86,8 @@
 
 (defn main
   []
-  (let [width 50
-        height 50]
+  (let [width 500
+        height 500]
   (init-window width height "alpha")
   (init-gl)
   (inv-poly (gen-test-data width height))

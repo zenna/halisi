@@ -30,6 +30,7 @@
 (defn draw-poly
   "Draws a polygon to the display"
   [poly]
+  ; (println "entering draw-poly")
   (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT  GL11/GL_DEPTH_BUFFER_BIT))
   (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_FILL)
   (GL11/glBegin GL11/GL_POLYGON)
@@ -38,16 +39,28 @@
     (GL11/glVertex2f (first vertex) (second vertex)))
   (GL11/glEnd))
 
+(def mem-range
+  (memoize (fn [width height]
+              (vec (range (* width height))))))
+
 (defn buffer-to-vec
   [buffer width height bpp]
-  (vec (for [x (range width)
-        y (range height)
-        :let [i (* bpp (+ x (* width y)))]]
-    (/ (bit-and (.get buffer i) 0xFF) 255))))
+  (println "entering buffer-to-vec")
+  (pmap #(/ (bit-and (.get buffer %) 0xFF) 255)
+         (mem-range width height)))
+
+; (defn buffer-to-vec
+;   [buffer width height bpp]
+;   ; (println "entering buffer-to-vec")
+;   (vec (for [x (range width)
+;         y (range height)
+;         :let [i (* bpp (+ x (* width y)))]]
+;     (/ (bit-and (.get buffer i) 0xFF) 255))))
 
 (defn poly-to-pixels
   "returns pixel data of rendering img of polygon"
   [points width height]
+  ; (println "entering poly-to-pixels")
   (let [;pvar (println "Points" points)
         bpp 4
         buffer (BufferUtils/createByteBuffer (* width height bpp))]
