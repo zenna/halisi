@@ -45,6 +45,7 @@
 (defn boolean-compare
   "Sum up 1s if matching 0 otherwise"
   [proposal-img data-img]
+  ; (println "entering compare")
   (apply + (map bit-xor proposal-img data-img)))
 
 (defn gen-cost-f
@@ -56,14 +57,12 @@
           ; pvar (println "PVALS" param-values)
           ; points (partition 2 param-values)
           points (convex-hull-gf (partition 2 param-values))
-           ; nelder mead expects a flat vectorm need to unflatten
+          ; nelder mead expects a flat vector need to unflatten
+          
           ; pvar (println "rendering-points" points)
           rendered-img (poly-to-pixels points (:width data) (:height data))
           sigma (last points)
-          ; blurred-img (blur img sigma)
-          ; pvar (println "data rendered-img (:data data))
           quality (boolean-compare rendered-img (:data data))]
-          ; pvar (print quality " ")]
       quality)))
 
 (defn inv-poly
@@ -86,8 +85,8 @@
 
 (defn main
   []
-  (let [width 500
-        height 500]
+  (let [width 50
+        height 50]
   (init-window width height "alpha")
   (init-gl)
   (inv-poly (gen-test-data width height))

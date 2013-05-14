@@ -5,6 +5,9 @@
 
 (use 'relax.graphics)
 
+(set! *warn-on-reflection* true)
+
+
 ;; ======================================================================
 ;; spinning triangle in OpenGL 1.1
 (defn init-window
@@ -30,7 +33,6 @@
 (defn draw-poly
   "Draws a polygon to the display"
   [poly]
-  ; (println "entering draw-poly")
   (GL11/glClear (bit-or GL11/GL_COLOR_BUFFER_BIT  GL11/GL_DEPTH_BUFFER_BIT))
   (GL11/glPolygonMode GL11/GL_FRONT_AND_BACK GL11/GL_FILL)
   (GL11/glBegin GL11/GL_POLYGON)
@@ -44,18 +46,11 @@
               (vec (range (* width height))))))
 
 (defn buffer-to-vec
-  [buffer width height bpp]
-  (println "entering buffer-to-vec")
-  (pmap #(/ (bit-and (.get buffer %) 0xFF) 255)
-         (mem-range width height)))
-
-; (defn buffer-to-vec
-;   [buffer width height bpp]
-;   ; (println "entering buffer-to-vec")
-;   (vec (for [x (range width)
-;         y (range height)
-;         :let [i (* bpp (+ x (* width y)))]]
-;     (/ (bit-and (.get buffer i) 0xFF) 255))))
+  [^java.nio.ByteBuffer buffer width height bpp]
+  (vec (for [x (range width)
+        y (range height)
+        :let [i (* bpp (+ x (* width y)))]]
+    (/ (bit-and (.getInt buffer i) 0xFF) 255))))
 
 (defn poly-to-pixels
   "returns pixel data of rendering img of polygon"
@@ -63,17 +58,13 @@
   ; (println "entering poly-to-pixels")
   (let [;pvar (println "Points" points)
         bpp 4
-        buffer (BufferUtils/createByteBuffer (* width height bpp))]
-    ; (init-window width height "alpha")
-    ; (init-gl)
-  ; (while (not (Display/isCloseRequested))
-    (draw-poly points)
-    (Display/update)
-    (Display/sync 60)
+        ^java.nio.ByteBuffer buffer (BufferUtils/createByteBuffer (* width height bpp))]
+
+  (draw-poly points)
+  (Display/update)
+  (Display/sync 60)
   (GL11/glReadBuffer GL11/GL_FRONT) ; specify colour buffer
   (GL11/glReadPixels 0 0 width height GL11/GL_RGBA GL11/GL_UNSIGNED_BYTE buffer)
-  ; (Display/destroy)
-
   (buffer-to-vec buffer width height bpp)))
 
 (defn close-display
