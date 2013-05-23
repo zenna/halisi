@@ -8,6 +8,33 @@
 ;1 Go to an optimisation method which allows search through arbitrary spaces.
 ;2 Find bottlenecks which are making code slow
 ;3 Noisify program, (automatically?)
+;1 Go to an optimisation method which allows search through arbitrary spaces.
+
+; in church you defoinn e generative modend we want to condition on some aspects of the programl
+; and condition on variables in that program
+; WHat I am ataking about is 
+; The high level concept is thawe have some program and we want to pmake statements about the program
+; things which are true about the program.
+; What does this mean throughthink of an imperative program that sorts lists
+; we might want to condition on the output and observe the input
+; the thinkg is that the we can easily ask impossibl questoins such as cpndition on an unsorrted output
+; But what are we really going when we conditon on some output\
+; def a (sort b)
+; assume a is [1 2 3 4 5], what's b.  Well b could be any combination of [1 2 3 4 5]
+; in order to sample we need some probability distribution.  OR mor generally some bias of one over the others.
+; Providing a distribution allows you to take a single sample in a meaningful way, on the other hand there are at least
+; some example where we can answer the question more abstractly from a logical defintion of the program.
+
+; So we might want something of the form, where it tells us that if we condition on the output being [1 2 3 4 5],
+; an ask about the input, we know the input will be any combingatin of the input, this implies our resutls must be returned in some 
+; language.  This is a noble goal, most surely.  But what itwe is precisely.  What we are saying, is that we can condition on the
+; input or output of a program and find logical constraints on the input.  Our answers are declarative.
+
+; Another example, conider inverse graphics, we can condition on some output image.  The difference herei sthat there is 
+; no language in which to define the input in a deductive way.  Thi would require a more indepth knowledge of logic programming
+; and constraint programming to see how these things work.
+
+; A more immediate goal could be taking an arbitrary program and having holes I wish to fill.
 
 (ns relax.query
   (:use relax.render)
@@ -33,15 +60,6 @@
       (Math/log
         (normal (nth proposal-img i) (nth data-img i) 0.8)))))
 
-; (defn boolean-compare
-;   "Sum up 1s if matching 0 otherwise"
-;   [proposal-img data-img]
-;   {:pre [(= (count proposal-img) (count data-img))]}
-;   (sum
-;   (map
-;     #(Math/abs (- (first %) (second %)))
-;     (partition 2 (interleave proposal-img data-img)))))
-
 (defn boolean-compare
   "Sum up 1s if matching 0 otherwise"
   [proposal-img data-img]
@@ -55,8 +73,9 @@
     [param-values]
     (let [flat-points (subvec param-values 0 (dec (count param-values))) ; first n-1 params are that of points
           ; pvar (println "PVALS" param-values)
-          ; points (partition 2 param-values)
-          points (convex-hull-gf (partition 2 param-values))
+          points (vec (partition 2 param-values))
+          pvar (println "convexity" (soft-convexity points))
+          ; points (convex-hull-gf (partition 2 param-values))
           ; nelder mead expects a flat vector need to unflatten
           
           ; pvar (println "rendering-points" points)
@@ -65,10 +84,24 @@
           quality (boolean-compare rendered-img (:data data))]
       quality)))
 
+(defn max-poly-convexity
+  "Maximise the convexity of a polygon"
+  [poly]
+  (let [cost-f (fn [flat-poly]
+                  (let [unflat-poly (vec (partition 2 flat-poly))]
+                    (draw-poly-standalone unflat-poly)
+                    (soft-convexity unflat-poly)))
+        {conv-poly :vertex} (nelder-mead cost-f (vec (flatten poly)))]
+        conv-poly))
+
 (defn inv-poly
   [data]
-  (let [init-poly (vec (flatten (gen-unconstrained-poly (:width data) (:height data) 10)))
-        ;pvar (println "init-poly" (count init-poly) init-poly)
+  (let [init-poly (vec (flatten (gen-unconstrained-poly
+                                (:width data)
+                                (:height data) 5)))
+        init-poly (max-poly-convexity init-poly)
+        ; pvar (println "init-poly" (count init-poly) init-poly)
+        pvar (println "ip" init-poly)
         ]
   (println (read-line))
   (nelder-mead (gen-cost-f data)
@@ -76,20 +109,34 @@
 
 (defn gen-test-data
   [width height]
-  {:data (poly-to-pixels (gen-convex-poly width height 10) width height)
+  {:data (poly-to-pixels (gen-convex-poly width height  10) width height)
    :width width
    :height height})
 
-; (def test-data {:data [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1]
-;   :width 6 :height 6})
-
 (defn main
   []
-  (let [width 50
-        height 50]
+  (let [width 200
+        height 200]
   (init-window width height "alpha")
   (init-gl)
-  (inv-poly (gen-test-data width height))
-  (print ";\n")
-  (close-display)
-  nil))
+  (let [test-data (gen-test-data width height)]
+    (println "Showing Test Data" (read-line))
+    (inv-poly test-data) 
+    (print ";\n")
+    (close-display)
+    nil)))
+
+; (defn main
+;   []
+;   (let [width 200
+;         height 200
+;         init-poly (vec (flatten (gen-unconstrained-poly
+;                                         width
+;                                         height 5)))]
+;   (init-window width height "alpha")
+;   (init-gl)
+;   (println (read-line))
+;   (max-poly-convexity init-poly)
+;   (print ";\n")
+;   (close-display)
+;   nil))

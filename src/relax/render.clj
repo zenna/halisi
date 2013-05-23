@@ -52,6 +52,13 @@
         :let [i (* bpp (+ x (* width y)))]]
     (/ (bit-and (.getInt buffer i) 0xFF) 255))))
 
+(defn draw-poly-standalone
+  "Just draw and update"
+  [poly]
+  (draw-poly poly)
+  (Display/update)
+  (Display/sync 60))
+
 (defn poly-to-pixels
   "returns pixel data of rendering img of polygon"
   [points width height]

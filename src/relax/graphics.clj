@@ -174,6 +174,63 @@
 
 ; (gen-simple-poly 2)
 
+(defn edge-sum
+  "Sum over edges
+  If Positive, poly is clockwise (internal angles on right)
+  If negative, poly is counter clockwise (internal angles on left)"
+  [poly]
+  (sum
+    (for [pair (partition 2 1 (conj poly (first poly)))
+          :let [[[x1 y1] [x2 y2]] pair]]
+      (* (- x2 x1) (+ y2 y1)))))
+
+(defn points-to-vec
+  "convert pair of poitns to vector"
+  [[x1 y1] [x2 y2]]
+  [(- x2 x1) (- y2 y1)])
+
+(defn cross-product
+  "compute cross product of two vectors"
+  [[x1 y1] [x2 y2]]
+  (- (* x1 y2) (* x2 y1)))
+
+(defn triangle-area
+  "Compute the area of a triangle"
+  [[[x1 y1] [x2 y2] [x3 y3]]]
+  (Math/abs
+    (/ (+ (* x1 (- y2 y3)) (* x2 (- y3 y1)) (* x3 (- y1 y2))) 2)))
+
+(defn sign
+  "Sign of number"
+  [x]
+  (cond
+    (pos? x) 'pos
+    (neg? x) 'neg
+    :else 'no-sign))
+
+(defn soft-convexity
+  "An unnormalised continuous measure of convexity
+  based on the area of triangles of offending (internal
+  angle > 180) points.
+  Could normalise it by the area of polygon
+
+  If the edge-sum is negative left hand turns are internal angles
+  If the sign of the cross product is Positive its a left turn"
+  [poly]
+  {:pre [(vector? poly)]}
+  (let [orient (edge-sum poly)]
+    (sum
+      (for [triple (partition 3 1 (conj poly (first poly) (second poly)))
+            :let [[p1 p2 p3] triple
+                   v1 (points-to-vec p1 p2)
+                   v2 (points-to-vec p2 p3)
+                   ; p (println "C" (cross-product v1 v2))
+                   ; o (println "area" (triangle-area triple))
+                   ]]
+        (if (= (sign (cross-product v1 v2)) (sign orient))
+          (triangle-area triple)
+          0)))))
+
 (defn half
   [x]
   (/ x 2))
