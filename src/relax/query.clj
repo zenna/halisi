@@ -36,11 +36,14 @@
 
 ; A more immediate goal could be taking an arbitrary program and having holes I wish to fill.
 
+; Put noise on points, do inference over these points to
+
 (ns relax.query
   (:use relax.render)
   (:use relax.graphics)
   (:use clozen.helpers)
-  (:use clozen.neldermead))
+  (:use clozen.neldermead)
+  (:require [incanter.distributions :as dist]))
 
 (defn blur
   "Add Gaussian blur to image"
@@ -90,16 +93,70 @@
   (let [cost-f (fn [flat-poly]
                   (let [unflat-poly (vec (partition 2 flat-poly))]
                     (draw-poly-standalone unflat-poly)
-                    (soft-convexity unflat-poly)))
+                    (convex? unflat-poly)))
         {conv-poly :vertex} (nelder-mead cost-f (vec (flatten poly)))]
         conv-poly))
 
+; NOTEST
+(defn add-normal-noise
+  "adds noise in both x y to a polygon"
+  [poly std]
+  (mapv #(dist/draw (dist/normal-distribution % std)) poly))
+
+; ; NOTEST
+; (defn noisy-cost-f
+;   [params]
+;   (let [flat-poly (subvec params 0 (dec (count params)))
+;         unflat-poly (vec (partition 2 flat-poly))
+;         std (last params)
+;         pvar (println "sd" std)
+;         scores (repeatedly 10
+;           (fn []
+;             (let [noisy-poly (mapv #(add-normal-noise % std) unflat-poly)]
+;               (draw-poly-standalone noisy-poly)
+;               (convex? noisy-poly))))]
+;     (println (* 1.0 (mean scores)))
+;     (mean scores)))
+
+; NOTEST
+(defn noisy-cost-f
+  [params]
+  (let [[flat-poly stds] (vec (split-at (* 2 (/ (count params) 3)) params))
+        unflat-poly (vec (partition 2 flat-poly))
+        pvar (println "s" stds)
+        scores (repeatedly 10
+          (fn []
+            (let [noisy-poly (mapv #(add-normal-noise %1 %2) unflat-poly stds)]
+              ; (draw-poly-standalone noisy-poly)
+              (convex? noisy-poly))))]
+    (println (* 1.0 (mean scores)))
+    (mean scores)))
+
+; ; NOTEST
+; (defn max-poly-convexity-noisy
+;   "Maximise the convexity of a polygon"
+;   [poly]
+;   (let [std 5
+;         {conv-poly :vertex} (nelder-mead noisy-cost-f (conj (vec (flatten poly)) std))]
+;         conv-poly))
+
+(defn max-poly-convexity-noisy
+  "Maximise the convexity of a polygon"
+  [poly]
+  (let [stds (repeatedly (count poly) #(* (rand) 5))
+        init-data (vec (flatten (conj poly stds)))
+        ; pvar (println "start-point" init-data)
+        {conv-poly :vertex} (nelder-mead noisy-cost-f init-data)]
+        conv-poly))
+
+
 (defn inv-poly
   [data]
-  (let [init-poly (vec (flatten (gen-unconstrained-poly
+  (let [init-poly (vec (flatten (gen-convex-poly
                                 (:width data)
-                                (:height data) 5)))
-        init-poly (max-poly-convexity init-poly)
+                                (:height data) 10)))
+        init-poly (vec (flatten [[0.0 0.0] [50.0 0.0] [50.0 50.0] [25.0 45.0] [0.0 50.0]]))
+        ; init-poly (max-poly-convexity-noisy init-poly)
         ; pvar (println "init-poly" (count init-poly) init-poly)
         pvar (println "ip" init-poly)
         ]
@@ -109,14 +166,14 @@
 
 (defn gen-test-data
   [width height]
-  {:data (poly-to-pixels (gen-convex-poly width height  10) width height)
+  {:data (poly-to-pixels (gen-convex-poly width height  5) width height)
    :width width
    :height height})
 
 (defn main
   []
-  (let [width 200
-        height 200]
+  (let [width 100
+        height 100]
   (init-window width height "alpha")
   (init-gl)
   (let [test-data (gen-test-data width height)]

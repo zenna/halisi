@@ -200,13 +200,15 @@
   (Math/abs
     (/ (+ (* x1 (- y2 y3)) (* x2 (- y3 y1)) (* x3 (- y1 y2))) 2)))
 
-(defn sign
-  "Sign of number"
-  [x]
-  (cond
-    (pos? x) 'pos
-    (neg? x) 'neg
-    :else 'no-sign))
+(defn z-cross-prods
+  "Compute the z component of the cross products of edges of a polygon"
+  [poly]
+  (for [triple (partition 3 1 (conj poly (first poly) (second poly)))
+        :let [[p1 p2 p3] triple
+               v1 (points-to-vec p1 p2)
+               v2 (points-to-vec p2 p3)
+               ]]
+    (cross-product v1 v2)))
 
 (defn soft-convexity
   "An unnormalised continuous measure of convexity
@@ -230,6 +232,45 @@
         (if (= (sign (cross-product v1 v2)) (sign orient))
           (triangle-area triple)
           0)))))
+
+(defn simple-convex?
+  "Is a poylgon convex?
+  Should be all left (or all right) hand turns
+
+  May fail is polygon is complex"
+  [poly]
+  {:pre [(vector? poly)]}
+  (consistent? sign
+    (filter #(not (zero? %))
+    (for [triple (partition 3 1 (conj poly (first poly) (second poly)))
+          :let [[p1 p2 p3] triple
+                 v1 (points-to-vec p1 p2)
+                 v2 (points-to-vec p2 p3)
+                 ]]
+      (cross-product v1 v2)))))
+
+(defn conv-polar-range
+  [[r theta]]
+  (if (neg? theta)
+    [r (+ theta (* 2 Math/PI))]
+    [r theta]))
+
+(defn convex?
+  "Is a polygon convex?
+  Works whether poly is simple or complex"
+  [poly]
+  (sum
+  (map (fn [cross-prods]
+          (let [filtered (filter #(not (zero? %)) cross-prods)]
+            (if (consistent? sign filtered)
+                0
+                (max (count (filter neg? filtered)) (count filtered)))))
+  (for [pair (partition 2 1 (conj poly (first poly)))
+        :let [[p1 p2] pair]]
+    (map #(cross-product
+            (points-to-vec p1 p2)
+            (points-to-vec p2 %))
+      (filter #(and (not= p1 %) (not= p2 %)) poly))))))
 
 (defn half
   [x]
