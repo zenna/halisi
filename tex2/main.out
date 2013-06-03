@@ -1,0 +1,19 @@
+\BOOKMARK [-1][]{part.1}{The Showcase}{}% 1
+\BOOKMARK [0][]{chapter.1}{1 Introduction}{part.1}% 2
+\BOOKMARK [1][-]{subsection.1.0.1}{1.0.1 Query}{chapter.1}% 3
+\BOOKMARK [2][-]{subsection.1.0.2}{1.0.2 Constrain}{subsection.1.0.1}% 4
+\BOOKMARK [2][-]{subsection.1.0.3}{1.0.3 Distribution Conserving}{subsection.1.0.1}% 5
+\BOOKMARK [0][]{chapter.2}{2 Constrained Generative Models}{part.1}% 6
+\BOOKMARK [1][-]{section.2.1}{2.1 Transform naive generative model}{chapter.2}% 7
+\BOOKMARK [2][-]{subsection.2.1.1}{2.1.1 Domain specificity}{section.2.1}% 8
+\BOOKMARK [2][-]{subsection.2.1.2}{2.1.2 Domain specificity}{section.2.1}% 9
+\BOOKMARK [1][-]{section.2.2}{2.2 Error correcting evaluation}{chapter.2}% 10
+\BOOKMARK [2][-]{subsection.2.2.1}{2.2.1 Program Transparency}{section.2.2}% 11
+\BOOKMARK [2][-]{subsection.2.2.2}{2.2.2 Blame attribution}{section.2.2}% 12
+\BOOKMARK [2][-]{subsection.2.2.3}{2.2.3 Unification: Attribution blame to the generative model}{section.2.2}% 13
+\BOOKMARK [0][]{chapter.3}{3 Case study}{part.1}% 14
+\BOOKMARK [1][-]{section.3.1}{3.1 Optimise initial sample}{chapter.3}% 15
+\BOOKMARK [2][-]{subsection.3.1.1}{3.1.1 Autem Timeam}{section.3.1}% 16
+\BOOKMARK [1][-]{section.3.2}{3.2 Another Section in This Chapter}{chapter.3}% 17
+\BOOKMARK [2][-]{subsection.3.2.1}{3.2.1 Personas Initialmente}{section.3.2}% 18
+\BOOKMARK [2][-]{subsection.3.2.2}{3.2.2 Figure Citations}{section.3.2}% 19

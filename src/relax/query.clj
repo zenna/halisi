@@ -38,6 +38,16 @@
 
 ; Put noise on points, do inference over these points to
 
+; PROBLEMS
+
+; 1. Getting stuck in local minima
+; 2. using weird rendering of complex shapes
+; 3. Using wrong nuber of points
+; 4. plateaus, if there is no overlap then it wont have any gradient
+; 5. Bad stopping criterion in nelder-mead.
+; More fundamentally generative model is poor!
+; Leslie  
+
 (ns relax.query
   (:use relax.render)
   (:use relax.graphics)
@@ -77,24 +87,25 @@
     (let [flat-points (subvec param-values 0 (dec (count param-values))) ; first n-1 params are that of points
           ; pvar (println "PVALS" param-values)
           points (vec (partition 2 param-values))
-          pvar (println "convexity" (soft-convexity points))
+          ; pvar (println "convexity" (soft-convexity points) (convex? points))
           ; points (convex-hull-gf (partition 2 param-values))
           ; nelder mead expects a flat vector need to unflatten
           
           ; pvar (println "rendering-points" points)
           rendered-img (poly-to-pixels points (:width data) (:height data))
           sigma (last points)
-          quality (boolean-compare rendered-img (:data data))]
-      quality)))
+          quality (boolean-compare rendered-img (:data data))
+          convexity (convex? points)]
+      (+ quality convexity (soft-convexity points)))))
 
 (defn max-poly-convexity
   "Maximise the convexity of a polygon"
   [poly]
   (let [cost-f (fn [flat-poly]
                   (let [unflat-poly (vec (partition 2 flat-poly))]
-                    (draw-poly-standalone unflat-poly)
+                    ; (draw-poly-standalone unflat-poly)
                     (convex? unflat-poly)))
-        {conv-poly :vertex} (nelder-mead cost-f (vec (flatten poly)))]
+        {conv-poly :vertex} (nelder-mead-noisy cost-f (vec (flatten poly)) 3000)]
         conv-poly))
 
 ; NOTEST
@@ -115,7 +126,7 @@
 ;             (let [noisy-poly (mapv #(add-normal-noise % std) unflat-poly)]
 ;               (draw-poly-standalone noisy-poly)
 ;               (convex? noisy-poly))))]
-;     (println (* 1.0 (mean scores)))
+;     (println (* 1.0 (mean scoreFs)))
 ;     (mean scores)))
 
 ; NOTEST
@@ -123,13 +134,15 @@
   [params]
   (let [[flat-poly stds] (vec (split-at (* 2 (/ (count params) 3)) params))
         unflat-poly (vec (partition 2 flat-poly))
-        pvar (println "s" stds)
-        scores (repeatedly 10
+        ; pvar (println "s" stds)
+        ; pvar (println "vl" (nth params 7))
+        scores (repeatedly 1000
           (fn []
             (let [noisy-poly (mapv #(add-normal-noise %1 %2) unflat-poly stds)]
               ; (draw-poly-standalone noisy-poly)
               (convex? noisy-poly))))]
-    (println (* 1.0 (mean scores)))
+    (draw-poly-standalone unflat-poly)
+    ; (println (double (mean scores)) (count params))
     (mean scores)))
 
 ; ; NOTEST
@@ -143,26 +156,32 @@
 (defn max-poly-convexity-noisy
   "Maximise the convexity of a polygon"
   [poly]
-  (let [stds (repeatedly (count poly) #(* (rand) 5))
+  (let [stds (vec (repeatedly (count poly) #(* (rand) 35)))
+        ; stds (assoc stds 3 10)
+        pvar (println stds)
         init-data (vec (flatten (conj poly stds)))
         ; pvar (println "start-point" init-data)
-        {conv-poly :vertex} (nelder-mead noisy-cost-f init-data)]
+        {conv-poly :vertex} (nelder-mead noisy-cost-f init-data 500)]
         conv-poly))
 
 
 (defn inv-poly
   [data]
-  (let [init-poly (vec (flatten (gen-convex-poly
+  (let [init-poly (vec (flatten (gen-unconstrained-poly
                                 (:width data)
-                                (:height data) 10)))
-        init-poly (vec (flatten [[0.0 0.0] [50.0 0.0] [50.0 50.0] [25.0 45.0] [0.0 50.0]]))
-        ; init-poly (max-poly-convexity-noisy init-poly)
+                                (:height data) 5)))
+        ; init-poly (vec [[0.0 0.0] [50.0 0.0] [50.0 50.0] [25.0 45.0] [0.0 50.0]])
+
+        init-poly (max-poly-convexity-noisy init-poly)
         ; pvar (println "init-poly" (count init-poly) init-poly)
-        pvar (println "ip" init-poly)
+        ; pvar (R "ip" init-poly)
         ]
+  (println "Ready to do inverse graphics, press key to continue" )
   (println (read-line))
-  (nelder-mead (gen-cost-f data)
-               init-poly)))
+  ; ))
+  (nelder-mead-noisy (gen-cost-f data)
+               init-poly
+               1000)))
 
 (defn gen-test-data
   [width height]
@@ -172,8 +191,8 @@
 
 (defn main
   []
-  (let [width 100
-        height 100]
+  (let [width 200
+        height 200]
   (init-window width height "alpha")
   (init-gl)
   (let [test-data (gen-test-data width height)]
