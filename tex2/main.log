@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012/Debian) (format=pdflatex 2013.5.15)  3 JUN 2013 19:18
+This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012/Debian) (format=pdflatex 2013.5.15)  9 JUN 2013 15:59
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -680,7 +680,7 @@ Package: prelim2e 2009/05/29 v1.3 prelim2e Package (MS)
 Package: everyshi 2001/05/15 v3.00 EveryShipout Package (MS)
 ))
 (/usr/share/texlive/texmf-dist/tex/latex/carlisle/remreset.sty))) (./main.aux
-(./Chapters/Chapter02.aux) (./FrontBackMatter/Bibliography.aux))
+(./Chapters/Chapter02.aux))
 \openout1 = `main.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 39.
@@ -768,18 +768,6 @@ Package microtype Info: No adjustment of character kerning.
 File: mt-ppl.cfg 2005/11/16 v1.6 microtype config. file: Palatino (RS)
 )
 ABD: EveryShipout initializing macros
-LaTeX Font Info:    Try loading font information for T1+fvm on input line 79.
-
-(/usr/share/texlive/texmf-dist/tex/latex/bera/t1fvm.fd
-File: t1fvm.fd 2004/09/07 scalable font definitions for T1/fvm.
-)
-LaTeX Font Info:    Font shape `T1/fvm/m/n' will be
-(Font)              scaled to size 7.65005pt on input line 79.
- [1
-
-
-
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] [2]
 \openout2 = `Chapters/Chapter02.aux'.
 
  (./Chapters/Chapter02.tex
@@ -791,14 +779,21 @@ Class scrreprt Warning: \float@addtolists detected!
 (scrreprt)              Support for \float@addtolists may be removed from
 (scrreprt)              `scrreprt' soon .
 
-LaTeX Font Info:    Try loading font information for U+zeur on input line 27.
+Package microtype Info: Character `029' is missing
+(microtype)             in font `T1/pplj/m/sc/10.95'.
+(microtype)             Ignoring protrusion settings for this character.
+LaTeX Font Info:    Font shape `T1/pplj/m/sl' in size <10.95> not available
+(Font)              Font shape `T1/pplj/m/it' tried instead on input line 24.
+LaTeX Font Info:    Font shape `T1/pplj/m/sl' in size <9> not available
+(Font)              Font shape `T1/pplj/m/it' tried instead on input line 24.
+LaTeX Font Info:    Try loading font information for U+zeur on input line 26.
 (/usr/share/texlive/texmf-dist/tex/latex/eulervm/uzeur.fd
 File: uzeur.fd 2005/01/11 v4.0 (WaS)
 )
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-eur.cfg
 File: mt-eur.cfg 2006/07/31 v1.1 microtype config. file: AMS Euler Roman (RS)
 )
-LaTeX Font Info:    Try loading font information for U+zeus on input line 27.
+LaTeX Font Info:    Try loading font information for U+zeus on input line 26.
 
 (/usr/share/texlive/texmf-dist/tex/latex/eulervm/uzeus.fd
 File: uzeus.fd 2005/01/11 v4.0 (WaS)
@@ -806,217 +801,122 @@ File: uzeus.fd 2005/01/11 v4.0 (WaS)
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-eus.cfg
 File: mt-eus.cfg 2006/07/28 v1.2 microtype config. file: AMS Euler Script (RS)
 )
-LaTeX Font Info:    Try loading font information for U+zeuex on input line 27.
+LaTeX Font Info:    Try loading font information for U+zeuex on input line 26.
 
 (/usr/share/texlive/texmf-dist/tex/latex/eulervm/uzeuex.fd
 File: uzeuex.fd 2005/01/11 v4.0 (WaS)
 )
-LaTeX Font Info:    Try loading font information for OT1+zplm on input line 27.
+LaTeX Font Info:    Try loading font information for OT1+zplm on input line 26.
 
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1zplm.fd
 File: ot1zplm.fd 2002/09/08 Fontinst v1.914 font definitions for OT1/zplm.
 )
-LaTeX Font Info:    Font shape `T1/pplj/bx/n' in size <10.95> not available
-(Font)              Font shape `T1/pplj/b/n' tried instead on input line 28.
+LaTeX Font Info:    Try loading font information for T1+fvm on input line 36.
+
+(/usr/share/texlive/texmf-dist/tex/latex/bera/t1fvm.fd
+File: t1fvm.fd 2004/09/07 scalable font definitions for T1/fvm.
+)
+LaTeX Font Info:    Font shape `T1/fvm/m/n' will be
+(Font)              scaled to size 7.65005pt on input line 36.
+ [1
 
 
-Package natbib Warning: Citation `SHULTZ' on page 3 undefined on input line 28.
 
 
-
-Overfull \hbox (0.80315pt too wide) in paragraph at lines 26--30
-[]\T1/pplj/m/n/10.95 Buildon upon re-cently in-ter-pre-ta-tions of in-fer-ence 
-in com-pu-ta-tional
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+Overfull \hbox (0.13475pt too wide) in paragraph at lines 47--49
+\T1/pplj/m/sc/10.95/80ls query \T1/pplj/m/n/10.95 for-malises prob-a-bilis-tic 
+in-fer-ence as a \T1/pplj/m/it/10.95 pro-gram \T1/pplj/m/n/10.95 in a cor-re-sp
+ond-
  []
-
-Package microtype Info: Character `029' is missing
-(microtype)             in font `T1/pplj/m/sc/10.95'.
-(microtype)             Ignoring protrusion settings for this character.
-
-Package hyperref Warning: Difference (2) between bookmark levels is greater 
-(hyperref)                than one, level fixed on input line 42.
-
-
-Package natbib Warning: Citation `CHURCH' on page 3 undefined on input line 45.
-
-
-
-Package natbib Warning: Citation `VIKASH' on page 3 undefined on input line 45.
-
-
-[3
-
-
-
-]
-
-Package natbib Warning: Citation `FREER:2012' on page 4 undefined on input line
- 48.
 
 LaTeX Font Info:    Font shape `T1/fvm/m/n' will be
-(Font)              scaled to size 9.30756pt on input line 53.
-LaTeX Font Info:    Font shape `T1/pplj/m/sl' in size <10.95> not available
-(Font)              Font shape `T1/pplj/m/it' tried instead on input line 84.
-LaTeX Font Info:    Font shape `T1/pplj/m/sl' in size <9> not available
-(Font)              Font shape `T1/pplj/m/it' tried instead on input line 84.
-[4]
+(Font)              scaled to size 9.30756pt on input line 54.
+
+Overfull \hbox (22.60156pt too wide) in paragraph at lines 60--60
+[]  \T1/fvm/m/n/10.95 (let ((val (eval exp))        ; sample from model, call i
+t val[] 
+ []
+
+
+Overfull \hbox (5.79211pt too wide) in paragraph at lines 60--60
+[]    \T1/fvm/m/n/10.95 (if (pred val)              ; If val satisfies conditio
+ns[] 
+ []
+
+[2] [3] [4
+
+
+]
 Chapter 2.
-[5
+
+Overfull \hbox (8.4581pt too wide) in paragraph at lines 126--133
+\T1/pplj/m/n/10.95 sam-pling points uni-formly over some two di-men-sional in-t
+er-val. Clearly,
+ []
+
+[5] [6] [7] [8] [9] [10
 
 
 ]
-Overfull \hbox (7.45343pt too wide) in paragraph at lines 127--128
-\T1/pplj/m/n/10.95 TODO EX-PLAIN PRO-GRAM TRANS-PARENCY BOTH IN-FOR-MALLY
- []
-
-[6]
 Chapter 3.
-LaTeX Font Info:    Try loading font information for U+fplmbb on input line 155
-.
-(/usr/share/texlive/texmf-dist/tex/latex/psnfss/ufplmbb.fd
-File: ufplmbb.fd 2003/10/30 Fontinst v1.914 font definitions for U/fplmbb.
-) [7
+
+Package hyperref Warning: Difference (2) between bookmark levels is greater 
+(hyperref)                than one, level fixed on input line 254.
+
+! Missing { inserted.
+<to be read again> 
+                   $
+l.257 ... been limited to a single constraint $C^$
+                                                  , since multiple constrain...
+
+? 
+! Missing } inserted.
+<inserted text> 
+                }
+l.257 ... been limited to a single constraint $C^$
+                                                  , since multiple constrain...
+
+? 
+) [11] [12
 
 
-]
 
-Package natbib Warning: Citation `bentley:1999' on page 8 undefined on input li
-ne 180.
-
-
-Package natbib Warning: Citation `bentley:1999' on page 8 undefined on input li
-ne 180.
-
-
-Overfull \hbox (18.80463pt too wide) in paragraph at lines 183--183
-[]\T1/pplj/m/n/10.95 Pellentesque habi-tant morbi tris-tique senec-
- []
-
-
-Overfull \hbox (10.94551pt too wide) in paragraph at lines 183--183
-\T1/pplj/m/n/10.95 lum fringilla lorem. Sed neque lec-tus, con-sectetuer at, co
-n-sectetuer
- []
-
-
-Overfull \hbox (9.30934pt too wide) in paragraph at lines 184--184
-\T1/pplj/m/n/10.95 quam auc-tor, pede con-se-quat laoreet var-ius, eros tel-lus
- scelerisque
- []
-
-
-Package natbib Warning: Citation `cormen:2001' on page 8 undefined on input lin
-e 187.
-
-
-Package natbib Warning: Citation `cormen:2001' on page 8 undefined on input lin
-e 187.
-
-
-Overfull \hbox (0.77591pt too wide) in paragraph at lines 193--193
-\T1/pplj/m/n/10.95 Morbi ul-tri-ces rutrum lorem. Nam el-e-men-tum ul-lam-cor-p
-er leo. Morbi
- []
-
-[8]
-Overfull \hbox (9.6941pt too wide) in paragraph at lines 196--196
-\T1/pplj/m/n/10.95 Vestibu-lum diam eros, fringilla et, con-sectetuer eu, non-u
-mmy id, sapien.
- []
-
-
-Package natbib Warning: Citation `sommerville:1992' on page 9 undefined on inpu
-t line 205.
-
-
-Package natbib Warning: Citation `sommerville:1992' on page 9 undefined on inpu
-t line 205.
-
-
-Package natbib Warning: Citation `knuth:1976' on page 9 undefined on input line
- 217.
-
-LaTeX Font Info:    Font shape `T1/pplj/bx/n' in size <10> not available
-(Font)              Font shape `T1/pplj/b/n' tried instead on input line 218.
-
-Package natbib Warning: Citation `knuth:1976' on page 9 undefined on input line
- 218.
-
-
-Package natbib Warning: Citation `knuth:1976' on page 9 undefined on input line
- 218.
-
-[9] <gfx/example_1.jpg, id=138, 240.9pt x 180.675pt>
-File: gfx/example_1.jpg Graphic file (type jpg)
- <use gfx/example_1.jpg>
-Package pdftex.def Info: gfx/example_1.jpg used on input line 234.
-(pdftex.def)             Requested size: 151.19897pt x 113.40128pt.
-
-<gfx/example_2.jpg, id=139, 240.9pt x 180.675pt>
-File: gfx/example_2.jpg Graphic file (type jpg)
- <use gfx/example_2.jpg>
-Package pdftex.def Info: gfx/example_2.jpg used on input line 237.
-(pdftex.def)             Requested size: 151.19897pt x 113.40128pt.
-
-<gfx/example_3.jpg, id=140, 240.9pt x 180.675pt>
-File: gfx/example_3.jpg Graphic file (type jpg)
- <use gfx/example_3.jpg>
-Package pdftex.def Info: gfx/example_3.jpg used on input line 239.
-(pdftex.def)             Requested size: 151.19897pt x 113.40128pt.
-
-<gfx/example_4.jpg, id=141, 240.9pt x 180.675pt>
-File: gfx/example_4.jpg Graphic file (type jpg)
- <use gfx/example_4.jpg>
-Package pdftex.def Info: gfx/example_4.jpg used on input line 241.
-(pdftex.def)             Requested size: 151.19897pt x 113.40128pt.
-)
-[10 <./gfx/example_1.jpg> <./gfx/example_2.jpg> <./gfx/example_3.jpg> <./gfx/ex
-ample_4.jpg>]
-\openout2 = `FrontBackMatter/Bibliography.aux'.
-
- (./FrontBackMatter/Bibliography.tex
-No file main.bbl.
-)
-
-Package natbib Warning: There were undefined citations.
-
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 108.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 108.
-(./main.aux (./Chapters/Chapter02.aux) (./FrontBackMatter/Bibliography.aux))
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 108.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 108.
+] [13]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 119.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 119.
+ (./main.aux (./Chapters/Chapter02.aux))
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 119.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 119.
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: A66E1B3D18A0D7F0814C923670F8DC1C;1414.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 108.
+(rerunfilecheck)             Checksum: 1F32C807709BABA8D607337B74B0D70F;1213.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 119.
  ) 
 Here is how much of TeX's memory you used:
- 14444 strings out of 493485
- 220083 string characters out of 3143526
- 488894 words of memory out of 3000000
- 17375 multiletter control sequences out of 15000+200000
- 69105 words of font info for 110 fonts, out of 3000000 for 9000
+ 14329 strings out of 493485
+ 217993 string characters out of 3143526
+ 489894 words of memory out of 3000000
+ 17295 multiletter control sequences out of 15000+200000
+ 55967 words of font info for 88 fonts, out of 3000000 for 9000
  957 hyphenation exceptions out of 8191
- 48i,14n,67p,501b,448s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 45i,13n,67p,501b,467s stack positions out of 5000i,500n,10000p,200000b,50000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texliv
-e/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texm
-f-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/amsfonts/euler/euex10.pfb></usr/share/texlive/texmf-dist/fonts/typ
-e1/public/amsfonts/euler/eufm10.pfb></usr/share/texlive/texmf-dist/fonts/type1/
-public/amsfonts/euler/eurb10.pfb></usr/share/texlive/texmf-dist/fonts/type1/pub
-lic/amsfonts/euler/eurm10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public
-/amsfonts/euler/eurm7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/ams
-fonts/euler/eusm10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/mathpa
-zo/fplmbb.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/fpl/fplrc8a.pfb
-></usr/share/texlive/texmf-dist/fonts/type1/public/bera/fvmr8a.pfb></usr/share/
-texlive/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></usr/share/texlive/texm
-f-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/share/texlive/texmf-dist/fonts
-/type1/urw/palatino/uplri8a.pfb>
-Output written on main.pdf (10 pages, 181970 bytes).
+e/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texm
+f-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texlive/texmf-dist/
+fonts/type1/public/amsfonts/euler/eufm10.pfb></usr/share/texlive/texmf-dist/fon
+ts/type1/public/amsfonts/euler/eurb10.pfb></usr/share/texlive/texmf-dist/fonts/
+type1/public/amsfonts/euler/eurm10.pfb></usr/share/texlive/texmf-dist/fonts/typ
+e1/public/amsfonts/euler/eurm7.pfb></usr/share/texlive/texmf-dist/fonts/type1/p
+ublic/amsfonts/euler/eusm10.pfb></usr/share/texlive/texmf-dist/fonts/type1/publ
+ic/fpl/fplrc8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/fpl/fplrij
+8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/bera/fvmr8a.pfb></usr/
+share/texlive/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/share/texliv
+e/texmf-dist/fonts/type1/urw/palatino/uplri8a.pfb>
+Output written on main.pdf (13 pages, 114196 bytes).
 PDF statistics:
- 213 PDF objects out of 1000 (max. 8388607)
- 180 compressed objects within 2 object streams
- 38 named destinations out of 1000 (max. 500000)
- 12973 words of extra memory for PDF output out of 14400 (max. 10000000)
+ 204 PDF objects out of 1000 (max. 8388607)
+ 174 compressed objects within 2 object streams
+ 39 named destinations out of 1000 (max. 500000)
+ 10881 words of extra memory for PDF output out of 12000 (max. 10000000)
 
