@@ -2,8 +2,9 @@
 
 \chapter{Constrained Inference - Zenna Tavares} % Chapter title
 
-We address the problem of making good proposals in probabilstic inference.
-In particular we propose a formalism for constructively incorporating constraints into generative models, and suggest two strategies of implementation.
+We address the problem of tractably drawing exact samples from conditional probability distributions.
+In particular we propose a formalism for constructively incorporating constraints into generative models for probabilstic inference.
+Building upon formalisms of inference as conditional execution of a program, we outline approaches to analyse and transform the formal semantics of a probabilstic program.
 
 \section{Introduction}
 \label{ch:examples} % For referencing the chapter elsewhere, use \autoref{ch:examples} 
@@ -95,59 +96,14 @@ The rest of this study is devoted into proposed means of doing this.
 
 %------------------------------------------------
 
-\chapter{Constrained Generative Models}
-There are a number of ways to explore this problem, varying principally in dependence on domain specific knowledge.
-We will outline two methods, which draw largely from the domains of program semantics and automated reasoning about programs.
+\chapter{Constrained Generative Models Error correcting evaluation}
 
-\section{Transform rejective generative model}
-Transformational Programming is a prominent method used in automated program development.
-A formal, declarative specification of a program is {\em refined} into a complete program by applying a sequence of correctness-preserving transformations.
-We can appropriate this framework for our purposes; first constrain a naive generative through rejection sampling, then transform into a semantically equivalent, but more efficient program.
+TODO
 
-From a stochasic program $P$ and constraint $C$, we construct a new program $R_P^C$ with rejection sampling semantics.
-$R_P^C$ executes $P$ to sample from its prior and returns the sample $C$ is satisfied, otherwise a further attempt is made.
-$R_P^C$ is what is returned from application of \spacedlowsmallcaps{constrain} to $P$ and $C$, and can also be viewed as the partial-evaluation of the following lisp function:
+\begin{itemize}
+\end{itemize}
 
-\graffito{Partial evaluation of a program means to take some subset of its arguments, and compile a new program with this subset fixed (under closure) and no longer arguments.}
-\begin{verbatim}
-(defn R [P C]
-  (let [sample (P)]
-  (if (true? (C sample))
-      sample
-      (R P C))))
-\end{verbatim}
-
-Our next objective is to perform a series of transformations to improve the efficiency $R_P^C$.
-By constraining this set of transformations to be semantic preserving - any new program is \textit{equivalent} to the original program, our program will describe the same distribution.
-r
-It does not follow immediately that a transformed program will be constructive, this depends entirely on the transformations applied.
-The follow example illustrates one method, which may fall short of constructivism but could improve upon rejection sampling.
-
-Consider a naive generative model which generates polygons by sampling points uniformly over some two dimensional interval.
-Clearly, the majority of generated polygons will not be convex, most will not even be simple.
-We wish our polygons to be convex and so specify this as some computable predicate $C$.
-$R_P^C$  will construct a fully formed polygon, then reject it if it is not convex.
-One obvious transformation will result in a new program which applies the convexity test to partially constructed proposals, exploting the fact that if some part of a polygon is not convex, neither will the whole polygon ever be.
-Clearly the effiency gains will depend on the complexity of the test, the size of the polygons being generated and the frequency with which it is applied to partial solutions.
-Additionally this kind of transformation cannot be applied unconditionally; there instances of constraints which may fail partial solutions but permit whole solutions compsoed of these failing parts.
-
-\subsection{Domain General and Specific Transformations}
-
-Three well known program transformations are \textit{finite differencing, partial evaluation and dominated convergence}.
-Partial evaluation \citep{paige} is perhaps the mot practical transformation commonly used, and forms the basis of \spacedlowsmallcaps{constrain}.
-It is based on the idea in which a highly parameterised program is concretised by simplification , when some subet of the parameters are fixed.
-It uses a highly generic strategy which traces a portion of the computation for which expressions can be evaluated.
-As a result, partial evaluation must be implemented in full accordance with language semantics
-
-Transformations such as these are deductive in the sense that every one has an associated proof that it is semantic preserving.
-These proofs are typically domain independent; they apply to any program and exploit the denotations, i.e., the meaning of the program syntax to make valid changes.
-Clearly however, many semantic preserving transformations will depend on domain specific proofs.
-A program transformation for the convex polygon example above could depend upon geometric proofs for instance.
-Automatically generating domain specific transformations then must defer to the problem of automated theorem proving.
-This is indeed an active area of research in program transformation.
-
-\section{Error correcting evaluation}
-Constraining generative models without knowledge speific to the domain $X$ seems implausible; how can one generate only convex polygons without any understanding of convexity or geometry?
+Constraining generative models without knowledge specific to the domain $X$ seems implausible; how can one generate only convex polygons without any understanding of convexity or geometry?
 Yet the complexities of representing, incorporating and devising algorithms to exploit domain specific knowledge is best avoided.
 Black box optimisation methods succeed in obviating domain specific requirements, but at the cost of discarding useful information about the structure of the problem and causes of error in proposals.
 This approach posits that when considered in accordance to the semantics of program in which they are represented, $P$, $C^*$ and $x$ are sufficiently meaningful to sidestep any need to inject domain specific knowledge.
@@ -240,6 +196,58 @@ Try to define our approach with respet to denotational semantics
 In order Let's focus on a small imperative language.
 Our domain $X$ is composed of input vectors of booleans or real valued numbers.
 Our predicates and our generative models are non-recursive. no looping allowed.
+
+\section{Alternative approaches}
+There are a number of ways to explore this problem, varying principally in dependence on domain specific knowledge.
+We will outline two methods, which draw largely from the domains of program semantics and automated reasoning about programs.
+
+\section{Transform rejective generative model}
+Transformational Programming is a prominent method used in automated program development.
+A formal, declarative specification of a program is {\em refined} into a complete program by applying a sequence of correctness-preserving transformations.
+We can appropriate this framework for our purposes; first constrain a naive generative through rejection sampling, then transform into a semantically equivalent, but more efficient program.
+
+From a stochasic program $P$ and constraint $C$, we construct a new program $R_P^C$ with rejection sampling semantics.
+$R_P^C$ executes $P$ to sample from its prior and returns the sample $C$ is satisfied, otherwise a further attempt is made.
+$R_P^C$ is what is returned from application of \spacedlowsmallcaps{constrain} to $P$ and $C$, and can also be viewed as the partial-evaluation of the following lisp function:
+
+\graffito{Partial evaluation of a program means to take some subset of its arguments, and compile a new program with this subset fixed (under closure) and no longer arguments.}
+\begin{verbatim}
+(defn R [P C]
+  (let [sample (P)]
+  (if (true? (C sample))
+      sample
+      (R P C))))
+\end{verbatim}
+
+Our next objective is to perform a series of transformations to improve the efficiency $R_P^C$.
+By constraining this set of transformations to be semantic preserving - any new program is \textit{equivalent} to the original program, our program will describe the same distribution.
+r
+It does not follow immediately that a transformed program will be constructive, this depends entirely on the transformations applied.
+The follow example illustrates one method, which may fall short of constructivism but could improve upon rejection sampling.
+
+Consider a naive generative model which generates polygons by sampling points uniformly over some two dimensional interval.
+Clearly, the majority of generated polygons will not be convex, most will not even be simple.
+We wish our polygons to be convex and so specify this as some computable predicate $C$.
+$R_P^C$  will construct a fully formed polygon, then reject it if it is not convex.
+One obvious transformation will result in a new program which applies the convexity test to partially constructed proposals, exploting the fact that if some part of a polygon is not convex, neither will the whole polygon ever be.
+Clearly the effiency gains will depend on the complexity of the test, the size of the polygons being generated and the frequency with which it is applied to partial solutions.
+Additionally this kind of transformation cannot be applied unconditionally; there instances of constraints which may fail partial solutions but permit whole solutions compsoed of these failing parts.
+
+\subsection{Domain General and Specific Transformations}
+
+Three well known program transformations are \textit{finite differencing, partial evaluation and dominated convergence}.
+Partial evaluation \citep{paige} is perhaps the mot practical transformation commonly used, and forms the basis of \spacedlowsmallcaps{constrain}.
+It is based on the idea in which a highly parameterised program is concretised by simplification , when some subet of the parameters are fixed.
+It uses a highly generic strategy which traces a portion of the computation for which expressions can be evaluated.
+As a result, partial evaluation must be implemented in full accordance with language semantics
+
+Transformations such as these are deductive in the sense that every one has an associated proof that it is semantic preserving.
+These proofs are typically domain independent; they apply to any program and exploit the denotations, i.e., the meaning of the program syntax to make valid changes.
+Clearly however, many semantic preserving transformations will depend on domain specific proofs.
+A program transformation for the convex polygon example above could depend upon geometric proofs for instance.
+Automatically generating domain specific transformations then must defer to the problem of automated theorem proving.
+This is indeed an active area of research in program transformation.
+
 
 \subsection{TO TALK ABOUT}
 
