@@ -4,7 +4,7 @@
 
 We address the problem of tractably drawing exact samples from conditional probability distributions.
 In particular we propose a formalism for constructively incorporating constraints into generative models for probabilstic inference.
-Building upon formalisms of inference as conditional execution of a program, we outline approaches to analyse and transform the formal semantics of a probabilstic program.
+Two potential implementations are outlined, both of which build upon formalisms of inference as conditional execution of a program, and analyse such programs with respect to their formal semantics.
 
 \section{Introduction}
 \label{ch:examples} % For referencing the chapter elsewhere, use \autoref{ch:examples} 
@@ -15,7 +15,7 @@ Probabilstic inference has established itself as a means of reasoning in domains
 Although the rules of conditional probability state how to update our beliefs in hypotheses conditioned on evidence, it tells us only declaratively, and leaves us with no guidance as to how hypotheses should be constructed in the first place.
 In anticipation of the distinction emphasised in this essay, we describe conditional probability and in particular Bayes' Rule as the \textit{logic} of a program, while the the \textit{control} or \textit{procedure} remains a topic of continued research.
 
-Inference typically refers to finding the expectation of some function with respect to a probability distribution, computing the posterior distribution, or drawing samples to approximate it.
+Inference typically refers to finding the expectation of some function with respect to a probability distribution, computing the posterior distribution, or drawing from it.
 Numerous approaches exist, but our focus is on Monte Carlo methods whose strengths lie in their applicability to high dimensional distributions, where direct sampling becomes intractable.
 Inference by means of random perturbations to hypotheses is often inefficient however; we would prefer to not waste resources proposing candidate hypotheses which violate sensible constraints.
 In other words, we would like to make good guesses.
@@ -30,10 +30,11 @@ The feasibility of this aim is vulnerable to skepticism; how can we construct on
 It is unlikely this objective can be achieved in full generality, in some cases we have no alternative than to generate and test.
 Furthermore we shall see that relaxations of the above maxim may lead to more pragmatic implementation strategies; to construct is to test less perhaps, or to test only partially and incrementally.
 Precisely what distuiginshes one constraint from another in terms of the extent to which it can be implemented constructively, is a topic of great interest and speculated on in our conclusion.
-Yet, we can motivate the plausiibilty of constructive inference by appealling to common experience:
+Yet, we can motivate the plausibilty of constructive inference by appealling to common experience:
 consider the ease with one can compose a paragraph that rhymes, generate a polynomial expression, or draw an acyclic graph.
 Each of these examples entails a logical constraint which we satisfy without hinderance.
 While it is risky to draw conclusions about the computational hardness of a problem based on our subjective difficulty when solving it, each of the above examples has a known efficient algorithm.
+We conjecture the automatic discovery of algorithms as a means towards conditional sampling, is necessary for any general inference procedure approaching optimal efficiency.
 
 % A further appeal of such as approach is its potential to bridge between discriminative and generative approaches
 % Discriminative models may detect broad level characteristics of a scene, while generative use these as constraints.
@@ -77,8 +78,8 @@ Much research in inference is in looking for tractable approximations and altern
 \subsection{Constrain}
 The semantics of \spacedlowsmallcaps{constrain} can be readily understood in terms of \spacedlowsmallcaps{query}.
 Expanding on the lisp definition of \spacedlowsmallcaps{query} given above, \spacedlowsmallcaps{constrain} is a higher order function expecting a prior program $P$, and taking \textit{constraint} $C^*$.
-In the first of the approaches outlined in the next chapter cases $C$ and $C^*$ will be identical, while in the second the set of constraints is a subset of the set of conditions.
-They are differentiated in terms of hardness; constraints are logical and must be true, i.e., $P(x \vert \lnot C^*) = 0,$ $\forall x$.
+Uncertain evidence, or equivalently soft constraints are not considered here.
+Hence a condition $C$ and constraint $C^*$ can be used almost interchangeably, but are differentiated in terms of hardness; constraints are logical and must be true.
 \spacedlowsmallcaps{constrain} simply returns a function of no arguments which is \spacedlowsmallcaps{query} with all its arguments evaluated.
 
 \begin{verbatim}
@@ -96,14 +97,16 @@ The rest of this study is devoted into proposed means of doing this.
 
 %------------------------------------------------
 
-\chapter{Constrained Generative Models Error correcting evaluation}
+\chapter{Constrained Generative Models}
 
-TODO
+To recap: we wish to construct a probabilstic program which when evaluated draws samples from a conditonal distribution $P^*(x) = P(x \vert C^*)$.
+And we aim to do so constructively: to synthesise an efficient procedure of this declarative goal, which posseses improved complexity and efficiency properties.
 
-\begin{itemize}
-\end{itemize}
+Possible methods are numerous, and vary principally in dependence on domain specific knowledge.
+Two proposals will be outlined informally; both draw primarily from subdomains of program semantics: the automated reasoning, formal verification, debugging, and symbolic execution of programs.
 
-Constraining generative models without knowledge specific to the domain $X$ seems implausible; how can one generate only convex polygons without any understanding of convexity or geometry?
+\section{Fault localising evaluation}
+Constraining generative models without knowledge specific to the domain seems implausible; how can one generate only convex polygons without any understanding of convexity or geometry?
 Yet the complexities of representing, incorporating and devising algorithms to exploit domain specific knowledge is best avoided.
 Black box optimisation methods succeed in obviating domain specific requirements, but at the cost of discarding useful information about the structure of the problem and causes of error in proposals.
 This approach posits that when considered in accordance to the semantics of program in which they are represented, $P$, $C^*$ and $x$ are sufficiently meaningful to sidestep any need to inject domain specific knowledge.
@@ -136,39 +139,38 @@ Now we can ask see what caused $x_2$ to be positive, from the generative model w
 Tt is the cause unsatisfiability at the level of the generative model.
 In order to correct this, a local constraint can be applied on the second argument of list (the cause of the value of $x_2$).  That is, a change to (rand -10 10) that will only evaluate to negative values is to be found.
 
-\subsection{Blame attribution and counterfactual reasoning}
-The concepts of \textit{blame attribution}, \textit{counter factual reasoning}, \textit{local consistency} and \textit{causal chaining} can be seen in the example, and are central to the proposed method.
+\subsection{An informal algorithm}
+The concepts of \textit{fault localisation}, \textit{counter factual reasoning}, \textit{local consistency} and \textit{causal chaining} can be seen in the example, and are central to the proposed method.
 Informally, the approach can be stated as follows:
 \begin{enumerate}
-\item Evaluate the program until failure (if the constraint is satisfied then we are done), and attribute blame to parts of the program that caused the failure.
+\item Evaluate the program until failure (if the constraint is satisfied then we are done), and attribute fault to parts of the program that caused the failure.
 
 A cause of failure could be the evaluation of an expression or the execution of an imperative statement.
-There may be multiple causes, and independencies between them.
+There may be multiple causes, and interdependencies between them.
 
 \item Consider counterfactuals.
 
-Alternative worlds where a particular cause of failure does not cause failure are then considered.
+Alternative worlds where a particular cause of failure do not occur are considered.
 Specifically we seek a local constraint on the cause closest to failure of the entire predicate, that describes the change required result in satisfiability.
 
 \item Chain causes.
-
 A causal chain from the cause of failure back to our object of interest is made.
 This object is either the sample if our goal is to fix one particular sample, or the generative model itself.
 
-\item Solve constraints
-The output of this algorithm is a set of local constraints.
-They are local in the sense they apply to specific parts of the program.
-We may then wish to solve these constraints to produce a fixed sample or generative model.
-Constraints will typically have numerous solutions, we may then wish to pick a single one, or in some other way describe a new generative model over the solutions of the constraints.
+\item Transform generative model
+Taking both our constraints and generative model, we seek a transformation of the model that causes the constraints to be satisfied.
+This requires reasoning about the probabilstic semantics of the model.
+
+\item Repeat
+This algorithm is iterative; we sample a new value from our transformed generative model and continue to refine it with the previous steps.
 
 \end{enumerate}
 
-In this light, the approach can be viewed as a special kind of evaluation.
-The objective of this error correcting evaluation is not to return a value, but instead to correct either the sample or the generative model by fixing local problems.
+This approach can be viewed as a special kind of evaluation, where the objectiveis not to return a value, but instead to work backwards from points of failure to their cause in the generative model.
 In order to do this we must evaluate both forwards to the point of failure, and backwards to infer the causes.  
 
 \subsection{Program Sematnics}
-This method relies on understanding the meaning of a program, its denotational semantics.
+This method relies on understanding the meaning of a program, its semantics.
 To illustrate let us consider a slight variation of the previous predicate:
 
 \begin{verbatim}
@@ -184,22 +186,8 @@ We can no longer reason about its behaviour or infer what the cause of failure w
 Neither then could we expect any automated reasoner to be able to perform this task.
 
 Fortunately, programming languages are formal objects and their meaning can be specified exactly.
-Denotational semantics attempts to construct mathematical objects, denotations, that describe the meaning of the language.
-Semantics should be compositional; denotations of a program should be composed of denotations of its subcomponents.
-
-Several practical langauges such as Haskell and ML have complete denotational semantics, and are good candidates for use by the proposed method.
-
-\subsection{Formal specification of method}
-Try to define our approach with respet to denotational semantics
-
-\subsection{Practical proposal for constrained goal}
-In order Let's focus on a small imperative language.
-Our domain $X$ is composed of input vectors of booleans or real valued numbers.
-Our predicates and our generative models are non-recursive. no looping allowed.
-
-\section{Alternative approaches}
-There are a number of ways to explore this problem, varying principally in dependence on domain specific knowledge.
-We will outline two methods, which draw largely from the domains of program semantics and automated reasoning about programs.
+Semantics, in a variety of forms (denotational, operational, predicate-transformer, gameplaying) attempts to construct mathematical objects, that describe the meaning of the language.
+Several practical langauges such as Haskell and ML have complete semantics, and are good candidates for use by the proposed method.
 
 \section{Transform rejective generative model}
 Transformational Programming is a prominent method used in automated program development.
@@ -248,32 +236,49 @@ A program transformation for the convex polygon example above could depend upon 
 Automatically generating domain specific transformations then must defer to the problem of automated theorem proving.
 This is indeed an active area of research in program transformation.
 
+% \section{TO TALK ABOUT}
 
-\subsection{TO TALK ABOUT}
+% How this relates to dynamic execution
 
-How this relates to dynamic execution
+% Concrete/symbolic evaluation
 
-Concrete/symbolic evaluation
+% How this is a kind of constraint programming
 
-How this is a kind of constraint programming
+% \chapter{case study}
 
-\chapter{case study}
+% \subsection{issues}
 
-\subsection{issues}
+% Order of constraints
+% Discussion has been limited to a single constraint $C^$, since multiple constraints can be found conjoiing each individual constraint together.
+% There may be practical implications of the order.
+% There may also be means to recompile the constraint into one which is easier to reason about.
 
-Order of constraints
-Discussion has been limited to a single constraint $C^$, since multiple constraints can be found conjoiing each individual constraint together.
-There may be practical implications of the order.
-There may also be means to recompile the constraint into one which is easier to reason about.
+% Partial evaluation
 
-Partial evaluation
-
-Hardness o
+% Hardness o
 
 \section{Conclusion}
 Here the probabilstic inference framework \spacedlowsmallcaps{query} was given a constructive perspective with \spacedlowsmallcaps{constrain}.
-We proposed two methods for implementing \spacedlowsmallcaps{constrain} based on program transformations and local error inference.
-We suspect there will be many difficulties with such an implementation, but preliminary evidence suggests evencrude approaches to generating more constrained proposals can have dramatic effects on inference performance.
+We proposed two methods for implementing \spacedlowsmallcaps{constrain} based on program transformations and symbolic evaluation.
+We suspect there will be many difficulties with such an implementation, but preliminary evidence suggests even crude approaches to generating more constrained proposals can have dramatic effects on inference performance.
+
+Discussion has been limited to a single constraint $C^*$, since multiple constraints can be found conjoining each individual constraint together.
+However, there may be important practical implications in both of the above methods for the order of the conjunction, e.g $A \land B$ vs $B \land A$.
+There may for instance be a constraint, only visible with a semantic understanding of the programs which represent $A$ and $B$, such that $A \implies B$.
+Moreover, $A$ and $B$ may have an internal structure such that there is a more efficient compiliaton of the two together than just considering each in order.
+
+The central idea of this paper, constructivism, is still open to interpretation.
+How formally can we differentiate between constructive and non-constructive inference.
+An appealing possibility is to frame constructivism as the synthesis of an optimal algorithm to sample from the conditional distribution.
+The cause of variation in the difficulty in which constraints can be adhered to constructively can then be framed in this light; a constraint which is difficult to implement constructively is one where there does not exist (or it is difficult to find) an algorithm which implements it efficiently.
+
+But optimality must be defined with respect to some criterion, and there exist many.
+An asymtotically optimal algorithm for instance is one which for large inputs performs at worst a constant factor worse than the best possible algorithm.
+But constant factors can be important, and the worst case is not always indicative of real world performance.
+Hence, often times even if such an algorithm is known, it is not used regularly.
+
+In spite of these issues the synthesis perspective on inference is appealing, and seeks to appeal to the intuition that whether explicitly or otherwise, almost all approaches to probabilstic inference are implemented on computers as probabilistic programs.
+The synergy between the fields of program semantics and probability is likely to yield continued insight.
 
 % \subsection*{Filter generative model}.  From $D$ derive a {\em filter function} $f$ which transforms a sample from a naive model to one which satisfies $D$.
 % That is $f:O \rightarrow O^*$, where $ \bigwedge\limits_{i} d_i(o^*) = 1$.
