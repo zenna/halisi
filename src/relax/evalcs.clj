@@ -3,6 +3,28 @@
   relax.evalcs
   (:use relax.env))
 
+; Now symbolic execution will deal with the applywhen I appl a function to a value
+
+; e.g. (+ 1 1) -> {:conc }
+
+; Abstractions for concrete-symbolic hybrid datastructure
+(defn make-hybrid
+  "Construct a hybrid forom a concrete and symbolic value"
+  [conc-part symb-part]
+  (list 'hybrid conc-part symb-part))
+(defn hybrid? [val]
+  (and (list? val) (= (first val) 'hybrid)))
+(defn concrete-part [val]
+  "Get concrete part of value. Which is just the value if it is not hybrid"
+  (if (hybrid? val)
+      (nth val 1)
+      val))
+(defn symbolic-part [val]
+  "Get symbolic part of value. Which is just the value if it is not hybrid"
+  (if (hybrid? val)
+      (nth val 2)
+      val))
+
 ; Forward declarations
 (declare evalcs)
 
@@ -150,12 +172,19 @@
   ; (println "proc is" proc "args are " args)
   (apply (primitive-implementation proc) args))
 
+(defn apply-primitive-procedure-hybrid
+  [proc args]
+  ; (println "proc is" proc "args are " args)
+  (make-hybrid
+    (apply (primitive-implementation proc) (map concrete-part args))
+    (list proc args)))
+
 (defn applycs
   "Apply"
   [procedure arguments]
   (cond
     (primitive-procedure? procedure)
-    (apply-primitive-procedure procedure arguments)
+    (apply-primitive-procedure-hybrid procedure arguments)
 
     ; (compound-procedure? procedure)
     ; (eval-sequence)
