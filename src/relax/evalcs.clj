@@ -6,10 +6,11 @@
 ; Forward declarations
 (declare evalcs)
 
-;Error
-(defn error
-  [error-text]
-  (throw (Throwable. error-text)))
+(defn tagged-list?
+  [exp tag]
+  (if (list? exp)
+      (= (first exp) tag)
+      false))
 
 ; Application abstractions
 (defn application? [exp] (list? exp))
@@ -40,6 +41,11 @@
 ;     (eval (first-exp exps) env)
 ;     (eval-sequence (rest-exps exps) env)))
 
+; necessary? our predicates should be pure
+(defn assignment? [exp] (tagged-list? exp 'set!))
+(defn assignment-variable [exp] (nth exp 1))
+(defn assignment-value [exp] (nth exp 2))
+
 (defn eval-assignment
   [exp env]
   "Handles assignments to variables.
@@ -50,56 +56,53 @@
   (set-variable-value! (assignment-variable exp)
                        (evalcs (assignment-value exp) env)
                        env)
-  ’ok)
+  'ok)
 
+; Lambda
+(defn lambda? [exp] (tagged-list? exp 'lambda))
+(defn lambda-parameters [exp] (nth exp 1))
+(defn lambda-body [exp] (rest (rest exp)))
+(defn make-lambda [parameters body]
+  (list 'lambda (list parameters body)))
+
+; Definitions
+(defn definition? [exp] (tagged-list? exp 'define))
+(defn definition-variable [exp]
+  (if (symbol? (nth exp 1))
+      (nth exp 1)
+      (first (nth exp 1))))
+(defn definition-value [exp]
+  (if (symbol? (nth exp 1))
+      (nth exp 2)
+      (make-lambda (rest (nth exp 1))
+                   (rest (rest exp)))))
 (defn
   eval-definition
   [exp env]
   (define-variable! (definition-variable exp)
                     (evalcs (definition-value exp) env)
                     env)
-  ’ok)
-
+  'ok)
+  
 ;;
 (defn self-evaluating?
   [exp]
   (cond (number? exp) true
         (string? exp) true
         :else false))
-(defn tagged-list?
-  [exp tag]
-  (if (pair? exp)
-      (eq? (first exp) tag)
-      false))
 (defn variable? [exp] (symbol? exp))
-(defn quoted? [exp] (tagged-list? exp ’quote))
+(defn quoted? [exp] (tagged-list? exp 'quote))
 (defn text-of-quotation [exp] (rest exp))
 
-; necessary? our predicates should be pure
-(defn assignment? [exp] (tagged-list? exp ’set!))
-(defn assignment-variable [exp] (nth exp 1))
-(defn assignment-value [exp] (nth exp 2))
-
-; Definitions
-(defn definition? [exp] (tagged-list? exp ’define))
-(defn definition-variable [exp]
-  (if (symbol? (nth exp 1))
-      (nth exp 1)
-      (first (nth exp 1))))
-(defn definition-value [exp]
-  (if (symbol? (nth exp 1)
-      (nth exp 2)
-      (make-lambda (rest (nth exp 1))
-                   (rest (rest exp))))))
 
 ; Conditionals
-(defn if? [exp] (tagged-list? exp ’if))
+(defn if? [exp] (tagged-list? exp 'if))
 (defn if-predicate [exp] (nth exp 1))
-(defn if-consequent [exp] (first (rest (rest exp)))
+(defn if-consequent [exp] (first (rest (rest exp))))
 (defn if-alternative [exp]
   (if (not (empty? (rest (rest (rest exp)))))
       (first (rest (rest (rest exp))))
-      ’false))
+      'false))
 
 (defn eval-if
   "Evaluate a predicate part of an if expression in the given environment.
@@ -111,24 +114,17 @@
        (evalcs (if-alternative exp) env)))
 
 ;
-(defn true? [x] (not (eq? x false)))
-(defn false? [x] (eq x false))
-
-; Lambda
-(defn lambda? [exp] (tagged-list? exp ’lambda))
-(defn lambda-parameters [exp] (nth exp 1))
-(defn lambda-body [exp] (rest (rest exp)))
-(defn make-lambda [parameters body]
-  (list 'lambda (list parameters body)))
+(defn true? [x] (not (= x false)))
+(defn false? [x] (= x false))
 
 ; Procedures
-(defn make-procedure [body env]
+(defn make-procedure [parameters body env]
   (list 'procedure parameters body env))
 (defn compound-procedure? [p]
   (tagged-list? p 'procedure))
 (defn procedure-parameters [proc] (nth proc 1))
 (defn procedure-body [proc] (nth proc 2))
-(defn procedure-environment [proc] (nth proc 3)
+(defn procedure-environment [proc] (nth proc 3))
 
 (defn primitive-procedure?
   [proc]
@@ -139,7 +135,9 @@
 
 (def primitive-prodecures
   (list (list '+ +)
-        (list '- -)))
+        (list '- -)
+        (list '* *)
+        (list '/ /)))
 
 (def primitive-procedure-names
   (map first primitive-prodecures))
@@ -149,14 +147,15 @@
 
 (defn apply-primitive-procedure
   [proc args]
-  (apply proc args))
+  ; (println "proc is" proc "args are " args)
+  (apply (primitive-implementation proc) args))
 
-(defn applysc
+(defn applycs
   "Apply"
   [procedure arguments]
   (cond
     (primitive-procedure? procedure)
-    (apply-primitive-procedure procedure arguments)))
+    (apply-primitive-procedure procedure arguments)
 
     ; (compound-procedure? procedure)
     ; (eval-sequence)
@@ -174,10 +173,10 @@
   [exp env]
   (cond
     (self-evaluating? exp) exp
-    (variable? exp) (look-up-variable-value exp env)
+    (variable? exp) (lookup-variable-value exp env)
     (assignment? exp) (eval-assignment exp env)
     (definition? exp) (eval-definition exp env)
-    (if? exp) (eval-if expr env)
+    (if? exp) (eval-if exp env)
     ; (lambda? exp)
     ;   (make-procedure (lambda-parameters exp)
     ;                   (lambda-body exp)
@@ -188,4 +187,17 @@
       (applycs (evalcs (operator exp) env)
              (list-of-values (operands exp) env))
     :else
-      (error "Unknown expression typoe: EVAL" exp))
+      (error "Unknown expression typoe: EVAL" exp)))
+
+(defn setup-environment
+  []
+  (let [initial-env  (extend-environment primitive-procedure-names
+                                         primitive-procedure-objects
+                                         the-empty-environment)]
+    (define-variable! 'true true initial-env)
+    (define-variable! 'false false initial-env)
+    initial-env))
+
+(def the-global-environment (setup-environment))
+
+(defn -main[] (evalcs '(+ 1 (* 2 3)) the-global-environment))
