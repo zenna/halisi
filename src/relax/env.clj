@@ -1,12 +1,7 @@
 (ns ^{:doc "Evaluation Environment"
       :author "Zenna Tavares"}
-  relax.env)
-
-;; An environment is a vector list of hashes [{}{}]
-;Error
-(defn error
-  [error-text]
-  (throw (Throwable. error-text)))
+  relax.env
+  (:use relax.common))
 
 ; Environment abstractions
 (defn enclosing-env [env] (rest env))

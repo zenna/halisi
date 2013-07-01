@@ -1,46 +1,15 @@
 (ns ^{:doc "A concrete and symbolic metacircular evaluator"
       :author "Zenna Tavares"}
   relax.evalcs
-  (:use relax.env))
+  (:use relax.env)
+  (:use relax.symbolic)
+  (:use relax.common))
 
-; Now symbolic execution will deal with the applywhen I appl a function to a value
-
-; e.g. (+ 1 1) -> {:conc }
-
-; Abstractions for concrete-symbolic hybrid datastructure
-(defn make-hybrid
-  "Construct a hybrid forom a concrete and symbolic value"
-  [conc-part symb-part]
-  (list 'hybrid conc-part symb-part))
-(defn hybrid? [val]
-  (and (list? val) (= (first val) 'hybrid)))
-(defn concrete-part [val]
-  "Get concrete part of value. Which is just the value if it is not hybrid"
-  (if (hybrid? val)
-      (nth val 1)
-      val))
-(defn symbolic-part [val]
-  "Get symbolic part of value. Which is just the value if it is not hybrid"
-  (if (hybrid? val)
-      (nth val 2)
-      val))
+; TODO 1. Get constraints 
+; Pushup Constraints
 
 ; Forward declarations
 (declare evalcs)
-
-(defn tagged-list?
-  [exp tag]
-  (if (list? exp)
-      (= (first exp) tag)
-      false))
-
-; Application abstractions
-(defn application? [exp] (list? exp))
-(defn operator [exp] (first exp))
-(defn operands [exp] (rest exp))
-(defn no-operands? [ops] (empty? ops))
-(defn first-operand [ops] (first ops))
-(defn rest-operands [ops] (rest ops))
 
 (defn list-of-values
   "Produce the list of arguments to which the procedure is to be applied"
@@ -177,7 +146,7 @@
   ; (println "proc is" proc "args are " args)
   (make-hybrid
     (apply (primitive-implementation proc) (map concrete-part args))
-    (list proc args)))
+    (list   proc args)))
 
 (defn applycs
   "Apply"
