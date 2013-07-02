@@ -5,8 +5,9 @@
 ;; An environment is a vector list of hashes [{}{}]
 ;Error
 (defn error
-  [error-text]
-  (throw (Throwable. error-text)))
+  [& error-text]
+  (println error-text)
+  (throw (Throwable. )))
 
 (defn tagged-list?
   "Lists are tagged by putting a symbol as first element"

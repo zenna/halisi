@@ -78,13 +78,14 @@
 ;;
 (defn self-evaluating?
   [exp]
-  (cond (number? exp) true
-        (string? exp) true
-        :else false))
+  (or (number? exp)
+      (string? exp)
+      (true? exp)
+      (false? exp)))
+
 (defn variable? [exp] (symbol? exp))
 (defn quoted? [exp] (tagged-list? exp 'quote))
 (defn text-of-quotation [exp] (rest exp))
-
 
 ; Conditionals
 (defn if? [exp] (tagged-list? exp 'if))
@@ -99,12 +100,23 @@
   "Evaluate a predicate part of an if expression in the given environment.
    If the result is true, eval-if evaluates the consequent, otherwise it evaluates
    the alternative"
-   [exp env]
-   (if (true? (evalcs (if-predicate exp) env))
-       (evalcs (if-consequent exp) env)
-       (evalcs (if-alternative exp) env)))
+  [exp env]
+  (if (true? (concrete-part (evalcs (if-predicate exp) env)))
+      (evalcs (if-consequent exp) env)
+      (evalcs (if-alternative exp) env)))
 
-;
+(defn consistent?
+  [exp env])
+
+(defn )
+
+(defn eval-if-symb
+  "Symbolically evaluate if expression"
+  [exp env]
+  (if (consistent? exp env)
+      (evalcs (if-consequent exp) env))
+      false)
+
 (defn true? [x] (not (= x false)))
 (defn false? [x] (= x false))
 
@@ -128,7 +140,8 @@
   (list (list '+ +)
         (list '- -)
         (list '* *)
-        (list '/ /)))
+        (list '/ /)
+        (list '= =)))
 
 (def primitive-procedure-names
   (map first primitive-prodecures))
@@ -144,6 +157,7 @@
 (defn apply-primitive-procedure-hybrid
   [proc args]
   ; (println "proc is" proc "args are " args)
+  ; (println "applyung" proc (map concrete-part args))
   (make-hybrid
     (apply (primitive-implementation proc) (map concrete-part args))
     (list   proc args)))
@@ -185,7 +199,7 @@
       (applycs (evalcs (operator exp) env)
              (list-of-values (operands exp) env))
     :else
-      (error "Unknown expression typoe: EVAL" exp)))
+      (error "Unknown expression type: EVAL" exp)))
 
 (defn setup-environment
   []
@@ -198,4 +212,4 @@
 
 (def the-global-environment (setup-environment))
 
-(defn -main[] (evalcs '(+ 1 (* 2 3)) the-global-environment))
+(defn -main[] (evalcs '(if (= 2 (- 3 1)) (* 2 3) (+ 3 4)) the-global-environment))
