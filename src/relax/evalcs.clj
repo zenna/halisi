@@ -96,7 +96,7 @@
       (first (rest (rest (rest exp))))
       'false))
 
-(defn eval-if
+(defn eval-if-concrete
   "Evaluate a predicate part of an if expression in the given environment.
    If the result is true, eval-if evaluates the consequent, otherwise it evaluates
    the alternative"
@@ -105,21 +105,36 @@
       (evalcs (if-consequent exp) env)
       (evalcs (if-alternative exp) env)))
 
-(defn consistent?
-  [exp env])
-
-(defn )
-
-(defn eval-if-symb
-  "Symbolically evaluate if expression"
+; NOTEST
+(defn eval-if-symbolic
+  "Evaluate an expression symbolically
+   I want to find path constraints that lead to true"
   [exp env]
-  (if (consistent? exp env)
-      (evalcs (if-consequent exp) env))
-      false)
+  (let [eval-cond (evalcs (if-predicate exp) env)
+        eval-cond-comp (evalcs (negate (if-predicate exp)) env)]
+    (make-multivalue
+    (list
+      (if (feasible? eval-cond env)
+          (add-condition (evalcs (if-consequent exp) env))
+          'inconsistent)  
+      (if (feasible? eval-cond-comp env)
+          (add-condition (evalcs (if-alternative exp) env))
+          'inconsistent)))))
 
-(defn true? [x] (not (= x false)))
-(defn false? [x] (= x false))
+; NOTEST
+(defn eval-if
+  "Evaluate a predicate part of an if expression in the given environment.
+   There are three cases, depending on whether the value is concrete, symbolic
+   or a mutivalue"
+  [exp env]
+  (let [eval-cond (evalcs (if-predicate exp) env)]
+    (cond
+      (symbolic? eval-cond)
+      (eval-if-symbolic exp env)
 
+      :else
+      (eval-if-concrete exp))))
+  
 ; Procedures
 (defn make-procedure [parameters body env]
   (list 'procedure parameters body env))
@@ -160,14 +175,26 @@
   ; (println "applyung" proc (map concrete-part args))
   (make-hybrid
     (apply (primitive-implementation proc) (map concrete-part args))
-    (list   proc args)))
+    (list proc args)))
+
+(defn apply-primitive-procedure-symbolic
+  [proc args]
+  ; (println "proc is" proc "args are " args)
+  ; (println "applyung" proc (map concrete-part args))
+  (make-symbolic
+    (list proc args)))
 
 (defn applycs
   "Apply"
   [procedure arguments]
   (cond
     (primitive-procedure? procedure)
-    (apply-primitive-procedure-hybrid procedure arguments)
+    (cond 
+      (some symbolic? arguments)
+      (apply-primitive-procedure-symbolic procedure arguments)
+
+      :else
+      (apply-primitive-procedure procedure arguments))
 
     ; (compound-procedure? procedure)
     ; (eval-sequence)
@@ -212,4 +239,6 @@
 
 (def the-global-environment (setup-environment))
 
-(defn -main[] (evalcs '(if (= 2 (- 3 1)) (* 2 3) (+ 3 4)) the-global-environment))
+(defn -main[]
+  (define-symbolic! 'x 3 the-global-environment)
+  (evalcs '(+ 1 1 (/ 3 x)) the-global-environment))

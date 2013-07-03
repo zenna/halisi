@@ -6,24 +6,35 @@
 
 (defn symbolic? [val]
   "is this value symbolic?"
-  tagged-list? val 'symbolic)
+  (tagged-list? val 'symbolic))
 
-(defn define-symbolic [var val env]
+(defn make-symbolic [val]
+  "Create a symbolic version of a val"
+  (list 'symbolic val))
+
+(defn define-symbolic! [var val env]
   "Creates a symbolic variable unconstrained"
-  (define-variable! (list 'symbolic var) '() env))
+  (define-variable! var (list 'symbolic nil) env))
+
+; Multivalue abstractions
+(defn multivalue? [val]
+  (tagged-list? val 'multivalue))
 
 ; Abstractions for concrete-symbolic hybrid datastructure
 (defn make-hybrid
   "Construct a hybrid forom a concrete and symbolic value"
   [conc-part symb-part]
   (list 'hybrid conc-part symb-part))
+
 (defn hybrid? [val]
   (tagged-list? val 'hybrid))
+
 (defn concrete-part [val]
   "Get concrete part of value. Which is just the value if it is not hybrid"
   (if (hybrid? val)
       (nth val 1)
       val))
+
 (defn symbolic-part [val]
   "Get symbolic part of value. Which is just the value if it is not hybrid"
   (if (hybrid? val)
@@ -76,91 +87,24 @@
     :else
     exp))
 
-(def exp '(if (> x1 0.5)
-    (and (> x2 0.7) (< x2 0.9))
-    (and (> x1 0.1) (< x1 0.4)
-         (> x2 0.3) (< x2 0.5)
-         (or (< x3 0.1) (> x3 0.9)))))
+(defn negate
+  "negate a predicate: i.e., an inequality.
+   (negate '(< x 3)) => (>= x 3)"
+  [pred]
+  (condp = (operator pred)
+    '<  (cons '>= (rest pred))
+    '<= (cons '> (rest pred))
+    '>  (cons '<= (rest pred))
+    '>= (cons '< (rest pred))
+    (list 'not pred)))
 
-(if (> x1 (+ 3 2))
-  (if (> x2 0.7)
-    (if (< x2 0.9)
-        true
-        false)
-    false)
-  (if (> x1 0.1)
-      (if (< x1 0.4)
-          (if (> x2 0.3)
-              (if (< x2 0.5) 
-                  (if (if (< x3 0.1)
-                          true
-                          (if (> x3 0.9)
-                              true
-                              false))
-                      true
-                      false)
-                  false)
-              false)
-          false)
-      false))
+; Mutlivalue abstractions
+(defn make-multivalue
+  [values]
+  "Make a multivalue"
+  (list 'multivalue values))
 
-(if (> x1 (+ 3 2))
-  (if (> x2 0.7)
-    (if (< x2 0.9)
-        true
-        false)
-    false)
-  false)
+; TODO
+(defn add-condition [val])
 
-(if (> x1 (+ 3 2))
-  (if (> x2 0.7)
-      true
-      false)
-  true)
-
-
-[[true false] false]
-
-; assume that eval-symb will return something like
-; (> x1 5)
-; (consistent? (> x1 5) (x -)))
-
-1. Do symbolic evaluation
-2. Check for consistency
-3. Do merging
-4. Get variable values back
-
-(defn eval-if-symb
-  "Symbolically evaluate if expression"
-  [exp env]
-  (filter #(true? (concrete %))
-    (let [symb-val (eval-symb (if-condition exp) env)]
-    (list
-      (if (consistent? symb-val env)
-          (evalcs (if-consequent exp) (merge-env env symb-val))
-          'inconsistent)
-      (if (consistent? (negate (if-condition exp)) env)
-          (evalcs (if-alternative exp) env)
-          'inconsistent)))))
-
-(defn eval-symb
-  "Evaluate an expression symbolically
-   I want to find path constraints that lead to true"
-  [exp env]
-  (cond
-    (self-evaluating? exp) exp
-    (variable? exp) (lookup-variable-value exp env)
-    (assignment? exp) (eval-assignment exp env)
-    (definition? exp) (eval-definition exp env)
-    (if? exp) (eval-if exp env)
-    ; (lambda? exp)
-    ;   (make-procedure (lambda-parameters exp)
-    ;                   (lambda-body exp)
-    ;                   env)
-    ; (begin? exp)
-    ;   (eval-sequence (begin-actions exp) env)
-    (application? exp)
-      (applycs (evalcs (operator exp) env)
-             (list-of-values (operands exp) env))
-    :else
-      (error "Unknown expression type: EVAL" exp)))
+(defn feasible? [val])

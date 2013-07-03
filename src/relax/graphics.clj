@@ -257,7 +257,7 @@
 
 ; ((50.78548498912936 18.255480322220933) (57.02285222336273 74.5809487549939) (37.412055834884285 85.05755844440188) (14.204150341267471 72.65084148273826) (0.06225969718018605 39.22938652163184))
 
-(defn convex?
+(defn convexity-measure
   "Is a polygon convex?
   Works whether poly is simple or complex"
   [poly]
@@ -273,6 +273,12 @@
             (points-to-vec p1 p2)
             (points-to-vec p2 %))
       (filter #(and (not= p1 %) (not= p2 %)) poly))))))
+
+(defn convex?
+  "Is a polygon convex?
+  Works whether poly is simple or complex"
+  [poly]
+  (zero? (convexity-measure poly)))
 
 (defn half
   [x]

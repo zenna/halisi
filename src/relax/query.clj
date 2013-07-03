@@ -87,7 +87,7 @@
     (let [flat-points (subvec param-values 0 (dec (count param-values))) ; first n-1 params are that of points
           ; pvar (println "PVALS" param-values)
           points (vec (partition 2 param-values))
-          ; pvar (println "convexity" (soft-convexity points) (convex? points))
+          ; pvar (println "convexity" (soft-convexity points) (convexity-measure points))
           ; points (convex-hull-gf (partition 2 param-values))
           ; nelder mead expects a flat vector need to unflatten
           
@@ -95,7 +95,7 @@
           rendered-img (poly-to-pixels points (:width data) (:height data))
           sigma (last points)
           quality (boolean-compare rendered-img (:data data))
-          convexity (convex? points)]
+          convexity (convexity-measure points)]
       (+ quality convexity (soft-convexity points)))))
 
 (defn max-poly-convexity
@@ -104,7 +104,7 @@
   (let [cost-f (fn [flat-poly]
                   (let [unflat-poly (vec (partition 2 flat-poly))]
                     ; (draw-poly-standalone unflat-poly)
-                    (convex? unflat-poly)))
+                    (convexity-measure unflat-poly)))
         {conv-poly :vertex} (nelder-mead-noisy cost-f (vec (flatten poly)) 3000)]
         conv-poly))
 
@@ -125,7 +125,7 @@
 ;           (fn []
 ;             (let [noisy-poly (mapv #(add-normal-noise % std) unflat-poly)]
 ;               (draw-poly-standalone noisy-poly)
-;               (convex? noisy-poly))))]
+;               (convexity-measure noisy-poly))))]
 ;     (println (* 1.0 (mean scoreFs)))
 ;     (mean scores)))
 
@@ -140,7 +140,7 @@
           (fn []
             (let [noisy-poly (mapv #(add-normal-noise %1 %2) unflat-poly stds)]
               ; (draw-poly-standalone noisy-poly)
-              (convex? noisy-poly))))]
+              (convexity-measure noisy-poly))))]
     (draw-poly-standalone unflat-poly)
     ; (println (double (mean scores)) (count params))
     (mean scores)))
