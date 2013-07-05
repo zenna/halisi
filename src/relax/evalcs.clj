@@ -113,13 +113,14 @@
   (let [eval-cond (evalcs (if-predicate exp) env)
         eval-cond-comp (evalcs (negate (if-predicate exp)) env)]
     (make-multivalue
-    (list
       (if (feasible? eval-cond env)
-          (add-condition (evalcs (if-consequent exp) env))
-          'inconsistent)  
+          (multify add-condition (evalcs (if-consequent exp) env)
+                             eval-cond)
+          'inconsistent)
       (if (feasible? eval-cond-comp env)
-          (add-condition (evalcs (if-alternative exp) env))
-          'inconsistent)))))
+          (multify add-condition (evalcs (if-alternative exp) env)
+                             eval-cond-comp)
+          'inconsistent))))
 
 ; NOTEST
 (defn eval-if

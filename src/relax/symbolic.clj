@@ -16,10 +16,6 @@
   "Creates a symbolic variable unconstrained"
   (define-variable! var (list 'symbolic nil) env))
 
-; Multivalue abstractions
-(defn multivalue? [val]
-  (tagged-list? val 'multivalue))
-
 ; Abstractions for concrete-symbolic hybrid datastructure
 (defn make-hybrid
   "Construct a hybrid forom a concrete and symbolic value"
@@ -104,7 +100,46 @@
   "Make a multivalue"
   (list 'multivalue values))
 
-; TODO
-(defn add-condition [val])
+(defn multivalue? [val]
+  (tagged-list? val 'multivalue))
 
-(defn feasible? [val])
+; TODO
+(defn multify
+  "Multify takes a function that does not support multivalues
+   and returns one that does"
+  [f args]
+  (make-conditon val1 val2))))
+
+  (not (and (multivalue? val1)
+            (mutlivalue? val2)))
+  (vec val1 val2)
+
+  (mutlivalue? val1)
+
+(defn feasible? [cond env]
+  true)
+
+; Condition abstractions
+(defn conditioned-value?
+  "A conditioned value has the form
+  (condition value condition)"
+  [exp]
+  (tagged-list exp 'condition))
+
+(defn condition-value
+  [val condition]
+  (list 'condition val [condition]))
+
+(defn update-condition
+  [val condition]
+  (update-list #(conj % condition) val))
+
+(defn add-condition
+  ""
+  [val condition]
+  (cond
+    (conditioned-value? val)
+    (update-condition val condition)
+
+    :else
+    (condition-value val condition)))

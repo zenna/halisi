@@ -16,6 +16,13 @@
       (= (first exp) tag)
       false))
 
+(defn tagged-vector?
+  "Lists are tagged by putting a symbol as first element"
+  [exp tag]
+  (if (vector? exp)
+      (= (first exp) tag)
+      false))
+
 ; Application abstractions
 (defn application? [exp] (list? exp))
 (defn operator [exp] (first exp))
