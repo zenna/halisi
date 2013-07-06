@@ -12,7 +12,7 @@
 (defn tagged-list?
   "Lists are tagged by putting a symbol as first element"
   [exp tag]
-  (if (list? exp)
+  (if (coll? exp)
       (= (first exp) tag)
       false))
 
@@ -24,7 +24,7 @@
       false))
 
 ; Application abstractions
-(defn application? [exp] (list? exp))
+(defn application? [exp] (coll? exp)) ;FIXME the test for application should not be coll?
 (defn operator [exp] (first exp))
 (defn operands [exp] (rest exp))
 (defn no-operands? [ops] (empty? ops))

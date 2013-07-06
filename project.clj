@@ -25,6 +25,7 @@
                  [com.taoensso/timbre "1.6.0"]
                  [org.lwjgl.lwjgl/lwjgl "2.8.5"]
                  [org.lwjgl.lwjgl/lwjgl_util "2.8.5"]
+                 [org.clojure/math.combinatorics "0.0.4"]
                  [org.lwjgl.lwjgl/lwjgl-platform "2.8.5" 
                   :classifier ~(lwjgl-classifier)
                   :native-prefix ""]]

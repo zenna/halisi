@@ -111,15 +111,17 @@
    I want to find path constraints that lead to true"
   [exp env]
   (let [eval-cond (evalcs (if-predicate exp) env)
+        pvar (println (negate (if-predicate exp)))
         eval-cond-comp (evalcs (negate (if-predicate exp)) env)]
-    (make-multivalue
+    ; (println "ENV" @env)
+    (make-merge-multivalue
       (if (feasible? eval-cond env)
           (multify add-condition (evalcs (if-consequent exp) env)
-                             eval-cond)
+                                  eval-cond)
           'inconsistent)
       (if (feasible? eval-cond-comp env)
           (multify add-condition (evalcs (if-alternative exp) env)
-                             eval-cond-comp)
+                                  eval-cond-comp)
           'inconsistent))))
 
 ; NOTEST
@@ -157,7 +159,11 @@
         (list '- -)
         (list '* *)
         (list '/ /)
-        (list '= =)))
+        (list '= =)
+        (list '> >)
+        (list '>= >=)
+        (list '< <)
+        (list '<= <=)))
 
 (def primitive-procedure-names
   (map first primitive-prodecures))
@@ -179,20 +185,20 @@
     (list proc args)))
 
 (defn apply-primitive-procedure-symbolic
-  [proc args]
+  [op args]
   ; (println "proc is" proc "args are " args)
   ; (println "applyung" proc (map concrete-part args))
   (make-symbolic
-    (list proc args)))
+    (cons op args)))
 
 (defn applycs
   "Apply"
-  [procedure arguments]
+  [procedure arguments exp]
   (cond
     (primitive-procedure? procedure)
     (cond 
       (some symbolic? arguments)
-      (apply-primitive-procedure-symbolic procedure arguments)
+      (apply-primitive-procedure-symbolic (operator exp) arguments)
 
       :else
       (apply-primitive-procedure procedure arguments))
@@ -211,6 +217,7 @@
 (defn evalcs
   "Evaluate an expression"
   [exp env]
+  ; (println "EXP IS" exp)
   (cond
     (self-evaluating? exp) exp
     (variable? exp) (lookup-variable-value exp env)
@@ -225,7 +232,8 @@
     ;   (eval-sequence (begin-actions exp) env)
     (application? exp)
       (applycs (evalcs (operator exp) env)
-             (list-of-values (operands exp) env))
+               (list-of-values (operands exp) env)
+               exp)
     :else
       (error "Unknown expression type: EVAL" exp)))
 
@@ -239,7 +247,3 @@
     initial-env))
 
 (def the-global-environment (setup-environment))
-
-(defn -main[]
-  (define-symbolic! 'x 3 the-global-environment)
-  (evalcs '(+ 1 1 (/ 3 x)) the-global-environment))
