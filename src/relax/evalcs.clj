@@ -100,29 +100,68 @@
   "Evaluate a predicate part of an if expression in the given environment.
    If the result is true, eval-if evaluates the consequent, otherwise it evaluates
    the alternative"
-  [exp env]
-  (if (true? (concrete-part (evalcs (if-predicate exp) env)))
+  [exp eval-cond env]
+  ; (println "EVAL-IF-CONCRETE" (evalcs (if-predicate exp) env) "HMM" env "\n")
+  (if (true? eval-cond)
       (evalcs (if-consequent exp) env)
       (evalcs (if-alternative exp) env)))
+
+; If the condition is a multivalue, I need to consider both paths with
+; getting a multivalue from the if
+; I need to use this multivalue with the multivalue of the 
 
 ; NOTEST
 (defn eval-if-symbolic
   "Evaluate an expression symbolically
    I want to find path constraints that lead to true"
-  [exp env]
-  (let [eval-cond (evalcs (if-predicate exp) env)
-        pvar (println (negate (if-predicate exp)))
-        eval-cond-comp (evalcs (negate (if-predicate exp)) env)]
-    ; (println "ENV" @env)
+  [exp eval-cond eval-cond-compl env]
+    (println "EVAL-IF-SYMBOLIC" exp eval-cond eval-cond-compl env "\n")
+    ; (println "ENV" @env)\
     (make-merge-multivalue
       (if (feasible? eval-cond env)
           (multify add-condition (evalcs (if-consequent exp) env)
-                                  eval-cond)
+                                  [eval-cond])
           'inconsistent)
-      (if (feasible? eval-cond-comp env)
+      (if (feasible? eval-cond-compl env)
           (multify add-condition (evalcs (if-alternative exp) env)
-                                  eval-cond-comp)
-          'inconsistent))))
+                                  [eval-cond-compl])
+          'inconsistent)))
+
+(defn eval-if-conditioned
+  "blag"
+  [exp eval-cond env]
+  (println "EVAL-IF-CONDITIONED" exp "HMM" eval-cond "\n")
+  (cond
+    (true? (condition-value eval-cond))
+    (multify add-condition (evalcs (if-consequent exp) env)
+                           (conditions eval-cond))
+
+    (false? (condition-value eval-cond))
+    'inconsistent
+
+    :else
+    (error "Condition must be true or false")))
+
+; 1. filter out false at symbolic level in eval-symoblic (if (x) true false) if x is a multvalue
+; of true/false will not be filtered.  Which is fine.
+; 2. Fi
+
+; (if (if (> x 2)
+;         true
+;         false)
+;     1
+;     2)
+
+; want a | 
+
+; (defmacro multify-if
+;   [pred a b]
+;   `(let [eval-cond# ~pred]
+;      (if (multivalue? eval-cond#)
+;          true
+;          (if eval-cond#
+;               ~a
+;               ~b))))
 
 ; NOTEST
 (defn eval-if
@@ -131,13 +170,20 @@
    or a mutivalue"
   [exp env]
   (let [eval-cond (evalcs (if-predicate exp) env)]
-    (cond
-      (symbolic? eval-cond)
-      (eval-if-symbolic exp env)
+    (multify
+      (fn [eval-cond]
+        (cond
+          (symbolic? eval-cond)
+          (eval-if-symbolic exp eval-cond (evalcs (negate (if-predicate exp)) env) env)
 
-      :else
-      (eval-if-concrete exp))))
-  
+          (conditioned-value? eval-cond)
+          (eval-if-conditioned exp eval-cond env)
+
+          :else
+          (eval-if-concrete exp eval-cond env)))
+
+      eval-cond)))
+
 ; Procedures
 (defn make-procedure [parameters body env]
   (list 'procedure parameters body env))
@@ -173,8 +219,9 @@
 
 (defn apply-primitive-procedure
   [proc args]
+  ; (println "apply primitive" proc args)
   ; (println "proc is" proc "args are " args)
-  (apply (primitive-implementation proc) args))
+  (multify-apply (primitive-implementation proc) args))
 
 (defn apply-primitive-procedure-hybrid
   [proc args]
@@ -247,3 +294,8 @@
     initial-env))
 
 (def the-global-environment (setup-environment))
+
+; (defn -main []
+;   (define-variable! 'x (make-multivalue 1 2 3) the-global-environment)
+;   (define-symbolic! 'x the-global-environment)
+;   (evalcs '(if (> x 2) 1 3) the-global-environment))

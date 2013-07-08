@@ -1,6 +1,7 @@
 (ns relax.evalcs-test
   (:use clojure.test
         relax.evalcs
+        relax.env
         relax.symbolic
         relax.constrain
         clozen.helpers))
@@ -29,58 +30,7 @@
   (is (= (revise-interval [0 10] '< 13) [0 10]))
   (is (= (revise-interval [0 10] '> -5) [0 10])))
 
-; (deftest unroll-and-ors-test
-;   (let [exp
-;           '(if (> x1 0.5)
-;               (and (> x2 0.7) (< x2 0.9))
-;               (and (> x1 0.1) (< x1 0.4)
-;                    (> x2 0.3) (< x2 0.5)
-;                    (or (< x3 0.1) (> x3 0.9))))]
-;   (is (= (unroll-and-ors-test exp)))))
-
-; (deftest eval-concrete-test
-;   ())
-; (if (= 2 (- 3 1)) (* 2 3) (+ 3 4))
-
-
-; (def exp '(if (> x1 0.5)
-;     (and (> x2 0.7) (< x2 0.9))
-;     (and (> x1 0.1) (< x1 0.4)
-;          (> x2 0.3) (< x2 0.5)
-;          (or (< x3 0.1) (> x3 0.9)))))
-
-; (if (> x1 (+ 3 2))
-;   (if (> x2 0.7)
-;     (if (< x2 0.9)
-;         true
-;         false)
-;     false)
-;   (if (> x1 0.1)
-;       (if (< x1 0.4)
-;           (if (> x2 0.3)
-;               (if (< x2 0.5) 
-;                   (if (if (< x3 0.1)
-;                           true
-;                           (if (> x3 0.9)
-;                               true
-;                               false))
-;                       true
-;                       false)
-;                   false)
-;               false)
-;           false)
-;       false))
-
-; (if (> x1 (+ 3 2))
-;   (if (> x2 0.7)
-;     (if (< x2 0.9)
-;         true
-;         false)
-;     false)
-;   false)
-
-; (if (> x1 (+ 3 2))
-;   (if (> x2 0.7)
-;       true
-;       false)
-;   true)
+(deftest evalcs-test
+  (is (= (evalcs '(if true 2 3) the-global-environment) 2))
+  (define-variable! 'x (make-multivalue 1 2 3) the-global-environment)
+  (is (= 2 (evalcs '(if (> x 2) true false) the-global-environment))))

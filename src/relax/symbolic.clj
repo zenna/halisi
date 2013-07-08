@@ -151,9 +151,22 @@
       (map #(apply f %) 
             (apply combo/cartesian-product (map multivalues args))))))
 
+(defn multify-apply
+  [f args]
+  (cond
+    (not-any? multivalue? args)
+    (apply f args)
+
+    :else
+    (apply make-multivalue
+      (map #(apply f %) 
+            (apply combo/cartesian-product (map multivalues args))))))
+
 ; TODO
 (defn feasible? [cond env]
   true)
+
+;; Conditional value abstractions
 
 ; Condition abstractions
 (defn conditioned-value?
@@ -170,27 +183,28 @@
 (defn condition-value
   "Get the conditions of a conditioned value"
   [val]
+  (println "VALLL is" val)
   (nth val 1))
 
 (defn apply-condition
-  [val condition]
-  (list 'conditioned-value val [condition]))
+  [val new-conditions]
+  (list 'conditioned-value val new-conditions))
 
 ; TODO
 (defn update-condition
   "Add a condition to already conditioned value"
-  [val condition]
-  (replace-in-list val 2 (conj (conditions val) condition)))
+  [val new-conditions]
+  (replace-in-list val 2 (vec concat (conditions val) new-conditions)))
 
 (defn add-condition
   "adds conditions to a value, concatenates conditions if already present"
-  [val condition]
+  [val new-conditions]
   (cond
     (conditioned-value? val)
-    (update-condition val condition)
+    (update-condition val new-conditions)
 
-    (conditioned-value? condition)
-    (error "conditioned conditions not supported")
+    (conditioned-value? new-conditions)
+    (error "conditioned conditions not supported" new-conditions)
 
     :else
-    (apply-condition val condition)))
+    (apply-condition val new-conditions)))
