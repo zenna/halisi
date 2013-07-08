@@ -30,6 +30,12 @@
   (is (= (revise-interval [0 10] '< 13) [0 10]))
   (is (= (revise-interval [0 10] '> -5) [0 10])))
 
+(deftest handle-condition-test
+  (let [x1 (make-conditional-value 3 'godisgood 4 'notsogood)
+        x2 (make-conditional-value 10 'satanisbad 100 'ilikethefire)
+        result '(conditional-value (multivalue [(possible-value 14 [godisgood satanisbad]) (possible-value 104 [godisgood ilikethefire]) (possible-value 15 [notsogood satanisbad]) (possible-value 105 [notsogood ilikethefire])]))]
+    (is (= (handle-condition-test + 1 2 x1 x2))
+
 (deftest evalcs-test
   (is (= (evalcs '(if true 2 3) the-global-environment) 2))
   (define-variable! 'x (make-multivalue 1 2 3) the-global-environment)

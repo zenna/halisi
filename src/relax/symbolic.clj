@@ -169,42 +169,94 @@
 ;; Conditional value abstractions
 
 ; Condition abstractions
-(defn conditioned-value?
-  "A conditioned value has the form
-  (condition value condition)"
+(defn conditional-value?
+  "A conditioned value has the form (condition multivalue)
+   where each element of multivalue (possible-value) has the form
+   ('possible-value value_i [condition_1, ..., condition_n])"
   [exp]
-  (tagged-list? exp 'conditioned-value))
+  (tagged-list? exp 'conditional-value))
 
-(defn conditions
+(defn possible-value?
+  [exp]
+  (tagged-list? exp 'possible-value))
+
+(defn all-conditional-values
+  [cond-val]
+  (nth cond-val 1))
+
+
+(defn value-conditions
   "Get the conditions of a conditioned value"
   [val]
   (nth val 2))
 
-(defn condition-value
+(defn merge-conditions
+  [possible-values]
+  (reduce #(vec (concat %1 %2))
+           (map value-conditions possible-values)))
+
+(defn conditional-value
   "Get the conditions of a conditioned value"
   [val]
-  (println "VALLL is" val)
   (nth val 1))
 
 (defn apply-condition
   [val new-conditions]
   (list 'conditioned-value val new-conditions))
 
-; TODO
-(defn update-condition
-  "Add a condition to already conditioned value"
-  [val new-conditions]
-  (replace-in-list val 2 (vec concat (conditions val) new-conditions)))
+; ; TODO
+; (defn update-condition
+;   "Add a condition to already conditioned value"
+;   [val new-conditions]
+;   (replace-in-list val 2 (vec concat (conditions val) new-conditions)))
 
-(defn add-condition
-  "adds conditions to a value, concatenates conditions if already present"
-  [val new-conditions]
+(defn make-conditional-value
+  ""
+  [& args]
+  {:pre [(even? (count args))]}
+  (l x (apply make-multivalue (map (fn [x] `(~'possible-value ~@x)) (partition 2 args)))
+  `(~'conditional-value ~x)))
+
+; TODO support nested multivalues
+(defn handle-conditional
+  "Multify takes a function that does not support multivalues
+   and returns one that does"
+  [f & args]
+  ; (println "args " args)
   (cond
-    (conditioned-value? val)
-    (update-condition val new-conditions)
-
-    (conditioned-value? new-conditions)
-    (error "conditioned conditions not supported" new-conditions)
+    (not-any? conditional-value? args)
+    [(apply f args)]
 
     :else
-    (apply-condition val new-conditions)))
+    (let [x (apply combo/cartesian-product 
+                   (map #(if (conditional-value? %)
+                             (multivalues (all-conditional-values %))
+                             [%])
+                          args))]
+      (apply make-conditional-value
+        (reduce concat 
+          (map (fn [arg-list]
+                 [(apply f (map #(if (possible-value? %) 
+                                         (conditional-value %)
+                                          %)
+                                    arg-list))
+                  (merge-conditions (filter possible-value? arg-list))])
+                x))))))
+
+(defn -main []
+  (let [x1 (make-conditional-value 3 ['godisgood] 4 ['notsogood])
+        x2 (make-conditional-value 10 ['satanisbad] 100 ['ilikethefire])]
+    (handle-conditional + 1 2 x1 x2)))
+
+; (defn add-conditions
+;   "adds conditions to a value, concatenates conditions if already present"
+;   [cond-value value new-conditions]
+;   (cond
+;     (conditional-value? val)
+;     (update-condition val new-conditions)
+
+;     (conditional-value? new-conditions)
+;     (error "conditioned conditions not supported" new-conditions)
+
+;     :else
+;     (apply-condition val new-conditions)))

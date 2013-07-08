@@ -3,7 +3,8 @@
   relax.evalcs
   (:use relax.env)
   (:use relax.symbolic)
-  (:use relax.common))
+  (:use relax.common)
+  (:use clozen.helpers))
 
 ; TODO 1. Get constraints 
 ; Pushup Constraints
@@ -117,34 +118,81 @@
   [exp eval-cond eval-cond-compl env]
     (println "EVAL-IF-SYMBOLIC" exp eval-cond eval-cond-compl env "\n")
     ; (println "ENV" @env)\
-    (make-merge-multivalue
-      (if (feasible? eval-cond env)
-          (multify add-condition (evalcs (if-consequent exp) env)
-                                  [eval-cond])
-          'inconsistent)
-      (if (feasible? eval-cond-compl env)
-          (multify add-condition (evalcs (if-alternative exp) env)
-                                  [eval-cond-compl])
-          'inconsistent)))
+    ; Should be something like
+    ; (make conditonal value possval1 conditionfor1 possval2 conditionfor2)
+    ; we'd only do this if the condition is feasible, 
+    (make-conditional-value
+      (pass
+        (fn [[choice pred] cond-pairs]
+          (if (feasible? pred env)
+              (conj cond-pairs (evalcs (pred exp) env) [choice])
+              cond-pairs))
+          []
+          [[eval-cond if-consequent] [eval-cond-compl if-alternative]])))
+
+    ; (make-merge-multivalue
+    ;   (if (feasible? eval-cond env)
+    ;       (multify add-condition (evalcs (if-consequent exp) env)
+    ;                               [eval-cond])
+    ;       'inconsistent)
+    ;   (if (feasible? eval-cond-compl env)
+    ;       (multify add-condition (evalcs (if-alternative exp) env)
+    ;                               [eval-cond-compl])
+    ;       'inconsistent)))
+
 
 (defn eval-if-conditioned
   "blag"
   [exp eval-cond env]
   (println "EVAL-IF-CONDITIONED" exp "HMM" eval-cond "\n")
-  (cond
-    (true? (condition-value eval-cond))
-    (multify add-condition (evalcs (if-consequent exp) env)
-                           (conditions eval-cond))
+  ; Now i know it's conditional value e.g. true | p and false | not p
+  ; for each condition
+  ; Now if it's a straight up multivalue I just need to do this for all the possibilities
+  ; If it's a conditional value
+  ; (if (if (> x1 3)
+  ;         true
+  ;         false) 
+  ;     (if (< y 4) 'a 'b)
+  ;     true)
 
-    (false? (condition-value eval-cond))
-    'inconsistent
+  ; true | (> x1 3)
+  ; false | (<= x1 3)
 
-    :else
-    (error "Condition must be true or false")))
+  ; a | (< y 1)
+  ; b | (>= y 10)
+
+  ; a | (< y 1) (> x1 3)
+  ; b | ()
+  ;so for each branch we check for consistency and concatenate
+  (let [t (fn [b]
+    (cond 
+      (true? (conditional-value b))
+      (handle-conditional vec (evalcs (if-consequent exp) env) (value-conditions b))
+
+      (false? (conditional-value b))
+      (handle-conditional vec (evalcs (if-alternative exp) env) (value-conditions b))
+
+      :else
+      (error "Condition true or false")))]
+    (apply make-conditional-value (handle-conditional t eval-cond))))
+
+  ; (make-conditional-value 'a [(< y 1) (> x1 3)] 'b [(< y 1) (> x1 3)])
+
+  ; (cond
+  ;   (true? (condition-value eval-cond))
+  ;   (multify add-condition (evalcs (if-consequent exp) env)
+  ;                          (conditions eval-cond))
+
+  ;   (false? (condition-value eval-cond))
+  ;   'inconsistent
+
+  ;   :else
+  ;   (error "Condition must be true or false")))
 
 ; 1. filter out false at symbolic level in eval-symoblic (if (x) true false) if x is a multvalue
 ; of true/false will not be filtered.  Which is fine.
-; 2. Fi
+; 2. The only thing we don't want to proceed is that if in a condition the return value
+; is false.  i.e. it's a conditioned upon value and the value is false.
 
 ; (if (if (> x 2)
 ;         true
@@ -176,7 +224,7 @@
           (symbolic? eval-cond)
           (eval-if-symbolic exp eval-cond (evalcs (negate (if-predicate exp)) env) env)
 
-          (conditioned-value? eval-cond)
+          (conditional-value? eval-cond)
           (eval-if-conditioned exp eval-cond env)
 
           :else
@@ -294,6 +342,13 @@
     initial-env))
 
 (def the-global-environment (setup-environment))
+
+; A conditioned value only really makes sense as a multivalue
+; It's a value which can assume many different values conditioned on some conjunction of constraints
+; it is probably better named a conditional value
+; x | A1 ^ A2^ A3
+
+; An if statement where the condition is symbolic returns a conditional value
 
 ; (defn -main []
 ;   (define-variable! 'x (make-multivalue 1 2 3) the-global-environment)
