@@ -141,66 +141,36 @@
     ;       'inconsistent)))
 
 
-(defn eval-if-conditioned
+(defn eval-if-conditional
   "blag"
   [exp eval-cond env]
   (println "EVAL-IF-CONDITIONED" exp "HMM" eval-cond "\n")
-  ; Now i know it's conditional value e.g. true | p and false | not p
-  ; for each condition
-  ; Now if it's a straight up multivalue I just need to do this for all the possibilities
-  ; If it's a conditional value
-  ; (if (if (> x1 3)
-  ;         true
-  ;         false) 
-  ;     (if (< y 4) 'a 'b)
-  ;     true)
+    ; If it's a conditional value
+    ; (if (if (> x1 3)
+    ;         true
+    ;         false) 
+    ;     (if (< y 4) 'a 'b)
+    ;     true)
 
-  ; true | (> x1 3)
-  ; false | (<= x1 3)
+    ; true | (> x1 3)
+    ; false | (<= x1 3)
 
-  ; a | (< y 1)
-  ; b | (>= y 10)
+    ; a | (< y 1)
+    ; b | (>= y 10)
 
-  ; a | (< y 1) (> x1 3)
-  ; b | ()
+    ; a | (< y 1) (> x1 3)
+    ; b | ()
   ;so for each branch we check for consistency and concatenate
-  (let [t (fn [b]
-    (cond 
-      (true? (conditional-value b))
-      (handle-conditional vec (evalcs (if-consequent exp) env) (value-conditions b))
+  (cond 
+    (true? (conditional-value eval-cond))
+    (evalcs (if-consequent exp) env)
 
-      (false? (conditional-value b))
-      (handle-conditional vec (evalcs (if-alternative exp) env) (value-conditions b))
+    (false? (conditional-value eval-cond))
+    (evalcs (if-alternative exp) env)
 
-      :else
-      (error "Condition true or false")))]
-    (apply make-conditional-value (handle-conditional t eval-cond))))
+    :else
+    (error "Condition true or false")))
 
-  ; (make-conditional-value 'a [(< y 1) (> x1 3)] 'b [(< y 1) (> x1 3)])
-
-  ; (cond
-  ;   (true? (condition-value eval-cond))
-  ;   (multify add-condition (evalcs (if-consequent exp) env)
-  ;                          (conditions eval-cond))
-
-  ;   (false? (condition-value eval-cond))
-  ;   'inconsistent
-
-  ;   :else
-  ;   (error "Condition must be true or false")))
-
-; 1. filter out false at symbolic level in eval-symoblic (if (x) true false) if x is a multvalue
-; of true/false will not be filtered.  Which is fine.
-; 2. The only thing we don't want to proceed is that if in a condition the return value
-; is false.  i.e. it's a conditioned upon value and the value is false.
-
-; (if (if (> x 2)
-;         true
-;         false)
-;     1
-;     2)
-
-; want a | 
 
 ; (defmacro multify-if
 ;   [pred a b]
@@ -225,7 +195,7 @@
           (eval-if-symbolic exp eval-cond (evalcs (negate (if-predicate exp)) env) env)
 
           (conditional-value? eval-cond)
-          (eval-if-conditioned exp eval-cond env)
+          (handle-conditional eval-if-conditional exp eval-cond env)
 
           :else
           (eval-if-concrete exp eval-cond env)))

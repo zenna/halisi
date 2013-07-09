@@ -170,7 +170,7 @@
 
 ; Condition abstractions
 (defn conditional-value?
-  "A conditioned value has the form (condition multivalue)
+  "A conditioned value has the form ('conditional multivalue)
    where each element of multivalue (possible-value) has the form
    ('possible-value value_i [condition_1, ..., condition_n])"
   [exp]
@@ -180,10 +180,9 @@
   [exp]
   (tagged-list? exp 'possible-value))
 
-(defn all-conditional-values
+(defn all-possible-values
   [cond-val]
   (nth cond-val 1))
-
 
 (defn value-conditions
   "Get the conditions of a conditioned value"
@@ -191,9 +190,9 @@
   (nth val 2))
 
 (defn merge-conditions
-  [possible-values]
-  (reduce #(vec (concat %1 %2))
-           (map value-conditions possible-values)))
+  [& value-conditions]
+  (println "possible-values" value-conditions)
+  (reduce #(vec (concat %1 %2)) value-conditions))
 
 (defn conditional-value
   "Get the conditions of a conditioned value"
@@ -211,16 +210,33 @@
 ;   (replace-in-list val 2 (vec concat (conditions val) new-conditions)))
 
 (defn make-conditional-value
-  ""
+  "Constructs a conditional value
+   Takes a sequence of pairs of value and vector of conditions
+   e.g. (make-conditional-value true [(< x 1)(> x 0)] false [(> x 1)]"
   [& args]
   {:pre [(even? (count args))]}
-  (l x (apply make-multivalue (map (fn [x] `(~'possible-value ~@x)) (partition 2 args)))
+  (let [x (apply make-multivalue
+                 (map (fn [x] `(~'possible-value ~@x)) (partition 2 args)))]
   `(~'conditional-value ~x)))
+
+(defn arg-combinations
+  [args]
+  (apply combo/cartesian-product 
+         (map #(if (conditional-value? %)
+                   (multivalues (all-possible-values %))
+                   [%])
+              args)))
 
 ; TODO support nested multivalues
 (defn handle-conditional
-  "Multify takes a function that does not support multivalues
-   and returns one that does"
+  "Allows a function to support conditional values
+   If any arguments are conditional it applies the function to all
+   combinations of their possible values.
+   The outcome of any particular combination is conditioned on 
+   conditions of any arguments that were used.
+
+   If the function evaluates to a conditional value, possible values
+   are expanded out and its conditions are included"
   [f & args]
   ; (println "args " args)
   (cond
@@ -228,25 +244,38 @@
     [(apply f args)]
 
     :else
-    (let [x (apply combo/cartesian-product 
-                   (map #(if (conditional-value? %)
-                             (multivalues (all-conditional-values %))
-                             [%])
-                          args))]
-      (apply make-conditional-value
-        (reduce concat 
-          (map (fn [arg-list]
-                 [(apply f (map #(if (possible-value? %) 
+    (apply make-conditional-value
+      (reduce concat
+      (for [arg-list (arg-combinations args)
+           :let [concrete-list (map #(if (possible-value? %) 
                                          (conditional-value %)
                                           %)
-                                    arg-list))
-                  (merge-conditions (filter possible-value? arg-list))])
-                x))))))
+                                    arg-list)
+                path-conditions (apply merge-conditions 
+                                       (map value-conditions
+                                            (filter possible-value? arg-list)))
+                fx (apply f concrete-list)]]
+
+        (if (conditional-value? fx)
+            (reduce concat
+              (map #(vector (conditional-value %)
+                      (merge-conditions (value-conditions %) path-conditions))
+                    (multivalues (all-possible-values fx))))
+
+            [fx path-conditions]))))))
+
+(defn oddplus
+  [& args]
+  (handle-conditional + (apply + args)
+                        (make-conditional-value
+                          0.5 ['iseethelight] 0.7 ['ohthedarkness])))
 
 (defn -main []
   (let [x1 (make-conditional-value 3 ['godisgood] 4 ['notsogood])
         x2 (make-conditional-value 10 ['satanisbad] 100 ['ilikethefire])]
-    (handle-conditional + 1 2 x1 x2)))
+    (handle-conditional oddplus x1 x2)))
+
+(def result '(conditional-value (multivalue [(possible-value 16 [godisgood satanisbad]) (possible-value 106 [godisgood ilikethefire]) (possible-value 17 [notsogood satanisbad]) (possible-value 107 [notsogood ilikethefire])])))
 
 ; (defn add-conditions
 ;   "adds conditions to a value, concatenates conditions if already present"
