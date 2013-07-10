@@ -37,7 +37,7 @@
     (condp = ineq-pred
       '<  (cond
             (<= ineq-val lowerb)
-            (error "inequality unsatisfiable")
+            [0.0 0.0] ;(error "inequality unsatisfiable")
 
             (> upperb ineq-val)
             [lowerb ineq-val]
@@ -46,7 +46,7 @@
             interval)
       '<= (cond
             (< ineq-val lowerb)
-            (error "inequality unsatisfiable")
+            [0.0 0.0] ;(error "inequality unsatisfiable")
 
             (> upperb ineq-val)
             [lowerb ineq-val]
@@ -55,7 +55,7 @@
             interval)
       '>  (cond
             (>= ineq-val upperb)
-            (error "inequality unsatisfiable")
+            [0.0 0.0] ; (error "inequality unsatisfiable")
 
             (> ineq-val lowerb)
             [ineq-val upperb]
@@ -64,7 +64,7 @@
             interval)
       '>= (cond
             (> ineq-val upperb)
-            (error "inequality unsatisfiable")
+            [0.0 0.0] ;(error "inequality unsatisfiable")
 
             (> ineq-val lower-bound)
             [ineq-val upperb]
@@ -74,7 +74,7 @@
       (error "this predicate not supported"))))
 
 (defn update-intervals
-  "Compute a et of intervals with a set of inequalities"
+  "Compute a set of intervals with a set of inequalities"
   [ineqs variable-intervals]  
   (pass (fn [ineq var-intervals]
           ; (println "DEBUG ineq" ineq "var-intervals" var-intervals "\n") 
@@ -107,7 +107,13 @@
 ; ((conditioned-value true [(symbolic (< (symbolic x2) 1)) (symbolic (<= (symbolic x2) 10)) (symbolic (> (symbolic x1) 9))])
 ;  (conditioned-value true [(symbolic (> (symbolic x2) 10)) (symbolic (> (symbolic x1) 9))])
 ;  (conditioned-value true [(symbolic (> (symbolic x2) 10)) (symbolic (<= (symbolic x1) 9))]))
-
+; (multivalue
+;   [(possible-value true 
+;     [(symbolic (> (symbolic x2) 2)) (symbolic (> (symbolic x1) 2))])
+;   (possible-value true [(symbolic (> (symbolic x2) 10)) (symbolic (<= (symbolic x2) 2)) (symbolic (> (symbolic x1) 2))])
+;   (possible-value false [(symbolic (<= (symbolic x2) 10)) (symbolic (<= (symbolic x2) 2)) (symbolic (> (symbolic x1) 2))])
+;   (possible-value true [(symbolic (> (symbolic x2) 10)) (symbolic (<= (symbolic x1) 2))])
+;   (possible-value false [(symbolic (<= (symbolic x2) 10)) (symbolic (<= (symbolic x1) 2))])])
 (defn constrain-uniform
   "Takes a model represented as map of variables to intervals on uniform distribution"
   [variable-intervals pred]
@@ -116,15 +122,18 @@
       (define-symbolic! variable the-global-environment)))
     (println "the the-global-environment is" the-global-environment "\n")
     (println "the expanded predicate is" (andor-to-if pred)  "\n")
-    (let [ineqs (filter #(true? (condition-value %))
-                              (multivalues
-                                (evalcs (andor-to-if pred)
-                                        the-global-environment)))
-          intervals-disjuction (map #(update-intervals (conditions %) variable-intervals)
+    (let [ineqs   (multivalues (all-possible-values 
+                    (evalcs (andor-to-if pred) the-global-environment)))
+          pvar (println "ineqsnow" ineqs)
+          ineqs (filter #(true? (conditional-value %)) ineqs)
+          pvar (println "ineqs" ineqs)
+          intervals-disjuction (map #(update-intervals (value-conditions %)
+                                                       variable-intervals)
                                      ineqs)
           volumes (map compute-volume intervals-disjuction)
           pvar (println "Intervals distjucntion" intervals-disjuction "INEQUALITIES"  ineqs "volumes" volumes)]
       #(sample-within-intervals (categorical intervals-disjuction volumes))))
+
 
 (def exp 
   '(if (> x1 9)
@@ -147,6 +156,39 @@
   '(or (and (> x1 2) (> x2 2))
        (> x2 10)))
 
+; 
+
+(def exp7
+  '(if (> x1 2)
+        (if (> x2 2)
+            true
+            false)
+        false))
+
+(def exp10
+  '(if (> x1 2)
+        true
+        false))
+
+; (if (if (> x1 2)
+;         (if (> x2 2)
+;             true
+;             false)
+;         false)
+;   true
+;   (if (> x2 10) true false))
+
+; (conditional-value (multivalue 
+;     [(possible-value
+;       (conditional-value (multivalue 
+;         [(possible-value true [(symbolic (> (symbolic x2) 2))]) (possible-value false [(symbolic (<= (symbolic x2) 2))])]))
+
+;       [(symbolic (> (symbolic x1) 2))])
+
+;     (possible-value false [(symbolic (<= (symbolic x1) 2))])]))
+
+;   [(possible-value true [(symbolic (> (symbolic x2) 2))]) (possible-value false [(symbolic (<= (symbolic x2) 2))])])) 
+
 (def exp4
   '(if (if (> x1 3)
             true
@@ -158,8 +200,14 @@
   '(if (if (> x1 3)
            true
            false) 
-       (if (< y 4) 'a 'b)
+       (if (< x2 4) true false  )
        true))
+
+
+; (multivalue [
+;   (possible-value true [(symbolic (< (symbolic x2) 4)) (symbolic (> (symbolic x1) 3))])
+;   (possible-value false [(symbolic (>= (symbolic x2) 4)) (symbolic (> (symbolic x1) 3))])
+;   (possible-value true [(symbolic (<= (symbolic x1) 3))])])
 
 
 ; (if (> x1 9)
@@ -179,8 +227,7 @@
 ;   false  ? (>= x2 1) (<= x2 10)]
 
 (defn -main[]
-  (constrain-uniform (zipmap '[x1 x2] [[0 10] [0 20]]) exp5))
-  ; (let [new-model (constrain-uniform (zipmap '[x1 x2] [[0 10] [0 20]]) exp2)
-  ;       samples (repeatedly 1000 new-model)]
-  ;   [(vec (map first samples))
-  ;    (vec (map second samples))]))
+  (let [new-model (constrain-uniform (zipmap '[x1 x2] [[0 10] [0 20]]) exp3)
+        samples (repeatedly 1000 new-model)]
+    [(vec (map first samples))
+     (vec (map second samples))]))

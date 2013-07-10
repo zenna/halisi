@@ -6,7 +6,7 @@
 ;Error
 (defn error
   [& error-text]
-  (println error-text)
+  (println "ERROR" error-text)
   (throw (Throwable. )))
 
 (defn tagged-list?

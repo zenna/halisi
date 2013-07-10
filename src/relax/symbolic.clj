@@ -184,6 +184,16 @@
   [cond-val]
   (nth cond-val 1))
 
+(defn all-conditions
+  [val]
+  "Return vector of all conditions"
+  (vec (map #(nth % 2) (multivalues (all-possible-values val)))))
+
+(defn all-values
+  [val]
+  "Return vector of all conditions"
+  (vec (map #(nth % 1) (multivalues (all-possible-values val)))))
+
 (defn value-conditions
   "Get the conditions of a conditioned value"
   [val]
@@ -264,18 +274,18 @@
 
             [fx path-conditions]))))))
 
-(defn oddplus
-  [& args]
-  (handle-conditional + (apply + args)
-                        (make-conditional-value
-                          0.5 ['iseethelight] 0.7 ['ohthedarkness])))
+; (defn oddplus
+;   [& args]
+;   (handle-conditional + (apply + args)
+;                         (make-conditional-value
+;                           0.5 ['iseethelight] 0.7 ['ohthedarkness])))
 
-(defn -main []
-  (let [x1 (make-conditional-value 3 ['godisgood] 4 ['notsogood])
-        x2 (make-conditional-value 10 ['satanisbad] 100 ['ilikethefire])]
-    (handle-conditional oddplus x1 x2)))
+; (defn -main []
+;   (let [x1 (make-conditional-value 3 ['godisgood] 4 ['notsogood])
+;         x2 (make-conditional-value 10 ['satanisbad] 100 ['ilikethefire])]
+;     (handle-conditional oddplus x1 x2)))
 
-(def result '(conditional-value (multivalue [(possible-value 16 [godisgood satanisbad]) (possible-value 106 [godisgood ilikethefire]) (possible-value 17 [notsogood satanisbad]) (possible-value 107 [notsogood ilikethefire])])))
+; (def result '(conditional-value (multivalue [(possible-value 16 [godisgood satanisbad]) (possible-value 106 [godisgood ilikethefire]) (possible-value 17 [notsogood satanisbad]) (possible-value 107 [notsogood ilikethefire])])))
 
 ; (defn add-conditions
 ;   "adds conditions to a value, concatenates conditions if already present"

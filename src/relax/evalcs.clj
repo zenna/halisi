@@ -111,24 +111,33 @@
 ; getting a multivalue from the if
 ; I need to use this multivalue with the multivalue of the 
 
+; The problem is if the thing is 
+; Condition Symbolic : alt/con Symbolic - Fine
+; Condition Symbolic : alt/con Conditional 
+; Condition conditional  : Symbolic
+
 ; NOTEST
 (defn eval-if-symbolic
   "Evaluate an expression symbolically
    I want to find path constraints that lead to true"
   [exp eval-cond eval-cond-compl env]
-    (println "EVAL-IF-SYMBOLIC" exp eval-cond eval-cond-compl env "\n")
-    ; (println "ENV" @env)\
-    ; Should be something like
-    ; (make conditonal value possval1 conditionfor1 possval2 conditionfor2)
-    ; we'd only do this if the condition is feasible, 
-    (make-conditional-value
-      (pass
-        (fn [[choice pred] cond-pairs]
-          (if (feasible? pred env)
-              (conj cond-pairs (evalcs (pred exp) env) [choice])
-              cond-pairs))
-          []
-          [[eval-cond if-consequent] [eval-cond-compl if-alternative]])))
+  (println "EVAL-IF-SYMBOLIC" exp "Eval-Cond" eval-cond eval-cond-compl "\n")
+  (let [constructor-args   ; (println "ENV" @env)\
+    (pass
+      (fn [[eval-cond consq-alt] cond-pairs]
+        (if (feasible? eval-cond env)
+            (let [evald-branch (evalcs (consq-alt exp) env)]
+              (if (conditional-value? evald-branch)
+                  (vec (concat cond-pairs
+                    (interleave (all-values evald-branch)
+                                (map #(merge-conditions % [eval-cond])
+                                       (all-conditions evald-branch)))))
+                  (conj cond-pairs evald-branch [eval-cond])))
+            cond-pairs))
+        []
+        [[eval-cond if-consequent] [eval-cond-compl if-alternative]])]
+    (println "unconditionified outpit os" constructor-args)
+    (apply make-conditional-value constructor-args)))
 
     ; (make-merge-multivalue
     ;   (if (feasible? eval-cond env)
@@ -143,8 +152,8 @@
 
 (defn eval-if-conditional
   "blag"
-  [exp eval-cond env]
-  (println "EVAL-IF-CONDITIONED" exp "HMM" eval-cond "\n")
+  [exp eval-cond-concrete env]
+  (println "EVAL-IF-CONDITIONED" exp "HMM" eval-cond-concrete "\n")
     ; If it's a conditional value
     ; (if (if (> x1 3)
     ;         true
@@ -162,14 +171,14 @@
     ; b | ()
   ;so for each branch we check for consistency and concatenate
   (cond 
-    (true? (conditional-value eval-cond))
+    (true? eval-cond-concrete)
     (evalcs (if-consequent exp) env)
 
-    (false? (conditional-value eval-cond))
+    (false? eval-cond-concrete)
     (evalcs (if-alternative exp) env)
 
     :else
-    (error "Condition true or false")))
+    (error "Condition should be true or false, not" eval-cond-concrete)))
 
 
 ; (defmacro multify-if
@@ -190,6 +199,7 @@
   (let [eval-cond (evalcs (if-predicate exp) env)]
     (multify
       (fn [eval-cond]
+        (println "evalcond is" eval-cond "\n")
         (cond
           (symbolic? eval-cond)
           (eval-if-symbolic exp eval-cond (evalcs (negate (if-predicate exp)) env) env)
