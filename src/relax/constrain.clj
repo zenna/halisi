@@ -66,7 +66,7 @@
             (> ineq-val upperb)
             [0.0 0.0] ;(error "inequality unsatisfiable")
 
-            (> ineq-val lower-bound)
+            (> ineq-val lowerb)
             [ineq-val upperb]
 
             :else
@@ -93,47 +93,73 @@
   (reduce * (map #(- (upper-bound %) (lower-bound %))
                   (vals intervals))))
 
-  ; idiom is that given a coll, you want to use the first element to modify some object
-  ; then use the output of this as the element to be modified using the second object
-  ; in this case the objects are our constraints
-
 ;TODO Does this support negative intervals?
 (defn sample-within-intervals
+  "Sample within box"
   [intervals]
   (for [interval (vals intervals)]
     (+ (lower-bound interval)
        (rand (- (upper-bound interval) (lower-bound interval))))))
 
-; ((conditioned-value true [(symbolic (< (symbolic x2) 1)) (symbolic (<= (symbolic x2) 10)) (symbolic (> (symbolic x1) 9))])
-;  (conditioned-value true [(symbolic (> (symbolic x2) 10)) (symbolic (> (symbolic x1) 9))])
-;  (conditioned-value true [(symbolic (> (symbolic x2) 10)) (symbolic (<= (symbolic x1) 9))]))
-; (multivalue
-;   [(possible-value true 
-;     [(symbolic (> (symbolic x2) 2)) (symbolic (> (symbolic x1) 2))])
-;   (possible-value true [(symbolic (> (symbolic x2) 10)) (symbolic (<= (symbolic x2) 2)) (symbolic (> (symbolic x1) 2))])
-;   (possible-value false [(symbolic (<= (symbolic x2) 10)) (symbolic (<= (symbolic x2) 2)) (symbolic (> (symbolic x1) 2))])
-;   (possible-value true [(symbolic (> (symbolic x2) 10)) (symbolic (<= (symbolic x1) 2))])
-;   (possible-value false [(symbolic (<= (symbolic x2) 10)) (symbolic (<= (symbolic x1) 2))])])
+(defn bound-polytope
+  "Compute a suitable bounding volume of the polytope"
+  [polytope]
+
+(defn cover
+  ""
+  [ineqs]
+  (map bound-polytope ineqs))
+
 (defn constrain-uniform
   "Takes a model represented as map of variables to intervals on uniform distribution"
   [variable-intervals pred]
+  
+  ; Add variables to environment
+  ; TODOconvert given intervals to constraints
   (doall
     (for [variable (keys variable-intervals)]
       (define-symbolic! variable the-global-environment)))
-    (println "the the-global-environment is" the-global-environment "\n")
-    (println "the expanded predicate is" (andor-to-if pred)  "\n")
-    (let [ineqs   (multivalues (all-possible-values 
-                    (evalcs (andor-to-if pred) the-global-environment)))
-          pvar (println "ineqsnow" ineqs)
-          ineqs (filter #(true? (conditional-value %)) ineqs)
-          pvar (println "ineqs" ineqs)
-          intervals-disjuction (map #(update-intervals (value-conditions %)
-                                                       variable-intervals)
-                                     ineqs)
-          volumes (map compute-volume intervals-disjuction)
-          pvar (println "Intervals distjucntion" intervals-disjuction "INEQUALITIES"  ineqs "volumes" volumes)]
-      #(sample-within-intervals (categorical intervals-disjuction volumes))))
 
+  (println "the the-global-environment is" the-global-environment "\n")
+  (println "the expanded predicate is" (andor-to-if pred)  "\n")
+
+  (let [ineqs   (multivalues (all-possible-values 
+                  (evalcs (andor-to-if pred) the-global-environment)))
+        ineqs (filter #(true? (conditional-value %)) ineqs)
+        pvar (println "DISJUNCTIVE NORMAL FORM:" ineqs "\n")
+
+        ; Then for each disjuctive clause we need to compute an abstraction
+        containers (cover ineqs)
+        volumes (map container-volume)
+        pvar (println "Intervals distjucntion" intervals-disjuction "INEQUALITIES"  ineqs "volumes" volumes)]
+    #(sample-within-intervals (categorical intervals-disjuction volumes))))
+
+; (defn constrain-uniform
+;   "Takes a model represented as map of variables to intervals on uniform distribution"
+;   [variable-intervals pred]
+  
+;   ; Add variables to environment
+;   ; TODOconvert given intervals to constraints
+;   (doall
+;     (for [variable (keys variable-intervals)]
+;       (define-symbolic! variable the-global-environment)))
+
+;   (println "the the-global-environment is" the-global-environment "\n")
+;   (println "the expanded predicate is" (andor-to-if pred)  "\n")
+
+;   (let [ineqs   (multivalues (all-possible-values 
+;                   (evalcs (andor-to-if pred) the-global-environment)))
+;         ineqs (filter #(true? (conditional-value %)) ineqs)
+;         pvar (println "DISJUNCTIVE NORMAL FORM:" ineqs "\n")
+
+;         ; Then for each disjuctive clause we need to compute an abstraction
+;         containers (cover ineqs)
+;         intervals-disjuction (map #(update-intervals (value-conditions %)
+;                                                      variable-intervals)
+;                                    ineqs)
+;         volumes (map compute-volume intervals-disjuction)
+;         pvar (println "Intervals distjucntion" intervals-disjuction "INEQUALITIES"  ineqs "volumes" volumes)]
+;     #(sample-within-intervals (categorical intervals-disjuction volumes))))
 
 (def exp 
   '(if (> x1 9)
@@ -153,10 +179,9 @@
           false)))
 
 (def exp3
-  '(or (and (> x1 2) (> x2 2))
-       (> x2 10)))
-
-; 
+  '(or (and (> x1 7) (> x2 7) (< x1 9) (< x2 10))
+       (and (> x1 3) (> x2 3) (< x1 5) (< x2 5))
+       (< x1 1)))
 
 (def exp7
   '(if (> x1 2)
@@ -169,25 +194,6 @@
   '(if (> x1 2)
         true
         false))
-
-; (if (if (> x1 2)
-;         (if (> x2 2)
-;             true
-;             false)
-;         false)
-;   true
-;   (if (> x2 10) true false))
-
-; (conditional-value (multivalue 
-;     [(possible-value
-;       (conditional-value (multivalue 
-;         [(possible-value true [(symbolic (> (symbolic x2) 2))]) (possible-value false [(symbolic (<= (symbolic x2) 2))])]))
-
-;       [(symbolic (> (symbolic x1) 2))])
-
-;     (possible-value false [(symbolic (<= (symbolic x1) 2))])]))
-
-;   [(possible-value true [(symbolic (> (symbolic x2) 2))]) (possible-value false [(symbolic (<= (symbolic x2) 2))])])) 
 
 (def exp4
   '(if (if (> x1 3)
@@ -202,29 +208,6 @@
            false) 
        (if (< x2 4) true false  )
        true))
-
-
-; (multivalue [
-;   (possible-value true [(symbolic (< (symbolic x2) 4)) (symbolic (> (symbolic x1) 3))])
-;   (possible-value false [(symbolic (>= (symbolic x2) 4)) (symbolic (> (symbolic x1) 3))])
-;   (possible-value true [(symbolic (<= (symbolic x1) 3))])])
-
-
-; (if (> x1 9)
-;     (if (> x2 10)
-;         true
-;         (if (< x2 1)
-;             true
-;             false))
-;     (if (> x2 10)))
-
-; m [true  | (< x2 2)
-;    false | (>= x2 1)]
-
-; ->
-
-; m [true  | (< x2 2) (<= x2 10)
-;   false  ? (>= x2 1) (<= x2 10)]
 
 (defn -main[]
   (let [new-model (constrain-uniform (zipmap '[x1 x2] [[0 10] [0 20]]) exp3)

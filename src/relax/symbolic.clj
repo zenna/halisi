@@ -163,7 +163,7 @@
             (apply combo/cartesian-product (map multivalues args))))))
 
 ; TODO
-(defn feasible? [cond env]
+(defn feasible? [conda env]
   true)
 
 ;; Conditional value abstractions
