@@ -121,7 +121,7 @@
   "Evaluate an expression symbolically
    I want to find path constraints that lead to true"
   [exp eval-cond eval-cond-compl env]
-  (println "EVAL-IF-SYMBOLIC" exp "Eval-Cond" eval-cond eval-cond-compl "\n")
+  ; (println "EVAL-IF-SYMBOLIC" exp "Eval-Cond" eval-cond eval-cond-compl "\n")
   (let [constructor-args   ; (println "ENV" @env)\
     (pass
       (fn [[eval-cond consq-alt] cond-pairs]
@@ -136,7 +136,7 @@
             cond-pairs))
         []
         [[eval-cond if-consequent] [eval-cond-compl if-alternative]])]
-    (println "unconditionified outpit os" constructor-args)
+    ; (println "unconditionified outpit os" constructor-args)
     (apply make-conditional-value constructor-args)))
 
     ; (make-merge-multivalue
@@ -153,7 +153,7 @@
 (defn eval-if-conditional
   "blag"
   [exp eval-cond-concrete env]
-  (println "EVAL-IF-CONDITIONED" exp "HMM" eval-cond-concrete "\n")
+  ; (println "EVAL-IF-CONDITIONED" exp "HMM" eval-cond-concrete "\n")
     ; If it's a conditional value
     ; (if (if (> x1 3)
     ;         true
@@ -199,7 +199,7 @@
   (let [eval-cond (evalcs (if-predicate exp) env)]
     (multify
       (fn [eval-cond]
-        (println "evalcond is" eval-cond "\n")
+        ; (println "evalcond is" eval-cond "\n")
         (cond
           (symbolic? eval-cond)
           (eval-if-symbolic exp eval-cond (evalcs (negate (if-predicate exp)) env) env)

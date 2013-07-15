@@ -201,7 +201,6 @@
 
 (defn merge-conditions
   [& value-conditions]
-  (println "possible-values" value-conditions)
   (reduce #(vec (concat %1 %2)) value-conditions))
 
 (defn conditional-value
