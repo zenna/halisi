@@ -4,6 +4,7 @@
   (:use relax.evalcs)
   (:use relax.symbolic)
   (:use relax.common)
+  (:use relax.env)
   (:use relax.linprog)
   (:use clozen.helpers))
 
@@ -144,11 +145,8 @@
   "get the box volume"
   [box]
   (apply * (map #(- (second %) (first %)) box)))
+; (symbolic (<= (symbolic (+ (symbolic x2) (symbolic (* -1 (symbolic x1))) 1)))) 
 
-(defn satisfiable?
-  [sample ineqs])
-
-; (>= (symbolic (+ (symbolic x1) (symbolic (* 6 (symbolic x2))))) 2)
 
 (defn ineq-to-matrix-form
   [exp vars]
@@ -161,10 +159,9 @@
         arguments (if (coll? second-arg)
                       (rest second-arg)
                       [(make-symbolic second-arg)])]
-    ; (println "second arg" second-arg "exp" exp "args" arguments "\n")
+    (println "second arg" second-arg "exp" exp "args" arguments "\n")
     [(pass
         (fn [term row]
-          ; (println "TERM" term "rpw " row)
           (cond
             (tagged-list? (symbolic-value term) '*)
             (let [{num :num symb :symb} (decompose-binary-exp (symbolic-value term))]
@@ -183,23 +180,35 @@
     (operator exp)
     (last exp)]))
 
-([(10.0 7.0 9.0 7.0) (possible-value true [(symbolic (< (symbolic x2) 10)) (symbolic (< (symbolic x1) 9)) (symbolic (> (symbolic x2) 7)) (symbolic (> (symbolic x1) 7))])] 
-
-
-  [(5.0 3.0 5.0 3.0) (possible-value true [(symbolic (< (symbolic x2) 5)) (symbolic (< (symbolic x1) 5)) (symbolic (> (symbolic x2) 3)) (symbolic (> (symbolic x1) 3)) (symbolic (<= (symbolic x1) 7))])] 
-
-
-  [(20.0 0.0 1.0 0.0) (possible-value true [(symbolic (< (symbolic x1) 1)) (symbolic (<= (symbolic x1) 3)) (symbolic (<= (symbolic x1) 7))])])
-
+(defn satisfiable?
+  [sample formula vars]
+  ; (println "sample" sample "formula" formula "vars" vars)
+  (let [extended-env (extend-environment vars sample the-pure-environment)]
+    (every? true? (map #(evalcs % extended-env) formula))))
 
 (defn disjoint-poly-box-sampling
-  [volumes formulae]
-  {:pre [(count= volumes formulae)]}
-  #(let [[polytope box] (categorical formulae volumes)
-         sample (interval-sample box)]
-     (if (satisfiable? sample polytope)
-         sample
-         (recur))))
+  [feasible-boxes vars]
+  (let [volumes (map first feasible-boxes)]
+    #(let [;pvar (println "volumes:" volumes)
+           ;pvar (println "volumes:" feasible-boxes)
+           [vol box formula] (categorical feasible-boxes volumes)
+           sample (interval-sample box)]
+       (if (satisfiable? sample formula vars)
+           sample
+           (recur)))))
+
+(defn unsymbolise
+  [formula]
+  "Remove symbols from something like this:
+  (<= (symbolic (+ (symbolic (* -4 (symbolic x1))) (symbolic x2))) 10)"
+  (map 
+    #(let [value (if (symbolic? %)
+                     (symbolic-value %)
+                     %)]
+      (if (coll? value)
+          (unsymbolise value)
+          value))
+    formula))
 
 (defn constrain-uniform
   "Takes a model represented as map of variables to intervals on uniform distribution"
@@ -225,43 +234,21 @@
                                   (value-conditions %)
                                   interval-constraints))
                           ineqs)
-        pvar (println "matrix form is" (nth matrix-form 5))
+        pvar (println "The matrix form is" matrix-form "\n")
+        pvar (println "The matrix form is" matrix-form "\n")
         ; Then for each disjuctive clause we need to compute an abstraction
         boxes (map bounding-box-lp matrix-form)
         feasible-boxes (filter #(not-any? nil? (first %))
                                 (map vector boxes ineqs))
-        volumes (map #(vector (box-volume (partition 2 (first %)))
-                              (value-conditions (second %)))
-                      feasible-boxes)]
-    (disjoint-poly-box-sampling volumes formu)
-    feasible-boxes)))
-
-; (defn constrain-uniform
-;   "Takes a model represented as map of variables to intervals on uniform distribution"
-;   [variable-intervals pred]
-  
-;   ; Add variables to environment
-;   ; TODOconvert given intervals to constraints
-;   (doall
-;     (for [variable (keys variable-intervals)]
-;       (define-symbolic! variable the-global-environment)))
-
-;   (println "the the-global-environment is" the-global-environment "\n")
-;   (println "the expanded predicate is" (andor-to-if pred)  "\n")
-
-;   (let [ineqs   (multivalues (all-possible-values 
-;                   (evalcs (andor-to-if pred) the-global-environment)))
-;         ineqs (filter #(true? (conditional-value %)) ineqs)
-;         pvar (println "DISJUNCTIVE NORMAL FORM:" ineqs "\n")
-
-;         ; Then for each disjuctive clause we need to compute an abstraction
-;         containers (cover ineqs)
-;         intervals-disjuction (map #(update-intervals (value-conditions %)
-;                                                      variable-intervals)
-;                                    ineqs)
-;         volumes (map compute-volume intervals-disjuction)
-;         pvar (println "Intervals distjucntion" intervals-disjuction "INEQUALITIES"  ineqs "volumes" volumes)]
-;     #(sample-within-intervals (categorical intervals-disjuction volumes))))
+        feasible-boxes (map #(vector 
+                              (box-volume (partition 2 (first %)))
+                              (partition 2 (first %))
+                              (map (fn [t] (unsymbolise (symbolic-value t)))
+                                (value-conditions (second %))))
+                            feasible-boxes)
+        pvar (println "The feasible boxes are" feasible-boxes)
+        pvar (println "The feasible boxes are" feasible-boxes)]
+    (disjoint-poly-box-sampling feasible-boxes vars)))
 
 (def exp 
   '(if (> x1 9)
@@ -284,6 +271,31 @@
   '(or (and (> x1 7) (> x2 7) (< x1 9) (< x2 10))
        (and (> x1 3) (> x2 3) (< x1 5) (< x2 5))
        (< x1 1)))
+
+(def exp-linear
+  '(or
+
+    (and (> x2 9) (< x2 10))
+    (and (> x1 3) (> x2 3) (< x1 5) (< x2 5))
+    (and 
+      (>= x1 0)
+      (>= x2 0)
+      (<= (+ x2 (* (- 1) x1)) 1)
+      (<= (+ x1 (* 6 x2)) 15)
+      (<= (+ (* 4 x1) (* (- 1) x2)) 10))))
+
+; ([(symbolic (> (symbolic x2) (symbolic x1)))]
+;  [(symbolic (< (symbolic x2) 4)) (symbolic (< (symbolic x1) 10)) (symbolic (> (symbolic x2) 2)) (symbolic (> (symbolic x1) 8)) (symbolic (<= (symbolic x2) (symbolic x1)))]) 
+;  constrs ((symbolic (> (symbolic x2) 0)) (symbolic (< (symbolic x2) 20)) (symbolic (> (symbolic x1) 0)) (symbolic (< (symbolic x1) 10)))
+
+
+(def exp-linear-overlap
+  '(or
+
+    (> (+ x2 (* -1 x1)) 0)
+    (and (> x1 8) (> x2 2) (< x1 10) (< x2 4))))
+
+; (([[1 0] (1 2) > (symbolic x1)] [[1 0] (1 2) > 0] [[1 0] (1 2) < 20] [[0 1] (1 2) > 0] [[0 1] (1 2) < 10]) ([[1 0] (1 2) < 4] [[0 1] (1 2) < 10] [[1 0] (1 2) > 2] [[0 1] (1 2) > 8] [[1 0] (1 2) <= (symbolic x1)] [[1 0] (1 2) > 0] [[1 0] (1 2) < 20] [[0 1] (1 2) > 0] [[0 1] (1 2) < 10]))
 
 (def exp7
   '(if (> x1 2)
@@ -316,14 +328,22 @@
   ; (ineq-to-matrix-form (evalcs '(>= (+ (* 6 x1) x2) 5) the-global-environment) '[x1 x2])
   ; (ineq-to-matrix-form (evalcs '(>= x2 10) the-global-environment) '[x1 x2])
 
+(use 'clojure.java.io)
+(defn samples-to-file
+  [fname samples]
+  (let [num-dim (count (first samples))
+        re-samples
+        (for [i (range num-dim)]
+          (map #(nth % i) samples))]
+    (doall
+      (for [dim re-samples]
+        (with-open [wrtr (writer fname :append true)]
+          (.write wrtr (str (clojure.string/join " " dim) "\n")))))))
 
 (defn -main[]
-  (println "op is "(constrain-uniform {'x1 ['(> x1 0) '(< x1 10)]
+  (let [new-model (constrain-uniform {'x1 ['(> x1 0) '(< x1 10)]
                                         'x2 ['(> x2 0) '(< x2 20)]}
-                                        exp3)))
-  ; (let [new-model (constrain-uniform {'x1 ['(> x1 0) '(< x1 10)]
-  ;                                     'x2 ['(> x2 0) '(< x2 20)]}
-  ;                                     exp3)
-  ;       samples (repeatedly 1000 new-model)]
-  ;   [(vec (map first samples))
-  ;    (vec (map second samples))]))
+                                        exp-linear-overlap)
+        samples (repeatedly 1000 new-model)]
+    (samples-to-file "op" samples)
+    samples))

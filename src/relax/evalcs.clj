@@ -322,6 +322,8 @@
     initial-env))
 
 (def the-global-environment (setup-environment))
+(def the-pure-environment (setup-environment))
+
 
 ; A conditioned value only really makes sense as a multivalue
 ; It's a value which can assume many different values conditioned on some conjunction of constraints
