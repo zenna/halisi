@@ -236,26 +236,42 @@ A program transformation for the convex polygon example above could depend upon 
 Automatically generating domain specific transformations then must defer to the problem of automated theorem proving.
 This is indeed an active area of research in program transformation.
 
-% \section{TO TALK ABOUT}
+\section{Sampling}
 
-% How this relates to dynamic execution
+First I'll consider a simplified instance of the problem, in anticipation that it will yield insight into the feasibility, or otherwise, of approaches to the more general solution, and may in its own right be applicable to many practical domains.
 
-% Concrete/symbolic evaluation
+This simplication can be stated simply as follows: our generative model defines a distribution over linear transformations of a random vector of uniformly distributed real values, where the length of this vector and parameters to each random variable (both lower and upper bound) are fixed and known ahead of time.
+A constraint involves the conjunction and disjunction of any number of linear equalities and inequalities on these samples.
+Both the generative model and the constraint are represented as programs in a limited functional language, which importantly is side-effect free and lacks general recursion.
 
-% How this is a kind of constraint programming
+Both a logical and geometric perspective brings some clarity; our constraint program $C$ implicitly defines a logical formula composed of the conjunction and disjunction of a fixed number of literals, each literal representing an inequality of the form $Ax \le b$ (note we can always convert an equality to two inequalities, as well as convert a greater than relation to a less than through negation).
+For instance the expression:
 
-% \chapter{case study}
+\begin{verbatim}
+(if (> x1 10)                   ; If val satisfies conditions
+    true                        ; then our constraint is satisfied
+    (or (> x2 10) (> x1 2)))    ; Otherwise if x2>10 or x1>2
+\end{verbatim}
 
-% \subsection{issues}
+Defines a logical formula of the form:
+\begin{equation}
+x_1 > 10 \lor (x_1 \le 10 \land x_2 > 10) \lor (x_1 \le 10 \land x_1 > 2)
+\end{equation}
 
-% Order of constraints
-% Discussion has been limited to a single constraint $C^$, since multiple constraints can be found conjoiing each individual constraint together.
-% There may be practical implications of the order.
-% There may also be means to recompile the constraint into one which is easier to reason about.
+The extraction of this logical expression from a the program is important, and the first step of the proposed methods.
+The formula is one of an infinite number of equivalent alternatives, but is distinct in that it is the disjunction of a number of clauses, where each clause is the conjunction of a number of literals.
+Each clause can be thought of as a set of local conditions which when all are simultaneously true, will cause the constraint to be satisfied.
+Geometrically, each literal is a linear inequality defininig a half space which splits $\mathbb{R}^n$ into two, and designates one side of the split as feasible and the other infeasible.
+The entire clause is the intersection of a number of these half spaces and is thus a convex polyhedron.
+The entire formulae in this form can then be viewed as dividing $\mathbb{R}^n$ into a number of possibly overlapping convex polyhedrons, within which our sample is permitted to lie.
 
-% Partial evaluation
+The gist of the proposed method, is to find and isolate these polytopes by statically analysing the predicate, and to focus our sampling within surroudign regions.
+Restating the objective more formally, we intend to draw samples from $P(X \vert C)$, where   .
 
-% Hardness o
+Simple Rejection Sampling
+
+Polytope Sampling
+
 
 \section{Conclusion}
 Here the probabilstic inference framework \spacedlowsmallcaps{query} was given a constructive perspective with \spacedlowsmallcaps{constrain}.

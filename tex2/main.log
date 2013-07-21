@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.6.18)  18 JUN 2013 16:22
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.6.18)  18 JUL 2013 08:20
 entering extended mode
  %&-line parsing enabled.
 **main.tex
@@ -836,35 +836,64 @@ Overfull \hbox (8.4581pt too wide) in paragraph at lines 216--223
 er-val. Clearly,
  []
 
-[8] [9]) [10] [11
+[8]
+Overfull \hbox (5.79211pt too wide) in paragraph at lines 254--254
+[]\T1/fvm/m/n/10.95 (if (> x1 10)                   ; If val satisfies conditio
+ns[] 
+ []
+
+
+Overfull \hbox (33.80786pt too wide) in paragraph at lines 254--254
+[]    \T1/fvm/m/n/10.95 true                        ; then our constraint is sa
+tisfied[] 
+ []
+
+
+Overfull \hbox (0.18896pt too wide) in paragraph at lines 254--254
+[]    \T1/fvm/m/n/10.95 (or (> x2 10) (> x1 2)))    ; Otherwise if x2>10 or x1>
+2[] 
+ []
+
+LaTeX Font Info:    Try loading font information for U+fplmbb on input line 264
+.
+(/usr/share/texmf-texlive/tex/latex/psnfss/ufplmbb.fd
+File: ufplmbb.fd 2003/10/30 Fontinst v1.914 font definitions for U/fplmbb.
+) [9] [10]) [11] [12
 
 
 
-] (./main.aux (./Chapters/Chapter02.aux)) ) 
+]
+[13] (./main.aux (./Chapters/Chapter02.aux)
+
+Package mparhack Warning: Marginpars may have changed.
+(mparhack)                Rerun to get them right.
+
+) ) 
 Here is how much of TeX's memory you used:
- 13159 strings out of 493848
- 197112 string characters out of 1152823
+ 13189 strings out of 493848
+ 197633 string characters out of 1152823
  464168 words of memory out of 3000000
- 16084 multiletter control sequences out of 15000+50000
- 55967 words of font info for 88 fonts, out of 3000000 for 9000
+ 16105 multiletter control sequences out of 15000+50000
+ 56552 words of font info for 93 fonts, out of 3000000 for 9000
  714 hyphenation exceptions out of 8191
  46i,14n,67p,501b,465s stack positions out of 5000i,500n,10000p,200000b,50000s
-{/usr/share/texmf-texlive/fonts/enc/
-dvips/base/8r.enc}</usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmr1
-0.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr
-/share/texmf-texlive/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texmf
--texlive/fonts/type1/public/amsfonts/euler/eufm10.pfb></usr/share/texmf-texlive
-/fonts/type1/public/amsfonts/euler/eurb10.pfb></usr/share/texmf-texlive/fonts/t
-ype1/public/amsfonts/euler/eurm10.pfb></usr/share/texmf-texlive/fonts/type1/pub
-lic/amsfonts/euler/eurm7.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfo
-nts/euler/eusm10.pfb></usr/share/texmf-texlive/fonts/type1/public/fpl/fplrc8a.p
-fb></usr/share/texmf-texlive/fonts/type1/public/fpl/fplrij8a.pfb></usr/share/te
-xmf-texlive/fonts/type1/public/bera/fvmr8a.pfb></usr/share/texmf-texlive/fonts/
-type1/urw/palatino/uplr8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/palatin
-o/uplri8a.pfb>
-Output written on main.pdf (11 pages, 158032 bytes).
+{/usr/share/texmf-texlive/fonts/enc/dvips/base/8r.enc}</usr/share/texmf-texl
+ive/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texmf-texlive/fonts/ty
+pe1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/type1/public/
+amsfonts/cm/cmsy7.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/eul
+er/eufm10.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/euler/eurb1
+0.pfb></usr/share/texmf-texlive/fonts/type1/public/amsfonts/euler/eurm10.pfb></
+usr/share/texmf-texlive/fonts/type1/public/amsfonts/euler/eurm7.pfb></usr/share
+/texmf-texlive/fonts/type1/public/amsfonts/euler/eusm10.pfb></usr/share/texmf-t
+exlive/fonts/type1/public/mathpazo/fplmbb.pfb></usr/share/texmf-texlive/fonts/t
+ype1/public/fpl/fplrc8a.pfb></usr/share/texmf-texlive/fonts/type1/public/fpl/fp
+lrij8a.pfb></usr/share/texmf-texlive/fonts/type1/public/bera/fvmr8a.pfb></usr/s
+hare/texmf-texlive/fonts/type1/public/amsfonts/symbols/msam10.pfb></usr/share/t
+exmf-texlive/fonts/type1/urw/palatino/uplr8a.pfb></usr/share/texmf-texlive/font
+s/type1/urw/palatino/uplri8a.pfb>
+Output written on main.pdf (13 pages, 176358 bytes).
 PDF statistics:
- 174 PDF objects out of 1000 (max. 8388607)
- 33 named destinations out of 1000 (max. 500000)
- 10841 words of extra memory for PDF output out of 12000 (max. 10000000)
+ 199 PDF objects out of 1000 (max. 8388607)
+ 37 named destinations out of 1000 (max. 500000)
+ 10849 words of extra memory for PDF output out of 12000 (max. 10000000)
 
