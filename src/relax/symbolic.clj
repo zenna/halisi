@@ -201,7 +201,6 @@
 
 (defn merge-conditions
   [& value-conditions]
-  (println "possible-values" value-conditions)
   (reduce #(vec (concat %1 %2)) value-conditions))
 
 (defn conditional-value
@@ -212,12 +211,6 @@
 (defn apply-condition
   [val new-conditions]
   (list 'conditioned-value val new-conditions))
-
-; ; TODO
-; (defn update-condition
-;   "Add a condition to already conditioned value"
-;   [val new-conditions]
-;   (replace-in-list val 2 (vec concat (conditions val) new-conditions)))
 
 (defn make-conditional-value
   "Constructs a conditional value
@@ -273,29 +266,3 @@
                     (multivalues (all-possible-values fx))))
 
             [fx path-conditions]))))))
-
-; (defn oddplus
-;   [& args]
-;   (handle-conditional + (apply + args)
-;                         (make-conditional-value
-;                           0.5 ['iseethelight] 0.7 ['ohthedarkness])))
-
-; (defn -main []
-;   (let [x1 (make-conditional-value 3 ['godisgood] 4 ['notsogood])
-;         x2 (make-conditional-value 10 ['satanisbad] 100 ['ilikethefire])]
-;     (handle-conditional oddplus x1 x2)))
-
-; (def result '(conditional-value (multivalue [(possible-value 16 [godisgood satanisbad]) (possible-value 106 [godisgood ilikethefire]) (possible-value 17 [notsogood satanisbad]) (possible-value 107 [notsogood ilikethefire])])))
-
-; (defn add-conditions
-;   "adds conditions to a value, concatenates conditions if already present"
-;   [cond-value value new-conditions]
-;   (cond
-;     (conditional-value? val)
-;     (update-condition val new-conditions)
-
-;     (conditional-value? new-conditions)
-;     (error "conditioned conditions not supported" new-conditions)
-
-;     :else
-;     (apply-condition val new-conditions)))

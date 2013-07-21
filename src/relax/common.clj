@@ -1,6 +1,7 @@
 (ns ^{:doc "Common"
       :author "Zenna Tavares"}
-  relax.common)
+  relax.common
+  (:use clojure.java.io))
 
 ;; An environment is a vector list of hashes [{}{}]
 ;Error
@@ -30,3 +31,24 @@
 (defn no-operands? [ops] (empty? ops))
 (defn first-operand [ops] (first ops))
 (defn rest-operands [ops] (rest ops))
+
+(defn samples-to-file
+  "Writes a set of samples to file
+   Creates two files, in one each line denotes a single sample
+   In the other each line denotes a variable"
+  [fname samples]
+  (let [num-dim (count (first samples))
+          re-samples
+        (for [i (range num-dim)]
+          (map #(nth % i) samples))]
+    (doall
+      (for [sample samples]
+        (with-open [wrtr (writer (str fname "-lines") :append true)]
+          (.write wrtr  (str (clojure.string/join " " sample)))
+                    ; (.write wrtr (apply str (doall sample)))
+
+          (.write wrtr "\n"))))
+    (doall
+      (for [dim re-samples]
+        (with-open [wrtr (writer fname :append true)]
+          (.write wrtr (str (clojure.string/join " " dim) "\n")))))))
