@@ -4,6 +4,7 @@
   (:use relax.evalcs)
   (:use relax.symbolic)
   (:use relax.common)
+  (:use relax.examples)
   (:use relax.env)
   (:use relax.linprog)
   (:use clozen.helpers))
@@ -144,7 +145,7 @@
 (defn box-volume
   "get the box volume"
   [box]
-  (apply * (map #(- (second %) (first %)) box)))
+  (apply * (map #(- (first %) (second %)) box)))
 ; (symbolic (<= (symbolic (+ (symbolic x2) (symbolic (* -1 (symbolic x1))) 1)))) 
 
 
@@ -189,13 +190,13 @@
 (defn disjoint-poly-box-sampling
   [feasible-boxes vars]
   (let [volumes (map first feasible-boxes)]
-    #(let [;pvar (println "volumes:" volumes)
-           ;pvar (println "volumes:" feasible-boxes)
-           [vol box formula] (categorical feasible-boxes volumes)
-           sample (interval-sample box)]
+    #(loop [n-sampled 0 n-rejected 0]
+      (let [[vol box formula] (categorical feasible-boxes volumes)
+           sample (interval-sample box)
+           pvar (println "box is" box " sample is " sample)]
        (if (satisfiable? sample formula vars)
-           sample
-           (recur)))))
+           {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
+           (recur (inc n-sampled) (inc n-rejected)))))))
 
 (defn unsymbolise
   [formula]
@@ -209,6 +210,49 @@
           (unsymbolise value)
           value))
     formula))
+
+(defn to-dnf
+  "Takes a model represented as map of variables to intervals on uniform distribution"
+  [variable-intervals pred]
+  
+  ; Add variables to environment
+  (doall
+    (for [variable (keys variable-intervals)]
+      (define-symbolic! variable the-global-environment)))
+
+  (println "the the-global-environment is" the-global-environment "\n")
+  (println "the expanded predicate is" (andor-to-if pred)  "\n")
+  (let [ineqs   (multivalues (all-possible-values 
+                  (evalcs (andor-to-if pred) the-global-environment)))
+        ineqs (filter #(true? (conditional-value %)) ineqs)]
+        ineqs))
+
+(defn make-lambda-args
+  "Make a function from an expression with some args"
+  [expr args]
+  (eval (list 'fn args expr)))
+
+(defn naive-rejection
+  "Just sample and accept or reject
+   Variables x: 10"
+  [variable-intervals pred]
+  (let [pred-fn (make-lambda-args pred (vec (keys variable-intervals)))]
+  #(loop [n-sampled 0 n-rejected 0]
+    (let [sample (interval-sample (vals variable-intervals))]
+     (if (apply pred-fn sample)
+         {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
+         (recur (inc n-sampled) (inc n-rejected)))))))
+
+(defn disjoint-poly-box-sampling
+  [feasible-boxes vars]
+  (let [volumes (map first feasible-boxes)]
+    #(loop [n-sampled 0 n-rejected 0]
+      (let [[vol box formula] (categorical feasible-boxes volumes)
+           sample (interval-sample box)
+           pvar (println "box is" box " sample is " sample)]
+       (if (satisfiable? sample formula vars)
+           {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
+           (recur (inc n-sampled) (inc n-rejected)))))))
 
 (defn constrain-uniform
   "Takes a model represented as map of variables to intervals on uniform distribution"
@@ -229,6 +273,7 @@
                                     (reduce concat (vals variable-intervals))))
         pvar (println "INEQS" (map value-conditions ineqs) "\n" "constrs" interval-constraints)
         vars (keys variable-intervals)
+        pvar (println "vars are " vars)
         matrix-form (map #(map (fn [x] (ineq-to-matrix-form x vars))
                                  (concat
                                   (value-conditions %)
@@ -237,7 +282,7 @@
         pvar (println "The matrix form is" matrix-form "\n")
         pvar (println "The matrix form is" matrix-form "\n")
         ; Then for each disjuctive clause we need to compute an abstraction
-        boxes (map bounding-box-lp matrix-form)
+        boxes (map #(bounding-box-lp % vars) matrix-form)
         feasible-boxes (filter #(not-any? nil? (first %))
                                 (map vector boxes ineqs))
         feasible-boxes (map #(vector 
@@ -247,81 +292,10 @@
                                 (value-conditions (second %))))
                             feasible-boxes)
         pvar (println "The feasible boxes are" feasible-boxes)
-        pvar (println "The feasible boxes are" feasible-boxes)]
+        pvar (println "The feasible boxes are" feasible-boxes)
+        pvar (println "Volumes are" (map first feasible-boxes))]
     (disjoint-poly-box-sampling feasible-boxes vars)))
 
-(def exp 
-  '(if (> x1 9)
-      (or (> x2 10)
-          (< x2 1))
-      (if (> x2 8)
-          true
-          false)))
-
-(def exp2
-  '(if (> x1 8)
-      (or (> x2 10)
-          (< x2 1))
-      (if (> x2 5)
-          (or (> x2 7)
-              (< x1 9))
-          false)))
-
-(def exp3
-  '(or (and (> x1 7) (> x2 7) (< x1 9) (< x2 10))
-       (and (> x1 3) (> x2 3) (< x1 5) (< x2 5))
-       (< x1 1)))
-
-(def exp-linear
-  '(or
-
-    (and (> x2 9) (< x2 10))
-    (and (> x1 3) (> x2 3) (< x1 5) (< x2 5))
-    (and 
-      (>= x1 0)
-      (>= x2 0)
-      (<= (+ x2 (* (- 1) x1)) 1)
-      (<= (+ x1 (* 6 x2)) 15)
-      (<= (+ (* 4 x1) (* (- 1) x2)) 10))))
-
-; ([(symbolic (> (symbolic x2) (symbolic x1)))]
-;  [(symbolic (< (symbolic x2) 4)) (symbolic (< (symbolic x1) 10)) (symbolic (> (symbolic x2) 2)) (symbolic (> (symbolic x1) 8)) (symbolic (<= (symbolic x2) (symbolic x1)))]) 
-;  constrs ((symbolic (> (symbolic x2) 0)) (symbolic (< (symbolic x2) 20)) (symbolic (> (symbolic x1) 0)) (symbolic (< (symbolic x1) 10)))
-
-
-(def exp-linear-overlap
-  '(or
-
-    (> (+ x2 (* -1 x1)) 0)
-    (and (> x1 8) (> x2 2) (< x1 10) (< x2 4))))
-
-; (([[1 0] (1 2) > (symbolic x1)] [[1 0] (1 2) > 0] [[1 0] (1 2) < 20] [[0 1] (1 2) > 0] [[0 1] (1 2) < 10]) ([[1 0] (1 2) < 4] [[0 1] (1 2) < 10] [[1 0] (1 2) > 2] [[0 1] (1 2) > 8] [[1 0] (1 2) <= (symbolic x1)] [[1 0] (1 2) > 0] [[1 0] (1 2) < 20] [[0 1] (1 2) > 0] [[0 1] (1 2) < 10]))
-
-(def exp7
-  '(if (> x1 2)
-        (if (> x2 2)
-            true
-            false)
-        false))
-
-(def exp10
-  '(if (> x1 2)
-        true
-        false))
-
-(def exp4
-  '(if (if (> x1 3)
-            true
-            false)
-      false
-      true))
-
-(def exp5
-  '(if (if (> x1 3)
-           true
-           false) 
-       (if (< x2 4) true false  )
-       true))
 
   ; (define-symbolic! 'x1 the-global-environment)
   ; (define-symbolic! 'x2 the-global-environment)
@@ -332,18 +306,47 @@
 (defn samples-to-file
   [fname samples]
   (let [num-dim (count (first samples))
-        re-samples
+          re-samples
         (for [i (range num-dim)]
           (map #(nth % i) samples))]
+    (doall
+      (for [sample samples]
+        (with-open [wrtr (writer (str fname "-lines") :append true)]
+          (.write wrtr  (str (clojure.string/join " " sample)))
+                    ; (.write wrtr (apply str (doall sample)))
+
+          (.write wrtr "\n"))))
     (doall
       (for [dim re-samples]
         (with-open [wrtr (writer fname :append true)]
           (.write wrtr (str (clojure.string/join " " dim) "\n")))))))
 
 (defn -main[]
-  (let [new-model (constrain-uniform {'x1 ['(> x1 0) '(< x1 10)]
-                                        'x2 ['(> x2 0) '(< x2 20)]}
-                                        exp-linear-overlap)
-        samples (repeatedly 1000 new-model)]
-    (samples-to-file "op" samples)
+  (let [{vars :vars pred :pred} (gen-box-constraints 3)
+        intervals (zipmap vars (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))
+        new-model (constrain-uniform intervals pred)
+        data (repeatedly 10 new-model)
+        samples (extract data :sample)
+        n-sampled (sum (extract data :n-sampled))
+        n-rejected (sum (extract data :n-rejected))
+        ;; Rejection sampling
+        srs-model (naive-rejection
+          (zipmap vars (repeat (count vars) (vector 0 10))) pred)
+        srs-data (repeatedly 10 srs-model)
+        srs-samples (extract srs-data :sample)
+        srs-n-sampled (sum (extract srs-data :n-sampled))
+        srs-n-rejected (sum (extract srs-data :n-rejected))
+        pvar (println "SRS SAMPLES ARE" srs-samples)
+        pvar (println "SRS SAMPLES ARE" srs-samples)]
+    (samples-to-file "op" srs-samples)
+    (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
+    (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
     samples))
+
+; (defn -main[]
+;   (let [new-model (constrain-uniform {'x1 ['(> x1 0) '(< x1 10)]
+;                                         'x2 ['(> x2 0) '(< x2 10)]}
+;                                         exp-abs)
+;         samples (repeatedly 1000 new-model)]
+;     (samples-to-file "op" samples)
+;     samples))

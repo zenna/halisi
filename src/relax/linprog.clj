@@ -12,18 +12,18 @@
 
 (defn bounding-box-lp
   "Find bounding box around system of linear inequalities by making and 
-   solving 2 * num-vars linear programming problems.
+   solving 2 * n-vars linear programming problems.
    Constraint in form [[coeffs var-is rhs] .. [..]]"
-  [constraint]
-  (let [num-vars 2;(count-vars constraint)
-        lp (LpSolve/makeLp 0 num-vars)]
+  [constraint vars]
+  (let [n-vars (count vars)
+        lp (LpSolve/makeLp 0 n-vars)]
     (.setAddRowmode lp true)
   
     ; Create the linear program
     (doall
       (for [[coeffs var-is le-ge rhs] constraint]
         (.addConstraintex lp
-          num-vars
+          n-vars
           (double-array coeffs)
           (int-array var-is)
           (conv-ineq le-ge) rhs)))
@@ -31,17 +31,18 @@
     (.setAddRowmode lp false)
 
     ; For each variable compute max and min
-    (let [results (double-array (vec (repeat num-vars 0.0)))
+    (let [results (double-array (vec (repeat n-vars 0.0)))
           bounds
           (doall
-            (for [i (range num-vars)
+            (for [i (range n-vars)
                   max-mim [#(.setMaxim lp) #(.setMinim lp)]]
               (do
+                (println "NUM VARS :" i n-vars)
                 (max-mim) 
                 (.setObjFnex lp
-                  num-vars
-                  (double-array (assoc (vec (repeat num-vars 0.0)) i 1.0))
-                  (int-array (range 1 (inc num-vars))))
+                  n-vars
+                  (double-array (assoc (vec (repeat n-vars 0.0)) i 1.0))
+                  (int-array (range 1 (inc n-vars))))
                 (let [ret (.solve lp)
                       pvar (println "SOLVE VAL IS" ret)]
                       (if (zero? ret)
