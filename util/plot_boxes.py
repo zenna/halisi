@@ -25,7 +25,7 @@ codes = [Path.MOVETO,
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
 
-for i in range(6,7):
+for i in range(62,63):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for sqr in chunks(X[i,:],3):

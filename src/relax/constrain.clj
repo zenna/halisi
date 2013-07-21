@@ -151,8 +151,7 @@
   (let [volumes (map first feasible-boxes)]
     #(loop [n-sampled 0 n-rejected 0]
       (let [[vol box formula] (categorical feasible-boxes volumes)
-           sample (interval-sample box)
-           pvar (println "box is" box " sample is " sample)]
+           sample (interval-sample box)]
        (if (satisfiable? sample formula vars)
            {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
            (recur (inc n-sampled) (inc n-rejected)))))))
@@ -167,6 +166,7 @@
       (define-symbolic! variable the-global-environment)))
 
   (println "the the-global-environment is" the-global-environment "\n")
+  (println "the predicate is" pred  "\n")
   (println "the expanded predicate is" (andor-to-if pred)  "\n")
   (let [ineqs   (multivalues (all-possible-values 
                   (evalcs (andor-to-if pred) the-global-environment)))
@@ -174,7 +174,7 @@
         interval-constraints (map #(evalcs % the-global-environment)
                                    (vec 
                                     (reduce concat (vals variable-intervals))))
-        pvar (println "INEQS" (map value-conditions ineqs) "\n" "constrs" interval-constraints)
+        ; pvar (println "INEQS" (map value-conditions ineqs) "\n" "constrs" interval-constraints)
         vars (keys variable-intervals)
         pvar (println "vars are " vars)
         matrix-form (map #(map (fn [x] (ineq-to-matrix-form x vars))
@@ -182,9 +182,10 @@
                                   (value-conditions %)
                                   interval-constraints))
                           ineqs)
-        pvar (println "The matrix form is" matrix-form "\n")
-        pvar (println "The matrix form is" matrix-form "\n")
+        ; pvar (println "The matrix form is" matrix-form "\n")
+        ; pvar (println "The matrix form is" matrix-form "\n")
         ; Then for each disjuctive clause we need to compute an abstraction
+        pvar (println "number of possible regions is" (count ineqs))
         boxes (map #(bounding-box-lp % vars) matrix-form)
         feasible-boxes (filter #(not-any? nil? (first %))
                                 (map vector boxes ineqs))
@@ -194,13 +195,14 @@
                               (map (fn [t] (unsymbolise (symbolic-value t)))
                                 (value-conditions (second %))))
                             feasible-boxes)
-        pvar (println "The feasible boxes are" feasible-boxes)
-        pvar (println "The feasible boxes are" feasible-boxes)
-        pvar (println "Volumes are" (map first feasible-boxes))]
+        ; pvar (println "The feasible boxes are" feasible-boxes)
+        ; pvar (println "The feasible boxes are" feasible-boxes)
+        pvar (println "Volumes are" (map first feasible-boxes)
+                      "Number of them is" (count feasible-boxes))]
     (disjoint-poly-box-sampling feasible-boxes vars)))
 
 (defn -main[]
-  (let [{vars :vars pred :pred} (gen-box-constraints 3)
+  (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
         intervals (zipmap vars (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))
         new-model (constrain-uniform intervals pred)
         data (repeatedly 10 new-model)

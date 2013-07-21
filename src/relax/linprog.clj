@@ -17,7 +17,9 @@
   [constraint vars]
   (let [n-vars (count vars)
         lp (LpSolve/makeLp 0 n-vars)]
+    (println "LINPROG: find bounding box, NUM VARS :" n-vars)
     (.setAddRowmode lp true)
+    (.setVerbose lp LpSolve/IMPORTANT)
   
     ; Create the linear program
     (doall
@@ -37,7 +39,6 @@
             (for [i (range n-vars)
                   max-mim [#(.setMaxim lp) #(.setMinim lp)]]
               (do
-                (println "NUM VARS :" i n-vars)
                 (max-mim) 
                 (.setObjFnex lp
                   n-vars

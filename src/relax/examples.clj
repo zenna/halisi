@@ -134,21 +134,6 @@
 
 ; (defn self-intersections? [])
 
-(defn unique-pairs
-  [coll]
-  (loop [coll coll pairs []]
-    (cond
-    (= (count coll) 1)
-    pairs
-
-    :else
-    (recur (rest coll) (concat pairs
-      (for [x (rest coll)]
-        [(first coll) x]))))))
-
-(defn f [x0 y0 r0 x1 y1 r1 x2 y2 r2]
-(if (< (+ x0 (* -1 r0) (* -1 x1) (* -1 r1)) 0) (if (> (+ x0 r0 (* -1 x1) r1) 0) (if (> (+ y0 r0 (* -1 y1) r1) 0) (if (< (+ y0 (* -1 r0) (* -1 y1) (* -1 r1)) 0) (if (< (+ x0 (* -1 r0) (* -1 x2) (* -1 r2)) 0) (if (> (+ x0 r0 (* -1 x2) r2) 0) (if (> (+ y0 r0 (* -1 y2) r2) 0) (if (< (+ y0 (* -1 r0) (* -1 y2) (* -1 r2)) 0) (if (< (+ x1 (* -1 r1) (* -1 x2) (* -1 r2)) 0) (if (> (+ x1 r1 (* -1 x2) r2) 0) (if (> (+ y1 r1 (* -1 y2) r2) 0) (if (< (+ y1 (* -1 r1) (* -1 y2) (* -1 r2)) 0) true false) false) false) false) false) false) false) false) false) false) false) false))
-
 
 ;; Box packing
 (defn gen-box-constraints-overlap
@@ -166,7 +151,7 @@
           (~'> (~'+ ~ay ~ar (~'* -1 ~by) ~br ) 0)
           (~'< (~'+ ~ay (~'* -1 ~ar) (~'* -1 ~by) (~'* -1 ~br)) 0)))))}))
 
-(defn gen-box-constraints
+(defn gen-box-non-overlap
   [n-boxes]
   (let [vars
        (for [i (range n-boxes)]
@@ -181,9 +166,67 @@
           (~'> (~'+ ~ay (~'* -1 ~ar) (~'* -1 ~by) (~'* -1 ~br)) 0)
           (~'< (~'+ ~ay ~ar (~'* -1 ~by) ~br ) 0))))}))
 
+(defn gen-box-non-overlap-close
+  [n-boxes]
+  (let [proximity-thresh 1.0 ; How close the boxes must be
+        vars
+       (for [i (range n-boxes)]
+          [(symbol (str "x" i)) (symbol (str "y" i)) (symbol (str "r" i))])]
+    {:vars (reduce concat vars)
+     :pred
+    `(~'and
+      ~@(for [[[ax ay ar][bx by br]] (unique-pairs vars)]
+        `(~'or 
+          (~'and
+            (~'> (~'+ ~ax (~'* -1 ~ar) (~'* -1 ~bx) (~'* -1 ~br)) 0)
+            (~'< (~'+ ~ax (~'* -1 ~ar) (~'* -1 ~bx) (~'* -1 ~br)) ~proximity-thresh))
+
+          (~'and
+            (~'< (~'+ ~ax ~ar (~'* -1 ~bx) ~br ) 0)
+            (~'> (~'+ ~ax ~ar (~'* -1 ~bx) ~br ) ~(* -1 proximity-thresh)))
+
+          (~'and
+            (~'> (~'+ ~ay (~'* -1 ~ar) (~'* -1 ~by) (~'* -1 ~br)) 0)
+            (~'< (~'+ ~ay (~'* -1 ~ar) (~'* -1 ~by) (~'* -1 ~br)) ~proximity-thresh))
+
+          (~'and
+            (~'< (~'+ ~ay ~ar (~'* -1 ~by) ~br ) 0)
+            (~'> (~'+ ~ay ~ar (~'* -1 ~by) ~br ) ~proximity-thresh)))))}))
+
+; the predicate is 
+
+; (and 
+;   (or 
+;     (and 
+;       (> (+ x0 (* -1 r0) (* -1 x1) (* -1 r1)) 0) 
+;       (< (+ x0 (* -1 r0) (* -1 x1) (* -1 r1)) 1.0))
+;     (and (< (+ x0 r0 (* -1 x1) r1) 0)
+;          (> (+ x0 r0 (* -1 x1) r1) -1.0))
+;     (and (> (+ y0 (* -1 r0) (* -1 y1) (* -1 r1)) 0)
+;          (< (+ y0 (* -1 r0) (* -1 y1) (* -1 r1)) 1.0))
+;     (and (< (+ y0 r0 (* -1 y1) r1) 0) (> (+ y0 r0 (* -1 y1) r1) 1.0)))
+
+;   (or (and (> (+ x0 (* -1 r0) (* -1 x2) (* -1 r2)) 0)
+;            (< (+ x0 (* -1 r0) (* -1 x2) (* -1 r2)) 1.0))
+;       (and (< (+ x0 r0 (* -1 x2) r2) 0)
+;            (> (+ x0 r0 (* -1 x2) r2) -1.0))
+;       (and (> (+ y0 (* -1 r0) (* -1 y2) (* -1 r2)) 0)
+;            (< (+ y0 (* -1 r0) (* -1 y2) (* -1 r2)) 1.0))
+;       (and (< (+ y0 r0 (* -1 y2) r2) 0)
+;         (> (+ y0 r0 (* -1 y2) r2) 1.0)))
+  
+;   (or 
+;     (and (> (+ x1 (* -1 r1) (* -1 x2) (* -1 r2)) 0)
+;          (< (+ x1 (* -1 r1) (* -1 x2) (* -1 r2)) 1.0))
+;     (and (< (+ x1 r1 (* -1 x2) r2) 0)
+;          (> (+ x1 r1 (* -1 x2) r2) -1.0))
+;     (and (> (+ y1 (* -1 r1) (* -1 y2) (* -1 r2)) 0)
+;          (< (+ y1 (* -1 r1) (* -1 y2) (* -1 r2)) 1.0))
+;     (and (< (+ y1 r1 (* -1 y2) r2) 0)
+;          (> (+ y1 r1 (* -1 y2) r2) 1.0))))
+
 
 ;; Random examples
-
 (def exp 
   '(if (> x1 9)
       (or (> x2 10)
