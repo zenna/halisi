@@ -66,7 +66,27 @@
 (defn box-volume
   "get the box volume"
   [box]
-  (apply * (map #(- (first %) (second %)) box)))
+  (apply * (map #(- (second %) (first %)) box)))
+
+; (symbolic (< (symbolic (+ (symbolic x1) (symbolic r1) (symbolic (* -1 (symbolic x2))) (symbolic r2))) 0)
+;   (symbolic (> (symbolic x0) 0))
+;   (symbolic (< (symbolic x0) 10))
+;   (symbolic (> (symbolic y0) 0))
+;   (symbolic (< (symbolic y0) 10))
+;   (symbolic (> (symbolic r0) 0))
+;   (symbolic (< (symbolic r0) 10))
+;   (symbolic (> (symbolic x1) 0))
+;   (symbolic (< (symbolic x1) 10))
+;   (symbolic (> (symbolic y1) 0))
+;   (symbolic (< (symbolic y1) 10))
+;   (symbolic (> (symbolic r1) 0))
+;   (symbolic (< (symbolic r1) 10))
+;   (symbolic (> (symbolic x2) 0))
+;   (symbolic (< (symbolic x2) 10))
+;   (symbolic (> (symbolic y2) 0))
+;   (symbolic (< (symbolic y2) 10))
+;   (symbolic (> (symbolic r2) 0))
+;   (symbolic (< (symbolic r2) 10)))
 
 (defn ineq-as-matrix
   "Takes an inequality expression, e.g. (> x 2) and converts it
@@ -136,13 +156,12 @@
       (define-symbolic! variable the-global-environment)))
 
   (println "the the-global-environment is" the-global-environment "\n")
-  (println "the expanded predicate is"
-    (andor-to-if (apply conjoin (conj model-constraints pred)))  "\n")
+  (println "the expanded predicate is"(andor-to-if pred)  "\n")
 
   (let [ineqs (multivalues
                 (all-possible-values 
-                (evalcs (andor-to-if (apply conjoin 
-                                            (conj model-constraints pred)))
+                (evalcs (andor-to-if pred)
+                                            ; (conj model-constraints pred)))
                         the-global-environment)))]
     (map value-conditions
          (filter #(true? (conditional-value %)) ineqs))))
@@ -173,13 +192,23 @@
   "Split the box into equally sized boxes"
   [box]
   (split box (middle-split (:internals box))))
-
+; (ineq-as-matrix x vars))
+;                                  (concat
+;                                   (value-conditions %)
+;                                   interval-constraints))
 (defn bound-clause
   [clause vars]
   ; (println "clause" clause "vars" vars)
-  (let [box (make-abstraction
-              (partition (count vars)
-                         (bounding-box-lp (map #(ineq-as-matrix % vars) clause) vars))
+  (let [interval-constraints (map #(evalcs % the-global-environment)
+                                   (vec 
+                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))))
+        ; pvar (println "interval constraints" interval-constraints)
+        box (make-abstraction
+              (partition 2
+                         (bounding-box-lp
+                           (map #(ineq-as-matrix % vars)
+                                 (concat clause interval-constraints))
+                            vars))
               (unsymbolise clause))]
     (if (some nil? (flatten (:internals box)))
         'empty-abstraction
@@ -225,17 +254,20 @@
 (defn cover
   "Cover each polytope individually"
   [clauses vars]
-  (println  "CLAUSES" clauses)
-  (let [budget (Math/pow 2 12)
+  ; (println  "CLAUSES" clauses)
+  (let [budget 1600
         large-abstrs (filter has-volume? 
                              (map #(bound-clause % vars) clauses))]
-    (println "ORIGINAL BOX" large-abstrs)
-    (println "ORIGINAL BOX" large-abstrs)
-    (loop [abstrs large-abstrs]
+    ; (println "ORIGINAL BOX" large-abstrs)
+    ; (println "ORIGINAL BOX" large-abstrs)
+    (loop [abstrs large-abstrs n-iters 10]
       (println "NUMBOXES" (count abstrs) (reduce + (map volume abstrs)))
       ; (println "NEWBOX" abstrs)
 
       (cond
+        (zero? n-iters)
+        abstrs
+
         (> (count abstrs) budget) ; Overbudget => Stop
         abstrs
 
@@ -243,16 +275,18 @@
         abstrs
 
         :else
-        (let [f-intersects-b abstrs; (filter #(on-boundary? % vars) abstrs)
+        (let [f-intersects-b (filter #(on-boundary? % vars) abstrs)
               to-split (categorical f-intersects-b (map volume f-intersects-b))
               splitted (split-uniform to-split)
               new-abstrs (vec (concat splitted (remove #(= to-split %)
                                                         abstrs)))]
-          (recur (filter #(non-empty-abstraction? % vars) new-abstrs)))))))
+          (recur (filter #(non-empty-abstraction? % vars) new-abstrs) (dec n-iters)))))))
 
-; (defn dominant-abstraction
-;   [sample ordering]
-;   abstr)
+(defn abstraction-sample
+  [box]
+  (for [interval (:internals box)]
+    (+ (lower-bound interval)
+       (rand (- (upper-bound interval) (lower-bound interval))))))
 
 (defn constrain-uniform-divisive
   "Make a sampler"
@@ -261,13 +295,12 @@
         pvar (println "DNF" (count dnf))
         covers (cover dnf vars)
         volumes (map volume covers)]
-    covers))
-    ; #(loop [n-sampled 0 n-rejected 0]
-    ;   (let [abstr (categorical covers volumes)
-    ;         sample (abstraction-sample abstr)]
-    ;    (if (satisfiable? sample formula vars)
-    ;        {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
-    ;        (recur (inc n-sampled) (inc n-rejected)))))))
+    #(loop [n-sampled 0 n-rejected 0]
+        (let [abstr (categorical covers volumes)
+              sample (abstraction-sample abstr)]
+          (if (satisfiable? sample (:formula abstr) vars)
+              {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
+              (recur (inc n-sampled) (inc n-rejected)))))))
 
 ;; Other
 (defn naive-rejection
@@ -344,45 +377,52 @@
 
 ; (defn -main [])
 
-; (defn -main[]
-;   (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
-;         intervals (zipmap vars (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))
-;         new-model (constrain-uniform intervals pred)
-;         data (repeatedly 10 new-model)
-;         samples (extract data :sample)
-;         n-sampled (sum (extract data :n-sampled))
-;         n-rejected (sum (extract data :n-rejected))
-;         ;; Rejection sampling
-;         srs-model (naive-rejection
-;           (zipmap vars (repeat (count vars) (vector 0 10))) pred)
-;         srs-data (repeatedly 10 srs-model)
-;         srs-samples (extract srs-data :sample)
-;         srs-n-sampled (sum (extract srs-data :n-sampled))
-;         srs-n-rejected (sum (extract srs-data :n-rejected))
-;         pvar (println "SRS SAMPLES ARE" srs-samples)
-;         pvar (println "SRS SAMPLES ARE" srs-samples)]
-;     (samples-to-file "op" srs-samples)
-;     (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
-;     (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
-;     samples))
+(defn -main[]
+  (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
+        intervals (zipmap vars (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))
+        new-model (constrain-uniform intervals pred)
+        data (repeatedly 10 new-model)
+        samples (extract data :sample)
+        n-sampled (sum (extract data :n-sampled))
+        n-rejected (sum (extract data :n-rejected))
+        ;; Rejection sampling
+        srs-model (naive-rejection
+          (zipmap vars (repeat (count vars) (vector 0 10))) pred)
+        srs-data (repeatedly 10 srs-model)
+        srs-samples (extract srs-data :sample)
+        srs-n-sampled (sum (extract srs-data :n-sampled))
+        srs-n-rejected (sum (extract srs-data :n-rejected))
+        pvar (println "SRS SAMPLES ARE" srs-samples)
+        pvar (println "SRS SAMPLES ARE" srs-samples)]
+    (samples-to-file "op" srs-samples)
+    (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
+    (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
+    samples))
 
 ; (defn -main[]
 ;   (let [new-model (constrain-uniform-divisive
 ;                     '[x1 x2]
 ;                     '[(> x1 0) (< x1 10) (> x2 0) (< x2 10)]
-;                     exp-linear)]
-;    new-model))
+;                     exp-line)
+;         data (repeatedly 1000 new-model)
+;         samples (extract data :sample)
+;         n-sampled (sum (extract data :n-sampled))
+;         n-rejected (sum (extract data :n-rejected))]
+;         (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
+;         (samples-to-file "opx" samples)
+;         samples))
 
-(defn -main[]
-  (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
-        intervals (vec (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)))
-        new-model (constrain-uniform-divisive
-                    vars
-                    intervals
-                    pred)]
-   new-model))
-
-  ;
-  ;       samples (repeatedly 10 new-model)]
-  ;   (samples-to-file "op" samples)
-  ;   samples))
+; (defn -main[]
+;   (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
+;         intervals (vec (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)))
+;         new-model (constrain-uniform-divisive
+;                     vars
+;                     intervals
+;                     pred)
+;         data (repeatedly 10 new-model)
+;         samples (extract data :sample)
+;         n-sampled (sum (extract data :n-sampled))
+;         n-rejected (sum (extract data :n-rejected))]
+;   (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
+;   (samples-to-file "opx" samples)
+;   samples))

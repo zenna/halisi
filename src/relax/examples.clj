@@ -250,7 +250,9 @@
        (< x1 1)))
 
 (def exp-line
-  '(>= (+ x2 (* -1 x1)) 0))
+  '(if (>= (+ x2 (* -1 x1)) 0)
+        true
+        false))
 
 (def exp-linear
   '(or

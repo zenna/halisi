@@ -44,8 +44,7 @@
                   n-vars
                   (double-array (assoc (vec (repeat n-vars 0.0)) i 1.0))
                   (int-array (range 1 (inc n-vars))))
-                (let [ret (.solve lp)
-                      pvar (println "SOLVE VAL IS" ret)]
+                (let [ret (.solve lp)]
                       (if (zero? ret)
                           (do
                             (.getVariables lp results)

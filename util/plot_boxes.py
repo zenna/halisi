@@ -25,7 +25,7 @@ codes = [Path.MOVETO,
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
 
-for i in range(62,63):
+for i in range(6,7):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for sqr in chunks(X[i,:],3):
@@ -40,7 +40,7 @@ for i in range(62,63):
             (x-r, y-r), # ignored
             ]
         path = Path(verts, codes)
-        patch = patches.PathPatch(path, facecolor='orange', lw=2)
+        patch = patches.PathPatch(path, facecolor='none', lw=2)
         ax.add_patch(patch)
 
 ax.set_xlim(-10,20)
