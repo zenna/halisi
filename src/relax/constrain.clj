@@ -68,26 +68,6 @@
   [box]
   (apply * (map #(- (second %) (first %)) box)))
 
-; (symbolic (< (symbolic (+ (symbolic x1) (symbolic r1) (symbolic (* -1 (symbolic x2))) (symbolic r2))) 0)
-;   (symbolic (> (symbolic x0) 0))
-;   (symbolic (< (symbolic x0) 10))
-;   (symbolic (> (symbolic y0) 0))
-;   (symbolic (< (symbolic y0) 10))
-;   (symbolic (> (symbolic r0) 0))
-;   (symbolic (< (symbolic r0) 10))
-;   (symbolic (> (symbolic x1) 0))
-;   (symbolic (< (symbolic x1) 10))
-;   (symbolic (> (symbolic y1) 0))
-;   (symbolic (< (symbolic y1) 10))
-;   (symbolic (> (symbolic r1) 0))
-;   (symbolic (< (symbolic r1) 10))
-;   (symbolic (> (symbolic x2) 0))
-;   (symbolic (< (symbolic x2) 10))
-;   (symbolic (> (symbolic y2) 0))
-;   (symbolic (< (symbolic y2) 10))
-;   (symbolic (> (symbolic r2) 0))
-;   (symbolic (< (symbolic r2) 10)))
-
 (defn ineq-as-matrix
   "Takes an inequality expression, e.g. (> x 2) and converts it
    into a matrix for use with the linear programming solver"
@@ -156,6 +136,7 @@
       (define-symbolic! variable the-global-environment)))
 
   (println "the the-global-environment is" the-global-environment "\n")
+  (println "Original Predicate Is" pred  "\n")  
   (println "the expanded predicate is"(andor-to-if pred)  "\n")
 
   (let [ineqs (multivalues
@@ -201,7 +182,7 @@
   ; (println "clause" clause "vars" vars)
   (let [interval-constraints (map #(evalcs % the-global-environment)
                                    (vec 
-                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))))
+                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 1)) vars))))
         ; pvar (println "interval constraints" interval-constraints)
         box (make-abstraction
               (partition 2
@@ -255,12 +236,12 @@
   "Cover each polytope individually"
   [clauses vars]
   ; (println  "CLAUSES" clauses)
-  (let [budget 1600
+  (let [budget 100000
         large-abstrs (filter has-volume? 
                              (map #(bound-clause % vars) clauses))]
-    ; (println "ORIGINAL BOX" large-abstrs)
-    ; (println "ORIGINAL BOX" large-abstrs)
-    (loop [abstrs large-abstrs n-iters 10]
+    (println "ORIGINAL BOX" large-abstrs)
+    (println "ORIGINAL BOX" large-abstrs)
+    (loop [abstrs large-abstrs n-iters 100]
       (println "NUMBOXES" (count abstrs) (reduce + (map volume abstrs)))
       ; (println "NEWBOX" abstrs)
 
@@ -291,14 +272,15 @@
 (defn constrain-uniform-divisive
   "Make a sampler"
   [vars model-constraints pred]
-  (let [dnf (to-dnf vars model-constraints pred)
+  (let [pred-fn (make-lambda-args pred vars)
+        dnf (to-dnf vars model-constraints pred)
         pvar (println "DNF" (count dnf))
         covers (cover dnf vars)
         volumes (map volume covers)]
     #(loop [n-sampled 0 n-rejected 0]
         (let [abstr (categorical covers volumes)
               sample (abstraction-sample abstr)]
-          (if (satisfiable? sample (:formula abstr) vars)
+          (if (apply pred-fn sample)
               {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
               (recur (inc n-sampled) (inc n-rejected)))))))
 
@@ -375,51 +357,42 @@
                       "Number of them is" (count feasible-boxes))]
     (disjoint-poly-box-sampling feasible-boxes vars)))
 
-; (defn -main [])
-
 (defn -main[]
   (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
-        intervals (zipmap vars (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))
-        new-model (constrain-uniform intervals pred)
-        data (repeatedly 10 new-model)
+        vars (vec vars)
+        ; pred exp-rand-and-3d
+        n-samples 20
+        ; vars '[x1 x2 x3 x4]
+        intervals (mapv #(vector `(~'> ~% 0) `(~'< ~% 1)) vars)
+        new-model (constrain-uniform-divisive
+                    vars
+                    (reduce concat intervals)
+                    pred)
+        data (repeatedly n-samples new-model)
         samples (extract data :sample)
         n-sampled (sum (extract data :n-sampled))
         n-rejected (sum (extract data :n-rejected))
-        ;; Rejection sampling
+
         srs-model (naive-rejection
-          (zipmap vars (repeat (count vars) (vector 0 10))) pred)
-        srs-data (repeatedly 10 srs-model)
+          (zipmap vars (repeat (count vars) (vector 0 1))) pred)
+        srs-data (repeatedly n-samples srs-model)
         srs-samples (extract srs-data :sample)
         srs-n-sampled (sum (extract srs-data :n-sampled))
-        srs-n-rejected (sum (extract srs-data :n-rejected))
-        pvar (println "SRS SAMPLES ARE" srs-samples)
-        pvar (println "SRS SAMPLES ARE" srs-samples)]
-    (samples-to-file "op" srs-samples)
-    (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
-    (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
-    samples))
-
-; (defn -main[]
-;   (let [new-model (constrain-uniform-divisive
-;                     '[x1 x2]
-;                     '[(> x1 0) (< x1 10) (> x2 0) (< x2 10)]
-;                     exp-line)
-;         data (repeatedly 1000 new-model)
-;         samples (extract data :sample)
-;         n-sampled (sum (extract data :n-sampled))
-;         n-rejected (sum (extract data :n-rejected))]
-;         (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
-;         (samples-to-file "opx" samples)
-;         samples))
+        srs-n-rejected (sum (extract srs-data :n-rejected))]
+        (samples-to-file "op" samples)
+        (samples-to-file "srsop" srs-samples)
+        (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
+        (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
+        samples))
 
 ; (defn -main[]
 ;   (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
-;         intervals (vec (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)))
+;         intervals (vec (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 1)) vars)))
 ;         new-model (constrain-uniform-divisive
-;                     vars
+;                     (vec vars)
 ;                     intervals
 ;                     pred)
-;         data (repeatedly 10 new-model)
+;         data (repeatedly 1 new-model)
 ;         samples (extract data :sample)
 ;         n-sampled (sum (extract data :n-sampled))
 ;         n-rejected (sum (extract data :n-rejected))]

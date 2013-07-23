@@ -326,8 +326,110 @@
     ; (or (< (+ x2 (* -1 x1)) 0) (< (+ x2 x1) 10))))
     ; (or (< (+ x2 (* -1 x1)) 10) (< (+ x2 (* -1 x1)) 0))))
 
+(def exp-testy-3d
+  '(and
+     (or
+       (> (+ x2 (* -1 x1)) 4)
+       (> (+ x2 (* 3 x1)) 23)
+       (> (+ x1 (* -1 x3)) 0)
+       (> (+ x3 (* 1 x2)) 23))
+     (or
+       (> (+ x1 (* 1 x2) (* 1 x3)) 5)
+       (> (+ x2 (* 0.5 x3)) 6)
+       (> (+ x1 (* -1 x2) (* -1 x3)) 5)
+       (> (+ x3 (* 1 x2)) 0))))
 
-; The problem with this is that we'll end up with a ccombinatorial explosion.
+(def exp-rand-3d
+  `(~'and
+     (~'or
+       (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+             (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+       (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+             (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2))))
+     (~'or
+       (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+             (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+       (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+             (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2))))))
+
+(def exp-rand-and-3d
+  `(~'and
+     (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+           (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+     (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+           (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+     (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+           (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+     (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+           (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+     (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+           (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))))
+
+(def exp-rand-and-3d
+  `(~'or
+      (~'and
+         (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+               (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+         (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+               (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+         (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+               (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+         (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+               (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+         (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+               (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2))))
+
+        (~'and
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2))))
+
+        (~'and
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2))))
+
+        (~'and
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+           (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                 (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2))))
+
+            (~'and
+               (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                     (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+               (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                     (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+               (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                     (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+               (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                     (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
+               (~'> (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
+                     (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2))))
+
+
+        ))
+    ; The problem with this is that we'll end up with a ccombinatorial explosion.
 
 ; (if (if (> x1 1)
 ;         true

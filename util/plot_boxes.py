@@ -25,13 +25,13 @@ codes = [Path.MOVETO,
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
 
-for i in range(6,7):
+for i in range(0,1):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     for sqr in chunks(X[i,:],3):
-        x = sqr[2]
+        x = sqr[0]
         y = sqr[1]
-        r = sqr[0]
+        r = sqr[2]
         verts = [
             (x-r, y-r), # left, bottom
             (x-r, y+r), # left, top
