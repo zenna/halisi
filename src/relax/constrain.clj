@@ -42,32 +42,6 @@
     (+ (lower-bound interval)
        (rand (- (upper-bound interval) (lower-bound interval))))))
 
-(defn bounding-box
-  "Expects data in poly-form form 
-   [[x1 y1 z1][x2 y2 z2]]"
-  [points]
-  (pass
-    (fn [point box]
-      ; {:pre [(count= point box])}
-      (println point "point-" "box" box)
-      (for [[[lowerb upperb]  x] (map vector box point)]
-        (cond
-          (> x upperb)
-          [lowerb x]
-
-          (< x lowerb)
-          [x upperb]
-
-          :else
-          [lowerb upperb])))
-    (mapv #(vector % %) (first points)) ;bounding box
-    points))
-
-(defn box-volume
-  "get the box volume"
-  [box]
-  (apply * (map #(- (second %) (first %)) box)))
-
 (defn ineq-as-matrix
   "Takes an inequality expression, e.g. (> x 2) and converts it
    into a matrix for use with the linear programming solver"
@@ -173,10 +147,7 @@
   "Split the box into equally sized boxes"
   [box]
   (split box (middle-split (:internals box))))
-; (ineq-as-matrix x vars))
-;                                  (concat
-;                                   (value-conditions %)
-;                                   interval-constraints))
+
 (defn bound-clause
   [clause vars]
   ; (println "clause" clause "vars" vars)
@@ -294,68 +265,6 @@
      (if (apply pred-fn sample)
          {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
          (recur (inc n-sampled) (inc n-rejected)))))))
-
-
-;; Legacy
-(defn disjoint-poly-box-sampling
-  "Returns new generative model given feasible regions"
-  [feasible-boxes vars]
-  (let [volumes (map first feasible-boxes)]
-    #(loop [n-sampled 0 n-rejected 0]
-      (let [[vol box formula] (categorical feasible-boxes volumes)
-           sample (interval-sample box)]
-       (if (satisfiable? sample formula vars)
-           {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
-           (recur (inc n-sampled) (inc n-rejected)))))))
-
-(defn constrain-uniform
-  "Takes a model represented as map of variables to intervals on uniform distribution"
-  [variable-intervals pred]
-  
-  ; Add variables to environment
-  (doall
-    (for [variable (keys variable-intervals)]
-      (define-symbolic! variable the-global-environment)))
-
-  (println "the the-global-environment is" the-global-environment "\n")
-  (println "the predicate is" pred  "\n")
-  (println "the expanded predicate is" (andor-to-if pred)  "\n")
-
-  (let [ineqs   (multivalues (all-possible-values 
-                  (evalcs (andor-to-if pred) the-global-environment)))
-        ineqs (filter #(true? (conditional-value %)) ineqs)
-
-        ; TODO the correct way to do this is to add the constraints to the symoblic value
-        ; THis will be beneficial in local consistency
-        interval-constraints (map #(evalcs % the-global-environment)
-                                   (vec 
-                                    (reduce concat (vals variable-intervals))))
-        ; pvar (println "INEQS" (map value-conditions ineqs) "\n" "constrs" interval-constraints)
-        vars (keys variable-intervals)
-        pvar (println "vars are " vars)
-        matrix-form (map #(map (fn [x] (ineq-as-matrix x vars))
-                                 (concat
-                                  (value-conditions %)
-                                  interval-constraints))
-                          ineqs)
-        ; pvar (println "The matrix form is" matrix-form "\n")
-        ; pvar (println "The matrix form is" matrix-form "\n")
-        ; Then for each disjuctive clause we need to compute an abstraction
-        pvar (println "number of possible regions is" (count ineqs))
-        boxes (map #(bounding-box-lp % vars) matrix-form)
-        feasible-boxes (filter #(not-any? nil? (first %))
-                                (map vector boxes ineqs))
-        feasible-boxes (map #(vector 
-                              (box-volume (partition 2 (first %)))
-                              (partition 2 (first %))
-                              (map (fn [t] (unsymbolise (symbolic-value t)))
-                                (value-conditions (second %))))
-                            feasible-boxes)
-        ; pvar (println "The feasible boxes are" feasible-boxes)
-        ; pvar (println "The feasible boxes are" feasible-boxes)
-        pvar (println "Volumes are" (map first feasible-boxes)
-                      "Number of them is" (count feasible-boxes))]
-    (disjoint-poly-box-sampling feasible-boxes vars)))
 
 (defn -main[]
   (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)

@@ -125,6 +125,37 @@
 ;             k (+ (* e_x ob-y0) (* e_y ob-x0))]
 ;         `(~'> (~'+ (~'* (~'- ~e_y) ~path-x1) (~'* (~'- ~e_x) ~path-y1)) ~k))))))
 
+(defn avoid-orthorope-obs
+  "Creates a program which when evaluated on a path will return true
+   only if that path passes through no obstacles
+   obstacles is a vector of points = [[x1-min x1-max][x2-min x2-max]]"
+  [n-points obstacles [sx sy :as start] [ex ey :as end]]
+  (let [pos-delta 0.1
+        max-step 2
+        vars
+        (for [i (range n-points)]
+          [(symbol (str "x" i)) (symbol (str "y" i))])
+        [svx svy] (first vars)
+        [evx evy] (last vars)]
+  `(~'and
+
+    ; First point must be in start box
+    (~'>= ~svx ~(- sx pos-delta))
+    (~'<= ~svx ~(+ sx pos-delta))
+    (~'>= ~svy ~(- sy pos-delta))
+    (~'<= ~svy ~(- sy pos-delta))
+
+    ; Last point must be in target box
+    (~'>= ~evx ~(- ex pos-delta))
+    (~'<= ~evx ~(+ ex pos-delta))
+    (~'>= ~evy ~(- ey pos-delta))
+    (~'<= ~evy ~(- ey pos-delta))
+
+    ~@(reduce concat
+        (for [[[path-x0 path-y0] [path-x1 path-y1]] (partition 2 vars)]
+          [('> ('~+ path-x1 (~'* -1 path-x0)) 0)
+          ('< ('~+ path-x1 (~'* -1 path-x0)) ~max-step)])))))
+
 ;; Inverse Graphics
 ; (defn gen-poly [])
 
