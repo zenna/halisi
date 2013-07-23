@@ -37,7 +37,7 @@
           bounds
           (doall
             (for [i (range n-vars)
-                  max-mim [#(.setMaxim lp) #(.setMinim lp)]]
+                  max-mim [#(.setMinim lp) #(.setMaxim lp)]]
               (do
                 (max-mim) 
                 (.setObjFnex lp
