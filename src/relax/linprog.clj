@@ -17,7 +17,7 @@
   [constraint vars]
   (let [n-vars (count vars)
         lp (LpSolve/makeLp 0 n-vars)]
-    (println "LINPROG: find bounding box, NUM VARS :" n-vars)
+    ; (println "LINPROG: find bounding box, NUM VARS :" n-vars)
     (.setAddRowmode lp true)
     (.setVerbose lp LpSolve/IMPORTANT)
   

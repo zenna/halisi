@@ -105,56 +105,46 @@
   {:pre [(= 2 (count vect))]}
   [(- y) x])
 
-; (def obstacles [[[3 9][7 8]][[5 4][6 2]]])
-
-; (defn create-avoid-obs
-;   "Creates a program which when evaluated on a path will return true
-;    only if that path passes through no obstacles
-   
-;    obstacles is a vector of points = []"
-;   [n-points obstacles]
-;   (let [vars
-;         (reduce concat (for [i (range n-points)]
-;           [(symbol (str "x" i)) (symbol (str "y" i))]))]
-;   `(~'and
-;     ~@(for [[[ob-x0 ob-y0 :as ob0][ob-x1 ob-y1 :as ob1]] obstacles
-;            [path-x0 path-y0 path-x1 path-y1] (partition 4 2 vars)]
-;       (let [n1 (vec-f - (perp-2d (vec-f - ob1 ob0)))
-;             e_x (- ob-y1 ob-y0)
-;             e_y (- ob-y0 ob-y1)
-;             k (+ (* e_x ob-y0) (* e_y ob-x0))]
-;         `(~'> (~'+ (~'* (~'- ~e_y) ~path-x1) (~'* (~'- ~e_x) ~path-y1)) ~k))))))
-
-(defn avoid-orthorope-obs
+(defn avoid-orthotope-obs
   "Creates a program which when evaluated on a path will return true
    only if that path passes through no obstacles
    obstacles is a vector of points = [[x1-min x1-max][x2-min x2-max]]"
-  [n-points obstacles [sx sy :as start] [ex ey :as end]]
+  [n-points [sx sy :as start] [ex ey :as end] obstacles]
   (let [pos-delta 0.1
-        max-step 2
+        max-step 5
         vars
         (for [i (range n-points)]
           [(symbol (str "x" i)) (symbol (str "y" i))])
         [svx svy] (first vars)
         [evx evy] (last vars)]
+    {:vars (vec (reduce concat vars))
+     :pred
   `(~'and
 
     ; First point must be in start box
     (~'>= ~svx ~(- sx pos-delta))
     (~'<= ~svx ~(+ sx pos-delta))
     (~'>= ~svy ~(- sy pos-delta))
-    (~'<= ~svy ~(- sy pos-delta))
+    (~'<= ~svy ~(+ sy pos-delta))
 
     ; Last point must be in target box
     (~'>= ~evx ~(- ex pos-delta))
     (~'<= ~evx ~(+ ex pos-delta))
     (~'>= ~evy ~(- ey pos-delta))
-    (~'<= ~evy ~(- ey pos-delta))
+    (~'<= ~evy ~(+ ey pos-delta))
 
     ~@(reduce concat
-        (for [[[path-x0 path-y0] [path-x1 path-y1]] (partition 2 vars)]
-          [('> ('~+ path-x1 (~'* -1 path-x0)) 0)
-          ('< ('~+ path-x1 (~'* -1 path-x0)) ~max-step)])))))
+        (for [[[path-x0 path-y0] [path-x1 path-y1]] (partition 2 1 vars)]
+          `[(~'>= (~'+ ~path-x1 (~'* -1 ~path-x0)) 0)
+            (~'<= (~'+ ~path-x1 (~'* -1 ~path-x0)) ~max-step)]))
+
+    ~@(for [[x y] vars
+              [[x-min x-max][y-min y-max]] obstacles]
+          `(~'or
+            (~'>= ~x ~x-min)
+            (~'<= ~x ~x-max)
+            (~'>= ~y ~y-min)
+            (~'<= ~y ~y-max))))}))
 
 ;; Inverse Graphics
 ; (defn gen-poly [])
@@ -164,6 +154,9 @@
 ; (defn gen-mesh [])
 
 ; (defn self-intersections? [])
+
+; (defn -main []
+;   (avoid-orthotope-obs 3 [1 1] [9 9] [[[2 5][5 7]][[5 8][4 6]]]))
 
 
 ;; Box packing

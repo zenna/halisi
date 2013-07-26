@@ -34,6 +34,7 @@
 (defn upper-bound [interval]
   (second interval))
 
+
 ;TODO Does this support negative intervals?
 (defn interval-sample
   "Sample within box"
@@ -153,7 +154,7 @@
   ; (println "clause" clause "vars" vars)
   (let [interval-constraints (map #(evalcs % the-global-environment)
                                    (vec 
-                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 1)) vars))))
+                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))))
         ; pvar (println "interval constraints" interval-constraints)
         box (make-abstraction
               (partition 2
@@ -207,12 +208,13 @@
   "Cover each polytope individually"
   [clauses vars]
   ; (println  "CLAUSES" clauses)
-  (let [budget 100000
+  (let [budget 2500
+        ; pvar (println "ORIGINAL BOX" (map #(bound-clause % vars) clauses))
         large-abstrs (filter has-volume? 
                              (map #(bound-clause % vars) clauses))]
     (println "ORIGINAL BOX" large-abstrs)
     (println "ORIGINAL BOX" large-abstrs)
-    (loop [abstrs large-abstrs n-iters 100]
+    (loop [abstrs large-abstrs n-iters 10]
       (println "NUMBOXES" (count abstrs) (reduce + (map volume abstrs)))
       ; (println "NEWBOX" abstrs)
 
@@ -267,12 +269,14 @@
          (recur (inc n-sampled) (inc n-rejected)))))))
 
 (defn -main[]
-  (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
+  (let [;{vars :vars pred :pred} (gen-box-non-overlap-close 3)
+        {vars :vars pred :pred}
+        (avoid-orthotope-obs 4 [1 1][9 9] [[[2 5][5 7]] [[5 8][0 3]]])
         vars (vec vars)
         ; pred exp-rand-and-3d
-        n-samples 20
+        n-samples 100
         ; vars '[x1 x2 x3 x4]
-        intervals (mapv #(vector `(~'> ~% 0) `(~'< ~% 1)) vars)
+        intervals (mapv #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)
         new-model (constrain-uniform-divisive
                     vars
                     (reduce concat intervals)
@@ -282,16 +286,17 @@
         n-sampled (sum (extract data :n-sampled))
         n-rejected (sum (extract data :n-rejected))
 
-        srs-model (naive-rejection
-          (zipmap vars (repeat (count vars) (vector 0 1))) pred)
-        srs-data (repeatedly n-samples srs-model)
-        srs-samples (extract srs-data :sample)
-        srs-n-sampled (sum (extract srs-data :n-sampled))
-        srs-n-rejected (sum (extract srs-data :n-rejected))]
+        ; srs-model (naive-rejection
+        ;   (zipmap vars (repeat (count vars) (vector 0 10))) pred)
+        ; srs-data (repeatedly n-samples srs-model)
+        ; srs-samples (extract srs-data :sample)
+        ; srs-n-sampled (sum (extract srs-data :n-sampled))
+        ; srs-n-rejected (sum (extract srs-data :n-rejected))
+        ]
         (samples-to-file "op" samples)
-        (samples-to-file "srsop" srs-samples)
+        ; (samples-to-file "srsop" srs-samples)
         (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
-        (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
+        ; (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
         samples))
 
 ; (defn -main[]
@@ -308,3 +313,91 @@
 ;   (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
 ;   (samples-to-file "opx" samples)
 ;   samples))
+
+;TODO
+(defn overlap
+  "Compute overlapping hyperrectangle from two overlappign ones"
+  [box1 box2]
+  ; (println "Boxes" box1 box2)
+  {:formula #(and (apply (:formula box1) %) (apply (:formula box2) %))
+   :internals
+    (vec
+      (for [[[low1 high1][low2 high2]]
+            (partition 2 (interleave (:internals box1) (:internals box2)))]
+        [(max low1 low2)(min high1 high2)]))})
+
+(defn max-pred-index
+  [pred coll]
+  (loop [i 0 max-i nil coll coll]
+    (cond
+      (empty? coll)
+      max-i
+
+      (pred (first coll))
+      (recur (inc i) i (rest coll))
+
+      :else
+      (recur (inc i) max-i (rest coll)))))
+
+(defn overlapping-sampler [n-samples]
+  (let [box1 {:name 'box1 :internals [[0 5][0 6]]}
+        box2 {:name 'box2 :internals [[3 7][3 8]]}
+        box3 {:name 'box3 :internals [[5 10][6 12]]}
+        vars '[x0 x1]
+        boxes [box3 box2 box1]
+        formula-maker
+        (fn [box]
+          `(~'and
+            ~@(reduce concat
+                (for [[low upp i] (map #(conj %1 %2) box (range (count box)))]
+              `((~'> ~(symbol (str "x" i)) ~low)
+                (~'< ~(symbol (str "x" i)) ~upp))))))
+        boxes (map #(assoc % :formula
+                              (make-lambda-args (formula-maker (:internals %)) vars))
+                    boxes)
+        volumes (map volume boxes)]
+    (loop [samples [] cache (zipmap boxes []) n-samples n-samples]
+      (cond
+        (zero? n-samples)
+        samples
+
+        :else
+        (let [box (categorical boxes volumes)
+              cache-item (peek (cache box))]
+          ; Do I have a cache?
+          (if (nil? cache-item)
+              ; If not proceed normally
+              (let [sample (interval-sample (:internals box))
+                    all-boxes (map #(apply (:formula %) sample) boxes)
+                    pos-dominant (max-pred-index true? all-boxes)
+                    pos-box (max-pred-index #(= box %) boxes)]
+                    (if (= pos-dominant pos-box)
+                        (recur (conj samples sample) cache (dec n-samples))
+                        (recur samples
+                               (update-in cache [(nth boxes pos-dominant)]
+                                          #(conj % {:from box :sample sample}))
+                               n-samples)))
+
+              ; Otherwise with prob p=ratio of overlapping region/box, take sample
+              (if (flip (/ (volume (overlap box (:from cache-item))) (volume box)))
+                  (recur (conj samples (:sample cache-item)) ; I should take the sample
+                         (update-in cache [box]
+                                    #(pop %))
+                         (dec n-samples))
+                  ; and 1-p generate sample in non-overlapping region
+                  ; Treat as normal sample
+                  (let [sample (gen-until #(interval-sample (:internals box))
+                                    #(and (apply (:formula box) %)
+                                          (not (apply (:formula (:from cache-item)) %))))
+                        all-boxes (map #(apply (:formula %) sample) boxes)
+                        pos-dominant (max-pred-index true? all-boxes)
+                        pos-box (max-pred-index #(= box %) boxes)]
+                        (if (= pos-dominant pos-box)
+                            (recur (conj samples sample) cache (dec n-samples))
+                            (recur samples
+                                   (update-in cache [(nth boxes pos-dominant)]
+                                              #(conj % {:from box :sample sample}))
+                                   n-samples))))))))))
+
+(defn -main []
+  (samples-to-file "kidding" (overlapping-sampler 2000)))
