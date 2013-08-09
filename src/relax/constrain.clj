@@ -7,6 +7,7 @@
   (:use relax.examples)
   (:use relax.env)
   (:use relax.linprog)
+  (:use relax.box)
   (:use clozen.helpers)
   (:require [clojure.math.combinatorics :as combo]))
 
@@ -128,63 +129,6 @@
   [internals formula]
   {:internals internals :formula formula})
 
-;; Box (Orthotope) abstractions
-(defn middle-split
-  [box]
-  (map #(double (+ (lower-bound %) (/ (- (upper-bound %) (lower-bound %)) 2))) box))
-
-(defn split
-  "Split a box into 2^D other boxes"
-  [box split-points]
-  (map
-    #(make-abstraction % (:formula box)) ; All subboxes have same formula as parent
-    (for [dim-to-change (apply combo/cartesian-product (:internals box))]
-      (mapv
-        (fn [dim-to-replace min-max split-point]
-          (vec (sort [(first (filter #(not= dim-to-replace %) min-max)) split-point])))
-        dim-to-change (:internals box) split-points))))
-
-(defn split-uniform
-  "Split the box into equally sized boxes"
-  [box]
-  (split box (middle-split (:internals box))))
-
-(defn bound-clause
-  [clause vars]
-  ; (println "clause" clause "vars" vars)
-  (let [interval-constraints (map #(evalcs % the-global-environment)
-                                   (vec 
-                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))))
-        ; pvar (println "interval constraints" interval-constraints)
-        box (make-abstraction
-              (partition 2
-                         (bounding-box-lp
-                           (map #(ineq-as-matrix % vars)
-                                 (concat clause interval-constraints))
-                            vars))
-              (unsymbolise clause))]
-    (if (some nil? (flatten (:internals box)))
-        'empty-abstraction
-        box)))
-
-(defn abstraction-vertices
-  "Get the vertices of an abstraction"
-  [box]
-  (apply combo/cartesian-product (:internals box)))
-
-(defn completely-within?
-  [box vars]
-  (every? #(satisfiable? % (:formula box) vars) (abstraction-vertices box)))
-
-(defn on-boundary?
-  [box vars]
-  (not (completely-within? box vars)))
-
-(defn volume
-  "get the box volume"
-  [box]
-  (apply * (map #(- (upper-bound %) (lower-bound %)) (:internals box))))
-
 (defn formula
   "Get formula of abstraction"
   [abstraction]
@@ -203,6 +147,14 @@
   [abstraction]
   "Does the box have volume? Box may not have volume infeasible"
   (not= abstraction 'empty-abstraction))
+
+(defn cover-no-overlap
+  [clauses vars]
+  ;1 Bound all the clauses
+  ; Find overlap
+  ; Split
+  ; Merge
+  )
 
 (defn cover
   "Cover each polytope individually"
@@ -235,12 +187,6 @@
               new-abstrs (vec (concat splitted (remove #(= to-split %)
                                                         abstrs)))]
           (recur (filter #(non-empty-abstraction? % vars) new-abstrs) (dec n-iters)))))))
-
-(defn abstraction-sample
-  [box]
-  (for [interval (:internals box)]
-    (+ (lower-bound interval)
-       (rand (- (upper-bound interval) (lower-bound interval))))))
 
 (defn constrain-uniform-divisive
   "Make a sampler"
@@ -314,37 +260,12 @@
 ;   (samples-to-file "opx" samples)
 ;   samples))
 
-;TODO
-(defn overlap
-  "Compute overlapping hyperrectangle from two overlappign ones"
-  [box1 box2]
-  ; (println "Boxes" box1 box2)
-  {:formula #(and (apply (:formula box1) %) (apply (:formula box2) %))
-   :internals
-    (vec
-      (for [[[low1 high1][low2 high2]]
-            (partition 2 (interleave (:internals box1) (:internals box2)))]
-        [(max low1 low2)(min high1 high2)]))})
-
-(defn max-pred-index
-  [pred coll]
-  (loop [i 0 max-i nil coll coll]
-    (cond
-      (empty? coll)
-      max-i
-
-      (pred (first coll))
-      (recur (inc i) i (rest coll))
-
-      :else
-      (recur (inc i) max-i (rest coll)))))
-
 (defn overlapping-sampler [n-samples]
-  (let [box1 {:name 'box1 :internals [[0 5][0 6]]}
-        box2 {:name 'box2 :internals [[3 7][3 8]]}
-        box3 {:name 'box3 :internals [[5 10][6 12]]}
+  (let [box1 {:name 'box1 :internals [[0 20][0 20]]}
+        box2 {:name 'box2 :internals [[18 22][18 22]]}
+        ; box3 {:name 'box3 :internals [[0 10][0 12]]}
         vars '[x0 x1]
-        boxes [box3 box2 box1]
+        boxes [box2 box1]
         formula-maker
         (fn [box]
           `(~'and
@@ -357,6 +278,7 @@
                     boxes)
         volumes (map volume boxes)]
     (loop [samples [] cache (zipmap boxes []) n-samples n-samples]
+      (println cache "\n")
       (cond
         (zero? n-samples)
         samples
@@ -373,10 +295,11 @@
                     pos-box (max-pred-index #(= box %) boxes)]
                     (if (= pos-dominant pos-box)
                         (recur (conj samples sample) cache (dec n-samples))
-                        (recur samples
-                               (update-in cache [(nth boxes pos-dominant)]
-                                          #(conj % {:from box :sample sample}))
-                               n-samples)))
+                        (recur samples cache n-samples)))
+                        ; (recur samples
+                        ;        (update-in cache [(nth boxes pos-dominant)]
+                        ;                   #(conj % {:from box :sample sample}))
+                        ;        n-samples)))
 
               ; Otherwise with prob p=ratio of overlapping region/box, take sample
               (if (flip (/ (volume (overlap box (:from cache-item))) (volume box)))
@@ -388,16 +311,16 @@
                   ; Treat as normal sample
                   (let [sample (gen-until #(interval-sample (:internals box))
                                     #(and (apply (:formula box) %)
-                                          (not (apply (:formula (:from cache-item)) %))))
-                        all-boxes (map #(apply (:formula %) sample) boxes)
-                        pos-dominant (max-pred-index true? all-boxes)
-                        pos-box (max-pred-index #(= box %) boxes)]
-                        (if (= pos-dominant pos-box)
-                            (recur (conj samples sample) cache (dec n-samples))
-                            (recur samples
-                                   (update-in cache [(nth boxes pos-dominant)]
-                                              #(conj % {:from box :sample sample}))
-                                   n-samples))))))))))
+                                          (not (apply (:formula (:from cache-item)) %))))]
+                        ; all-boxes (map #(apply (:formula %) sample) boxes)
+                        ; pos-dominant (max-pred-index true? all-boxes)
+                        ; pos-box (max-pred-index #(= box %) boxes)]
+                        ; (if (= pos-dominant pos-box)
+                            (recur (conj samples sample) cache (dec n-samples))))))))))
+                            ; (recur samples
+                            ;        (update-in cache [(nth boxes pos-dominant)]
+                            ;                   #(conj % {:from box :sample sample}))
+                            ;        n-samples))))))))))
 
 (defn -main []
-  (samples-to-file "kidding" (overlapping-sampler 2000)))
+  (samples-to-file "kidding2" (overlapping-sampler 20000)))
