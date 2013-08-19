@@ -29,21 +29,6 @@
     :else
     (error "one of the values in inequality must be symbolic")))
 
-(defn lower-bound [interval]
-  (first interval))
-
-(defn upper-bound [interval]
-  (second interval))
-
-
-;TODO Does this support negative intervals?
-(defn interval-sample
-  "Sample within box"
-  [intervals]
-  (for [interval intervals]
-    (+ (lower-bound interval)
-       (rand (- (upper-bound interval) (lower-bound interval))))))
-
 (defn ineq-as-matrix
   "Takes an inequality expression, e.g. (> x 2) and converts it
    into a matrix for use with the linear programming solver"
@@ -123,30 +108,23 @@
     (map value-conditions
          (filter #(true? (conditional-value %)) ineqs))))
 
-(defn make-abstraction
-  "An abstraction has a formula, which is purely conjunctive, and can be evaluated
-   using satisfiable?.  It also has some internal structure which depends on its type"
-  [internals formula]
-  {:internals internals :formula formula})
-
-(defn formula
-  "Get formula of abstraction"
-  [abstraction]
-  {:post [(not (nil? %))]}
-  (:formula abstraction))
-
-(defn non-empty-abstraction?
-  [abstraction vars]
-  "Is the box not empty? Box can be empty because we find it infeasible
-   Or due to subdivison process"
-  (and
-    (not= abstraction 'empty-abstraction)
-    (some #(satisfiable? % (formula abstraction) vars) (abstraction-vertices abstraction))))
-
-(defn has-volume?
-  [abstraction]
-  "Does the box have volume? Box may not have volume infeasible"
-  (not= abstraction 'empty-abstraction))
+(defn bound-clause
+  [clause vars]
+  ; (println "clause" clause "vars" vars)
+  (let [interval-constraints (map #(evalcs % the-global-environment)
+                                   (vec 
+                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))))
+        ; pvar (println "interval constraints" interval-constraints)
+        box (make-abstraction
+              (partition 2
+                         (bounding-box-lp
+                           (map #(ineq-as-matrix % vars)
+                                 (concat clause interval-constraints))
+                            vars))
+              (unsymbolise clause))]
+    (if (some nil? (flatten (:internals box)))
+        'empty-abstraction
+        box)))
 
 (defn cover-no-overlap
   [clauses vars]
