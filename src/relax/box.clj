@@ -3,7 +3,8 @@
   relax.box
   (:use relax.abstraction)
   (:use clozen.helpers)
-  (:require [clojure.math.combinatorics :as combo]))
+  (:require [clojure.math.combinatorics :as combo])
+  (:require [taoensso.timbre.profiling :as profiling :refer (p profile)]))
 
 (defn lower-bound [interval]
   (first interval))
@@ -207,7 +208,7 @@
       
       :else
       (let [dim (first sides)
-            pvar (println "dim"  dim)
+            ; pvar (println "dim"  dim)
             interval (nth-dim-interval box dim)
             ; We only care about extending to places which intersect.
             good-boxes (filter #(intersect? (remove-dim exp-box dim)
@@ -259,9 +260,15 @@
 ;TODO
 (defn intersecting-components
   "Partition set of possibly overlapping boxes into subsets of connected
-  components"
+  components:  Naive n^2 algorithm"
   [boxes]
-  [boxes])
+  (loop [ccs [] boxes boxes]
+    (if
+      (empty? boxes) ccs
+      (if-let [comp-i (first-index-pred #(collides? (first boxes) %) ccs)]
+        (recur (update-in ccs [comp-i] #(conj % (first boxes)))
+               (rest boxes))
+        (recur (conj ccs [(first boxes)]) (rest boxes))))))
 
 (defn side-extensions
   "Returns a mapping from sides of a box to possible extensions"
@@ -313,17 +320,17 @@
                              (range n-dims))
         exts (box-extensions init-box boxes)]
   (loop [exts exts cover [init-box]]
-    (println "  **ATTEMPTING EXTENSION")
+    (println "  **ATTEMPTING EXTENSION, NUM IN COVER" (count cover))
     (if (empty? exts)
         cover
         (let [;pvar (println "EXTENSIONS" (map #(get-in % [1 0]) exts))
               [[side components :as ext] popd-exts] (rand-vec-remove exts)
-              pvar (println "side" components)
+              ; pvar (println "comp counts" (count components))
               [component popd-components] (rand-vec-remove components)
               order (concat [(side-dim side)] 
                            (shuffle (remove #(= (side-dim side) %)
                                             (range n-dims))))
-              box (expand-box (rand-nth component) boxes cover order)
+              box (p :expand (expand-box (rand-nth component) boxes cover order))
               exts (if (empty? popd-components)
                         popd-exts
                         (conj popd-exts [side popd-components]))
@@ -345,9 +352,8 @@
   (reduce concat (mapv cover-connected-abstr
                        (intersecting-components boxes))))
 
-; (def b1 {:internals [[0 5][0 5]]})
-; (def b2 {:internals [[3 6][2 10]]})
-; (def b3 {:internals [[0 10][0 10]]})
+; (def b1 {:internals [[0 5][0 5]]}) def b2 {:internals [[3 6][2 10]]}) def b3
+; ({:internals [[0 10][0 10]]})q
 
 (def b1 {:internals (vec (repeat 6 [0 5]))})
 (def b2 {:internals (vec (repeat 6 [3 10]))})
@@ -359,12 +365,18 @@
 
 (defn gen-random-boxes
   [n-dims n-boxes]
-  (repeat n-boxes
-    (make-abstraction
-      (vec (for [dim (range n-dims)]
-           [[(rand) (rand)][(rand) (rand)]]))))
-      'no-formula)
+  (repeatedly n-boxes
+    #(make-abstraction
+      (vec (for [dim (range n-dims)
+                :let [mid (rand)]]
+           [(- mid (rand)) (+ mid (rand))]))
+      'no-formula)))
+
+; (defn -main []
+;   ; (union-volume b1 b2 b3))
+;   (count (cover-abstr [b1 b2 b3 b4 b5 b6])))
 
 (defn -main []
   ; (union-volume b1 b2 b3))
-  (count (cover-abstr [b1 b2 b3 b4 b5 b6])))
+  (profile :info :Arithmetic
+  (count (cover-abstr (gen-random-boxes 5 5)))))

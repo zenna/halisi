@@ -23,7 +23,7 @@
                  [lpsolve "5.5.2.0"]
                  [incanter "1.4.1"]
                  [criterium "0.4.1"]
-                 [com.taoensso/timbre "1.6.0"]
+                 [com.taoensso/timbre "2.6.1"]
                  [org.lwjgl.lwjgl/lwjgl "2.8.5"]
                  [org.lwjgl.lwjgl/lwjgl_util "2.8.5"]
                  [org.clojure/math.combinatorics "0.0.4"]
