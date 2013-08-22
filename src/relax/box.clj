@@ -61,9 +61,9 @@
   ; (println box1 "!!!" box2)
   (let [x
         (for [dim (range (num-dims box1))]
-              (or (< (upper-bound (nth-dim-interval box1 dim))
+              (or (<= (upper-bound (nth-dim-interval box1 dim))
                      (lower-bound (nth-dim-interval box2 dim)))
-                  (> (lower-bound (nth-dim-interval box1 dim))
+                  (>= (lower-bound (nth-dim-interval box1 dim))
                      (upper-bound (nth-dim-interval box2 dim)))))]
         (some true? x)))
 
@@ -175,10 +175,10 @@
 (defn valid-ext
   "LOLZ!"
   [box exp-box boxes]
-  (println "ext" exp-box)
+  ; (println "ext" exp-box)
   (let [n-samples 100]
     (loop [n-samples n-samples]
-      (println n-samples)
+      ; (println n-samples)
       (cond
         (zero? n-samples)
         true
@@ -189,106 +189,182 @@
               (recur (dec n-samples))
               false))))))
 
-(defn expand-box
+(defn collides?
+  "Does this box collide with any of the boxes?"
   [box boxes]
+  (some #(intersect? box %) boxes))
+
+; TODO, AVOID SELF INTERSECTION
+(defn expand-box
+  "Expand a box into greedily such tha it is contained within a union of boxes"
+  [box boxes cover dim-order]
   (let [n-dims (num-dims box)]
-  (loop [exp-box box sides (vec (range n-dims))]
+  ; (println "\n expanding box" box "n in cover" (count cover) "dim order" dim-order)
+  (loop [exp-box box sides dim-order]
     (cond
       (empty? sides)
       exp-box
       
       :else
-      (let [[dim sides] (rand-vec-remove sides)
+      (let [dim (first sides)
+            pvar (println "dim"  dim)
             interval (nth-dim-interval box dim)
             ; We only care about extending to places which intersect.
             good-boxes (filter #(intersect? (remove-dim exp-box dim)
                                             (remove-dim % dim))
                                 boxes)
-            pvar (println "good boxes" good-boxes)
+            ; pvar (println "good boxes" good-boxes)
 
             ext-points (sort (flatten (map #(nth-dim-interval % dim) 
                                             good-boxes)))
 
-            pvar (println "ext points" ext-points)
-            pvar (println "filtered" (filterv #(>= % (upper-bound interval)) ext-points))
+            ; pvar (println "ext points" ext-points)
+            ; pvar (println "filtered-high" (filterv #(>= % (upper-bound interval)) ext-points))
+            ; pvar (println "filtered-low" (filterv #(<= % (lower-bound interval)) ext-points))
+
+
+            ; pvar (println "collides" (collides? exp-box cover))
             upper
-            (max-pred #(valid-ext exp-box
-                                  (edit-upper-bound exp-box dim %)
-                                  boxes)
-                            (filterv #(>= % (upper-bound interval)) ext-points))
-            pvar (println "upper" upper)
+            (max-pred #(and (not (collides? (edit-upper-bound exp-box dim %) cover))
+                            (valid-ext exp-box
+                                       (edit-upper-bound exp-box dim %)
+                                       boxes))
+                      (filterv #(>= % (upper-bound interval)) ext-points))
+            ; pvar (println "upper" upper)
 
             lower
-            (min-pred #(valid-ext exp-box
-                                  (edit-lower-bound exp-box dim %)
-                                  boxes)
-                            (filterv #(<= % (lower-bound interval)) ext-points))]
-        (recur (edit-interval exp-box dim [lower upper]) sides))))))
+            (min-pred #(and (not (collides? (edit-lower-bound exp-box dim %) cover))
+                            (valid-ext exp-box
+                                       (edit-lower-bound exp-box dim %)
+                                       boxes))
+                      (filterv #(<= % (lower-bound interval)) ext-points))
+            ; pvar (println "lower" lower)
+            new-upper (if (nil? upper) (upper-bound interval) upper)
+            new-lower (if (nil? lower) (lower-bound interval) lower)
+            pvar (println "newlowerupper" new-lower new-upper)
+            ]
+        (recur (edit-interval exp-box dim [new-lower new-upper]) (rest sides)))))))
 
-; (defn select-init-box [boxes]
-;   (first boxes))
+(defn box-in-union
+  [boxes]
+  "Give me a box inside the union."
+  (first boxes))
 
-; (defn can-extend?
-;   [side])
+(defn side-to-box
+  "Return a degenerate box from a side"
+  [[side-box dim lower-upper]]
+  (update-in side-box [:internals dim] #(vector (nth % lower-upper)
+                                                (nth % lower-upper))))
 
-; ; NO TEST
-; (defn cover-abstr
-;   "Given"
-;   [boxes]
-;   (loop [unvisited-sides (select-init-box boxes) covering [curr-box]]
-;     (if (empty? unvisited-sides)
-;         covering
-;         (let [side (random-nth unvisited-sides)]
-;           (if (can-extend? side)
-;               (let [new-box (expand-box (extend-box side))]
-;                 (recur (add-sides unvisited-sides new-box) (conj covering new-box)))
-;               (recur (remove unvisited-sides sides) covering))))))
+;TODO
+(defn intersecting-components
+  "Partition set of possibly overlapping boxes into subsets of connected
+  components"
+  [boxes]
+  [boxes])
 
-; ; I could check each face of each box every tiem but that's silly
-; ; I could carry around a list of all the things I've alredy done
-; ; Or I could carry around a list of ones available to carry from
+(defn side-extensions
+  "Returns a mapping from sides of a box to possible extensions"
+  [[side-box dim lower-upper :as side] boxes]
+  (let [;pvar (println "FILTER NOTYET  BOXS" side)
+        valid-boxes (filter #(intersect? % (side-to-box side)) boxes)
+        side-pos (nth (nth-dim-interval side-box dim) lower-upper)]
+    ; Flatten the overlap between a boxes into side
+    (mapv #(assoc-in (overlap side-box %)
+                     [:internals dim]
+                     [side-pos side-pos])
+            valid-boxes)))
 
-; (defn cover-abstr-inner
-;   [init boxes])
+(defn enum-sides
+  "Return the sides of a box
+   A side is of the form [box dim 0|1 (lower or upper)]"
+  [box]
+  (reduce concat
+    (mapv #(vector [box % 0] [box % 1])
+        (range (count (:internals box))))))
 
-  ; Assume overlapping or divide into overlapping segments?
-  ; Find feasible region?
-  ; Start with any box
-  ; - Start with overlapping region
-  ; - Start with point sampled uniformly from volume
-  ; Breadth first, so I'm going to try to expand the dimension of each box
-  ; Choose a side uniformly and expand each dimension one
-  ; Q- What is the set of lines to which I must consider expansion
-  ; When that is done choose a side randomly, and see if extension is possible, if so extend
-  ; 
-  ;Expand box to
+(defn box-extensions
+  "For each side of box returns a pair
+  [side [box-components]] where an extension is a degenerate box"
+  [box boxes]
+  (vec (mapv #(update-in % [1] intersecting-components)
+             (remove #(empty? (second %))
+                     (mapv #(vector % (side-extensions % boxes))
+                           (enum-sides box))))))
+
+(defn side-dim
+  "What dim is the side on"
+  [side]
+  (nth side 1))
+
+; ([[{:formula #<box$overlap$fn__86 relax.box$overlap$fn__86@2483f9de>, :internals [[5 5] [2 5]]}]]
+
+;  [[{:formula #<box$overlap$fn__86 relax.box$overlap$fn__86@5489`08c>, :internals [[3 5] [5 5]]}]])
 
 
-; (defn tile-abstr
-;   "Box"
-;   [& boxes]
-;   ; {:pre [(true? (apply count= boxes))]} ; All boxes have same dim
-;   (let [;boxes (map :internals boxes)
-;         n-dim (num-dims (first boxes))
-;         planes
-;         (for [dim (range n-dim)]
-;           (partition 2 1
-;             (sort (distinct (reduce concat (map #(nth % dim) boxes))))))]
-;     ; Retain cells which are contained by one of the orig Boxes
-;     (filter
-;       #(some true? (for [box boxes] (contains? box %)))
-;       (apply combo/cartesian-product planes))))
+; NO TEST
+(defn cover-connected-abstr
+  "Same as cover-abstr, but assumes intersection graph of boxes is connected.
+   Dissect boxes into an non overlapping set covering the same area.
+   Assumes all boxes same dim"
+  [boxes]
+  (let [n-dims (num-dims (box-in-union boxes))
+        init-box (expand-box (box-in-union boxes) boxes []
+                             (range n-dims))
+        exts (box-extensions init-box boxes)]
+  (loop [exts exts cover [init-box]]
+    (println "  **ATTEMPTING EXTENSION")
+    (if (empty? exts)
+        cover
+        (let [;pvar (println "EXTENSIONS" (map #(get-in % [1 0]) exts))
+              [[side components :as ext] popd-exts] (rand-vec-remove exts)
+              pvar (println "side" components)
+              [component popd-components] (rand-vec-remove components)
+              order (concat [(side-dim side)] 
+                           (shuffle (remove #(= (side-dim side) %)
+                                            (range n-dims))))
+              box (expand-box (rand-nth component) boxes cover order)
+              exts (if (empty? popd-components)
+                        popd-exts
+                        (conj popd-exts [side popd-components]))
+              ; pvar (println "NEW-EXTENSIONS" (map #(get-in % [1 0])
+              ;   (box-extensions box boxes)))
+              pvar (println "HAS VOLUME" (not (tolerant= 0.0 (volume box))))]
+          (if (not (tolerant= 0.0 (volume box))) 
+              (recur (vec (concat exts (box-extensions box boxes)))
+                     (conj cover box))
+              (recur exts cover)))))))
 
-(def b1 {:internals [[0 5][0 5]]})
-(def b2 {:internals [[3 6][2 10]]})
-(def b3 {:internals [[0 10][0 10]]})
+(defn cover-abstr
+  "Dissect boxes into an non overlapping set covering the same area.
+
+  Incremenetal algorithm, starting with box within boxes:
+  1. Expand box, add it's sides to a set of unvisited-sides
+  2. "
+  [boxes]
+  (reduce concat (mapv cover-connected-abstr
+                       (intersecting-components boxes))))
+
+; (def b1 {:internals [[0 5][0 5]]})
+; (def b2 {:internals [[3 6][2 10]]})
+; (def b3 {:internals [[0 10][0 10]]})
+
+(def b1 {:internals (vec (repeat 6 [0 5]))})
+(def b2 {:internals (vec (repeat 6 [3 10]))})
+(def b3 {:internals (vec (repeat 6 [0 20]))})
+(def b4 {:internals (vec (repeat 6 [8 14]))})
+(def b5 {:internals (vec (repeat 6 [12 20]))})
+(def b6 {:internals (vec (repeat 6 [19 24]))})
+
 
 (defn gen-random-boxes
   [n-dims n-boxes]
   (repeat n-boxes
-    (vec (for [dim (range n-dims)]
-         [[(rand) (rand)][(rand) (rand)]]))))
+    (make-abstraction
+      (vec (for [dim (range n-dims)]
+           [[(rand) (rand)][(rand) (rand)]]))))
+      'no-formula)
 
 (defn -main []
   ; (union-volume b1 b2 b3))
-  (expand-box (overlap b1 b2) [b1 b2]))
+  (count (cover-abstr [b1 b2 b3 b4 b5 b6])))
