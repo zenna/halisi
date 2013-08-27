@@ -2,6 +2,7 @@
                 :author "Zenna Tavares"}
   relax.box
   (:use relax.abstraction)
+  (:use clozen.profile)
   (:use clozen.helpers)
   (:require [clojure.math.combinatorics :as combo])
   (:require [taoensso.timbre.profiling :as profiling :refer (p profile)]))
@@ -177,7 +178,7 @@
   "LOLZ!"
   [box exp-box boxes]
   ; (println "ext" exp-box)
-  (let [n-samples 100]
+  (let [n-samples 1000]
     (loop [n-samples n-samples]
       ; (println n-samples)
       (cond
@@ -186,7 +187,7 @@
 
         :else
         (let [sample (abstraction-sample exp-box)]
-          (if (some #(point-in-abstraction? % sample) boxes)
+          (if (p :pia (some #(point-in-abstraction? % sample) boxes))
               (recur (dec n-samples))
               false))))))
 
@@ -211,13 +212,13 @@
             ; pvar (println "dim"  dim)
             interval (nth-dim-interval box dim)
             ; We only care about extending to places which intersect.
-            good-boxes (filter #(intersect? (remove-dim exp-box dim)
+            good-boxes (p :filter-good (filter #(intersect? (remove-dim exp-box dim)
                                             (remove-dim % dim))
-                                boxes)
+                                boxes))
             ; pvar (println "good boxes" good-boxes)
 
-            ext-points (sort (flatten (map #(nth-dim-interval % dim) 
-                                            good-boxes)))
+            ext-points (p :sort (sort (flatten (map #(nth-dim-interval % dim) 
+                                            good-boxes))))
 
             ; pvar (println "ext points" ext-points)
             ; pvar (println "filtered-high" (filterv #(>= % (upper-bound interval)) ext-points))
@@ -226,23 +227,23 @@
 
             ; pvar (println "collides" (collides? exp-box cover))
             upper
-            (max-pred #(and (not (collides? (edit-upper-bound exp-box dim %) cover))
+            (p :upper (max-pred #(and (not (p :collides (collides? (edit-upper-bound exp-box dim %) cover)))
                             (valid-ext exp-box
                                        (edit-upper-bound exp-box dim %)
                                        boxes))
-                      (filterv #(>= % (upper-bound interval)) ext-points))
+                      (filterv #(>= % (upper-bound interval)) ext-points)))
             ; pvar (println "upper" upper)
 
             lower
             (min-pred #(and (not (collides? (edit-lower-bound exp-box dim %) cover))
-                            (valid-ext exp-box
+                            (p :valid (valid-ext exp-box
                                        (edit-lower-bound exp-box dim %)
-                                       boxes))
+                                       boxes)))
                       (filterv #(<= % (lower-bound interval)) ext-points))
             ; pvar (println "lower" lower)
             new-upper (if (nil? upper) (upper-bound interval) upper)
             new-lower (if (nil? lower) (lower-bound interval) lower)
-            pvar (println "newlowerupper" new-lower new-upper)
+            ; pvar (println "newlowerupper" new-lower new-upper)
             ]
         (recur (edit-interval exp-box dim [new-lower new-upper]) (rest sides)))))))
 
@@ -294,10 +295,10 @@
   "For each side of box returns a pair
   [side [box-components]] where an extension is a degenerate box"
   [box boxes]
-  (vec (mapv #(update-in % [1] intersecting-components)
+  (p :side-exts (vec (mapv #(update-in % [1] intersecting-components)
              (remove #(empty? (second %))
                      (mapv #(vector % (side-extensions % boxes))
-                           (enum-sides box))))))
+                           (enum-sides box)))))))
 
 (defn side-dim
   "What dim is the side on"
@@ -315,12 +316,13 @@
    Dissect boxes into an non overlapping set covering the same area.
    Assumes all boxes same dim"
   [boxes]
+  (println "BOXES ARE" boxes "NUM" (count boxes))
   (let [n-dims (num-dims (box-in-union boxes))
         init-box (expand-box (box-in-union boxes) boxes []
                              (range n-dims))
         exts (box-extensions init-box boxes)]
   (loop [exts exts cover [init-box]]
-    (println "  **ATTEMPTING EXTENSION, NUM IN COVER" (count cover))
+    ; (println "  **ATTEMPTING EXTENSION, NUM IN COVER" (count cover) "NUM IN exts" (count exts))
     (if (empty? exts)
         cover
         (let [;pvar (println "EXTENSIONS" (map #(get-in % [1 0]) exts))
@@ -336,9 +338,10 @@
                         (conj popd-exts [side popd-components]))
               ; pvar (println "NEW-EXTENSIONS" (map #(get-in % [1 0])
               ;   (box-extensions box boxes)))
-              pvar (println "HAS VOLUME" (not (tolerant= 0.0 (volume box))))]
+              ; pvar (println "HAS VOLUME" (not (tolerant= 0.0 (volume box))))
+              ]
           (if (not (tolerant= 0.0 (volume box))) 
-              (recur (vec (concat exts (box-extensions box boxes)))
+              (recur (vec (concat exts (p :extend (box-extensions box boxes))))
                      (conj cover box))
               (recur exts cover)))))))
 
@@ -376,7 +379,12 @@
 ;   ; (union-volume b1 b2 b3))
 ;   (count (cover-abstr [b1 b2 b3 b4 b5 b6])))
 
+; (defn -main []
+;   ; (union-volume b1 b2 b3))
+;   (profile :info :Arithmetic
+;   (count (cover-abstr (gen-random-boxes 6 10)))))
+
 (defn -main []
-  ; (union-volume b1 b2 b3))
-  (profile :info :Arithmetic
-  (count (cover-abstr (gen-random-boxes 5 5)))))
+  (scaling cover-abstr gen-random-boxes [[1 1][1 2][1 3][1 4][1 5]]
+           2))
+
