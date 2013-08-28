@@ -5,7 +5,15 @@
   (:use clozen.profile)
   (:use clozen.helpers)
   (:require [clojure.math.combinatorics :as combo])
-  (:require [taoensso.timbre.profiling :as profiling :refer (p profile)]))
+  (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)]))
+
+; ;; 
+; The profiling tells us,
+; The run time grows exponentially with the number of calls to expand
+; -This means that more time is being spent in each call to expand as the number of boxes is increasing
+
+; The number of calls to expand grows exponentially then linearly with the number of boxes in the output
+
 
 (defn lower-bound [interval]
   (first interval))
@@ -178,7 +186,7 @@
   "LOLZ!"
   [box exp-box boxes]
   ; (println "ext" exp-box)
-  (let [n-samples 1000]
+  (let [n-samples 100]
     (loop [n-samples n-samples]
       ; (println n-samples)
       (cond
@@ -212,11 +220,12 @@
             ; pvar (println "dim"  dim)
             interval (nth-dim-interval box dim)
             ; We only care about extending to places which intersect.
+            ; Complexity: n*d
             good-boxes (p :filter-good (filter #(intersect? (remove-dim exp-box dim)
                                             (remove-dim % dim))
                                 boxes))
             ; pvar (println "good boxes" good-boxes)
-
+            ; Complexity- n + that of flatten
             ext-points (p :sort (sort (flatten (map #(nth-dim-interval % dim) 
                                             good-boxes))))
 
@@ -226,6 +235,8 @@
 
 
             ; pvar (println "collides" (collides? exp-box cover))
+            ; collision: n (check every other box) * d (collison involves checking every dimension) * n
+            ; in the worse case we have to check every box
             upper
             (p :upper (max-pred #(and (not (p :collides (collides? (edit-upper-bound exp-box dim %) cover)))
                             (valid-ext exp-box
@@ -295,7 +306,8 @@
   "For each side of box returns a pair
   [side [box-components]] where an extension is a degenerate box"
   [box boxes]
-  (p :side-exts (vec (mapv #(update-in % [1] intersecting-components)
+  (o :side-exts-counts count
+    (vec (mapv #(update-in % [1] intersecting-components)
              (remove #(empty? (second %))
                      (mapv #(vector % (side-extensions % boxes))
                            (enum-sides box)))))))
@@ -316,7 +328,7 @@
    Dissect boxes into an non overlapping set covering the same area.
    Assumes all boxes same dim"
   [boxes]
-  (println "BOXES ARE" boxes "NUM" (count boxes))
+  ; (println "BOXES ARE" boxes "NUM" (count boxes))
   (let [n-dims (num-dims (box-in-union boxes))
         init-box (expand-box (box-in-union boxes) boxes []
                              (range n-dims))
@@ -332,6 +344,7 @@
               order (concat [(side-dim side)] 
                            (shuffle (remove #(= (side-dim side) %)
                                             (range n-dims))))
+              order [(side-dim side)] ;TEST
               box (p :expand (expand-box (rand-nth component) boxes cover order))
               exts (if (empty? popd-components)
                         popd-exts
@@ -352,8 +365,12 @@
   1. Expand box, add it's sides to a set of unvisited-sides
   2. "
   [boxes]
-  (reduce concat (mapv cover-connected-abstr
-                       (intersecting-components boxes))))
+  (let [ccs (o :count-ccs count (intersecting-components boxes))
+        cover (reduce concat (mapv cover-connected-abstr ccs))]
+    (println "expanding " (count boxes) " n-ccs "
+             (count ccs) " in dims " (num-dims (first boxes)) "cover-count" (count cover))
+    (println "union" (apply union-volume boxes) "sum volume" (sum (map volume boxes)))
+    cover))
 
 ; (def b1 {:internals [[0 5][0 5]]}) def b2 {:internals [[3 6][2 10]]}) def b3
 ; ({:internals [[0 10][0 10]]})q
@@ -382,9 +399,13 @@
 ; (defn -main []
 ;   ; (union-volume b1 b2 b3))
 ;   (profile :info :Arithmetic
-;   (count (cover-abstr (gen-random-boxes 6 10)))))
+;   (count (cover-abstr (gen-random-boxes 2 20)))))
+
+(defn tt [x]
+  (o :n-boxes count (cover-abstr x)))
+
+
 
 (defn -main []
-  (scaling cover-abstr gen-random-boxes [[1 1][1 2][1 3][1 4][1 5]]
-           2))
-
+  (scaling tt gen-random-boxes [[2 10][3 10]]
+           5))
