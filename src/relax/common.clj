@@ -32,6 +32,16 @@
 (defn first-operand [ops] (first ops))
 (defn rest-operands [ops] (rest ops))
 
+
+;; IO
+(defn matrix-to-file
+  [matrix fname]
+  (doall
+    (for [vector matrix]
+      (with-open [wrtr (writer fname :append true)]
+        (.write wrtr  (str (clojure.string/join " " vector)))
+        (.write wrtr "\n")))))
+
 (defn samples-to-file
   "Writes a set of samples to file
    Creates two files, in one each line denotes a single sample

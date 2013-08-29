@@ -1,5 +1,5 @@
 (ns ^{:doc "Linear programming wrapper around lpsolve"
-	  :author "Zenna Tavares"}
+	    :author "Zenna Tavares"}
 	relax.linprog
   (:import (lpsolve AbortListener BbListener LogListener MsgListener
             LpSolveException LpSolve)))
@@ -13,7 +13,9 @@
 (defn bounding-box-lp
   "Find bounding box around system of linear inequalities by making and 
    solving 2 * n-vars linear programming problems.
-   Constraint in form [[coeffs var-is rhs] .. [..]]"
+   Constraint in form [[coeffs var-is rhs] .. [..]]
+
+   Returns nil if cannot solve"
   [constraint vars]
   (let [n-vars (count vars)
         lp (LpSolve/makeLp 0 n-vars)]

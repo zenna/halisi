@@ -101,168 +101,42 @@
     '>= (replace-in-list pred 0 '<)
     (list 'not pred)))
 
-;; Mutlivalue abstractions
-(defn make-multivalue
-  [& values]
-  "Make a multivalue"
-  (list 'multivalue (vec values)))
-
-(defn multivalue? [val]
-  "Construct a multivalue: a compound value where the variable has many possible values"
-  (tagged-list? val 'multivalue))
-
-(defn multivalues [val]
-  (if (multivalue? val)
-      (nth val 1)
-      [val]))
-
-(defn make-merge-multivalue
-  "Make a multivalue but if any of the values are already multivalues then merge them in
-  (as opposed to creating nested multivalues)"
-  [& values]
-  (if (not-any? multivalue? values)
-      (apply make-multivalue values)
-      (reduce 
-        #(cond
-          (and (multivalue? %1) (multivalue? %2))
-          (list 'multivalue (vec (concat (multivalues %1) (multivalues %2))))
-
-          (multivalue? %1)
-          (list 'multivalue (conj (multivalues %1) %2))
-
-          (multivalue? %2)
-          (list 'multivalue (conj (multivalues %2) %1))
-
-          :else
-          (make-multivalue %1 %2))
-        values)))
-
-; TODO support nested multivalues
-(defn multify
-  "Multify takes a function that does not support multivalues
-   and returns one that does"
-  [f & args]
-  (cond
-    (not-any? multivalue? args)
-    (apply f args)
-
-    :else
-    (apply make-multivalue
-      (map #(apply f %) 
-            (apply combo/cartesian-product (map multivalues args))))))
-
-(defn multify-apply
-  [f args]
-  (cond
-    (not-any? multivalue? args)
-    (apply f args)
-
-    :else
-    (apply make-multivalue
-      (map #(apply f %) 
-            (apply combo/cartesian-product (map multivalues args))))))
-
 ; TODO
 (defn feasible? [conda env]
   true)
 
-;; Conditional value abstractions
+;; Symbol manipulations (as if there were anything else)
+(defn decompose-binary-exp
+  "Takes a binary exp involving a symbol and a concrete number
+   and extracts them into a map.
 
-; Condition abstractions
-(defn conditional-value?
-  "A conditioned value has the form ('conditional multivalue)
-   where each element of multivalue (possible-value) has the form
-   ('possible-value value_i [condition_1, ..., condition_n])"
-  [exp]
-  (tagged-list? exp 'conditional-value))
-
-(defn possible-value?
-  [exp]
-  (tagged-list? exp 'possible-value))
-
-(defn all-possible-values
-  [cond-val]
-  (nth cond-val 1))
-
-(defn all-conditions
-  [val]
-  "Return vector of all conditions"
-  (vec (map #(nth % 2) (multivalues (all-possible-values val)))))
-
-(defn all-values
-  [val]
-  "Return vector of all conditions"
-  (vec (map #(nth % 1) (multivalues (all-possible-values val)))))
-
-(defn value-conditions
-  "Get the conditions of a conditioned value"
-  [val]
-  (nth val 2))
-
-(defn merge-conditions
-  [& value-conditions]
-  (reduce #(vec (concat %1 %2)) value-conditions))
-
-(defn conditional-value
-  "Get the conditions of a conditioned value"
-  [val]
-  (nth val 1))
-
-(defn apply-condition
-  [val new-conditions]
-  (list 'conditioned-value val new-conditions))
-
-(defn make-conditional-value
-  "Constructs a conditional value
-   Takes a sequence of pairs of value and vector of conditions
-   e.g. (make-conditional-value true [(< x 1)(> x 0)] false [(> x 1)]"
-  [& args]
-  {:pre [(even? (count args))]}
-  (let [x (apply make-multivalue
-                 (map (fn [x] `(~'possible-value ~@x)) (partition 2 args)))]
-  `(~'conditional-value ~x)))
-
-(defn arg-combinations
-  [args]
-  (apply combo/cartesian-product 
-         (map #(if (conditional-value? %)
-                   (multivalues (all-possible-values %))
-                   [%])
-              args)))
-
-; TODO support nested multivalues
-(defn handle-conditional
-  "Allows a function to support conditional values
-   If any arguments are conditional it applies the function to all
-   combinations of their possible values.
-   The outcome of any particular combination is conditioned on 
-   conditions of any arguments that were used.
-
-   If the function evaluates to a conditional value, possible values
-   are expanded out and its conditions are included"
-  [f & args]
-  ; (println "args " args)
+   Useful to find the symbol and/or number when an expression could be
+   (+ x 2) or (+ 2 x) for instance"
+  [ineq]
   (cond
-    (not-any? conditional-value? args)
-    [(apply f args)]
+    (symbolic? (nth ineq 1))
+    {:num (nth ineq 2) :symb (nth ineq 1)}
+
+    (symbolic? (nth ineq 2))
+    {:num (nth ineq 1) :symb (nth ineq 2)}
 
     :else
-    (apply make-conditional-value
-      (reduce concat
-      (for [arg-list (arg-combinations args)
-           :let [concrete-list (map #(if (possible-value? %) 
-                                         (conditional-value %)
-                                          %)
-                                    arg-list)
-                path-conditions (apply merge-conditions 
-                                       (map value-conditions
-                                            (filter possible-value? arg-list)))
-                fx (apply f concrete-list)]]
+    (error "one of the values in inequality must be symbolic")))
 
-        (if (conditional-value? fx)
-            (reduce concat
-              (map #(vector (conditional-value %)
-                      (merge-conditions (value-conditions %) path-conditions))
-                    (multivalues (all-possible-values fx))))
+(defn unsymbolise
+  [formula]
+  "Remove symbols from something like this:
+  (<= (symbolic (+ (symbolic (* -4 (symbolic x1))) (symbolic x2))) 10)"
+  (map 
+    #(let [value (if (symbolic? %)
+                     (symbolic-value %)
+                     %)]
+      (if (coll? value)
+          (unsymbolise value)
+          value))
+    formula))
 
-            [fx path-conditions]))))))
+(defn conjoin
+  "Conjoin an expression"
+  [& exprs]
+  `(~'and ~@exprs))
