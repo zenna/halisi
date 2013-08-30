@@ -315,7 +315,7 @@
    Dissect boxes into an non overlapping set covering the same area.
    Assumes all boxes same dim"
   [boxes]
-  (println "BOXES ARE" boxes "NUM" (count boxes))
+  ; (println "BOXES ARE" boxes "NUM" (count boxes))
   (let [n-dims (num-dims (box-in-union boxes))
         init-box (expand-box (box-in-union boxes) boxes []
                              (range n-dims))

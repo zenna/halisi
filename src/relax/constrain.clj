@@ -102,11 +102,11 @@
         ; pvar (println "ORIGINAL BOX UNFILT" (map #(bound-clause % vars) clauses))
         large-abstrs (filterv has-volume? 
                              (map #(bound-clause % vars) clauses))
-        ; pvar (println large-abstrs)
-        ; pvar (println large-abstrs)]
+        pvar (println "BEFORE" (count large-abstrs))
+        pvar (println "BEFORE" (count large-abstrs))
         large-abstrs (cover-abstr large-abstrs)]
-    (println "ORIGINAL BOX" large-abstrs)
-    (println "ORIGINAL BOX" large-abstrs)
+    (println "ORIGINAL BOX" (count large-abstrs))
+    (println "ORIGINAL BOX" (count large-abstrs))
     (loop [abstrs large-abstrs n-iters 10]
       (println "NUMBOXES" (count abstrs) (reduce + (map volume abstrs)))
       ; (println "NEWBOX" abstrs)
