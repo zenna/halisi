@@ -4,6 +4,8 @@
   (:use relax.env)
   (:use relax.symbolic)
   (:use relax.common)
+  (:use relax.conditionalvalue)
+  (:use relax.multivalue)
   (:use clozen.helpers))
 
 ; TODO 1. Get constraints 

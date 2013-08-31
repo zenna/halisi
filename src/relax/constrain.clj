@@ -1,33 +1,18 @@
 (ns ^{:doc "Constrain a generative model"
       :author "Zenna Tavares"}
   relax.constrain
-  (:use relax.evalcs)
-  (:use relax.symbolic)
   (:use relax.common)
-  (:use relax.examples)
   (:use relax.env)
+  (:use relax.symbolic)
+  (:use relax.conditionalvalue)
+  (:use relax.multivalue)
+  (:use relax.examples)
   (:use relax.linprog)
+  (:use relax.abstraction)
   (:use relax.box)
   (:use clozen.helpers)
+  (:use relax.evalcs)
   (:require [clojure.math.combinatorics :as combo]))
-
-;; Inequality abstractions
-(defn decompose-binary-exp
-  "Takes a binary exp involving a symbol and a concrete number
-   and extracts them into a map.
-
-   Useful to find the symbol and/or number when an expression could be
-   (+ x 2) or (+ 2 x) for instnace"
-  [ineq]
-  (cond
-    (symbolic? (nth ineq 1))
-    {:num (nth ineq 2) :symb (nth ineq 1)}
-
-    (symbolic? (nth ineq 2))
-    {:num (nth ineq 1) :symb (nth ineq 2)}
-
-    :else
-    (error "one of the values in inequality must be symbolic")))
 
 (defn ineq-as-matrix
   "Takes an inequality expression, e.g. (> x 2) and converts it
@@ -69,24 +54,6 @@
   (let [extended-env (extend-environment vars sample the-pure-environment)]
     (every? true? (map #(evalcs % extended-env) formula))))
 
-(defn unsymbolise
-  [formula]
-  "Remove symbols from something like this:
-  (<= (symbolic (+ (symbolic (* -4 (symbolic x1))) (symbolic x2))) 10)"
-  (map 
-    #(let [value (if (symbolic? %)
-                     (symbolic-value %)
-                     %)]
-      (if (coll? value)
-          (unsymbolise value)
-          value))
-    formula))
-
-(defn conjoin
-  "Conjoin an expression"
-  [& exprs]
-  `(~'and ~@exprs))
-
 (defn to-dnf
   "Takes a program and converts it to disjunctive normal form"
   [vars model-constraints pred]
@@ -109,41 +76,37 @@
          (filter #(true? (conditional-value %)) ineqs))))
 
 (defn bound-clause
+  "Take a clause (from dnf) and find bounding box"
   [clause vars]
   ; (println "clause" clause "vars" vars)
   (let [interval-constraints (map #(evalcs % the-global-environment)
                                    (vec 
-                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars))))
+                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)))) ;HACK
         ; pvar (println "interval constraints" interval-constraints)
         box (make-abstraction
-              (partition 2
+              (mapv vec (partition 2
                          (bounding-box-lp
-                           (map #(ineq-as-matrix % vars)
+                           (mapv #(ineq-as-matrix % vars)
                                  (concat clause interval-constraints))
-                            vars))
+                            vars)))
               (unsymbolise clause))]
     (if (some nil? (flatten (:internals box)))
         'empty-abstraction
         box)))
-
-(defn cover-no-overlap
-  [clauses vars]
-  ;1 Bound all the clauses
-  ; Find overlap
-  ; Split
-  ; Merge
-  )
 
 (defn cover
   "Cover each polytope individually"
   [clauses vars]
   ; (println  "CLAUSES" clauses)
   (let [budget 2500
-        ; pvar (println "ORIGINAL BOX" (map #(bound-clause % vars) clauses))
-        large-abstrs (filter has-volume? 
-                             (map #(bound-clause % vars) clauses))]
-    (println "ORIGINAL BOX" large-abstrs)
-    (println "ORIGINAL BOX" large-abstrs)
+        ; pvar (println "ORIGINAL BOX UNFILT" (map #(bound-clause % vars) clauses))
+        large-abstrs (filterv has-volume? 
+                             (map #(bound-clause % vars) clauses))
+        pvar (println "BEFORE" (count large-abstrs))
+        pvar (println "BEFORE" (count large-abstrs))
+        large-abstrs (cover-abstr large-abstrs)]
+    (println "ORIGINAL BOX" (count large-abstrs))
+    (println "ORIGINAL BOX" (count large-abstrs))
     (loop [abstrs large-abstrs n-iters 10]
       (println "NUMBOXES" (count abstrs) (reduce + (map volume abstrs)))
       ; (println "NEWBOX" abstrs)
@@ -193,9 +156,9 @@
          (recur (inc n-sampled) (inc n-rejected)))))))
 
 (defn -main[]
-  (let [;{vars :vars pred :pred} (gen-box-non-overlap-close 3)
-        {vars :vars pred :pred}
-        (avoid-orthotope-obs 4 [1 1][9 9] [[[2 5][5 7]] [[5 8][0 3]]])
+  (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
+        ; {vars :vars pred :pred}
+        ; (avoid-orthotope-obs 3 [1 1] [9 9] [[[2 5][5 7]] [[5 8][0 3]]])
         vars (vec vars)
         ; pred exp-rand-and-3d
         n-samples 100
@@ -300,5 +263,5 @@
                             ;                   #(conj % {:from box :sample sample}))
                             ;        n-samples))))))))))
 
-(defn -main []
-  (samples-to-file "kidding2" (overlapping-sampler 20000)))
+; (defn -main []
+;   (samples-to-file "kidding2" (overlapping-sampler 20000)))

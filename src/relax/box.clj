@@ -127,7 +127,6 @@
    and subtracting union volume of interection of new one and all
    previous ones"
   [& boxess]
-  ; (println boxess)
   (if (or (empty? boxess) (nil? boxess))
     0.0
     (loop [boxes (rest boxess) seen-boxes (list (first boxess))
@@ -375,22 +374,45 @@
 ; (def b1 {:internals [[0 5][0 5]]}) def b2 {:internals [[3 6][2 10]]}) def b3
 ; ({:internals [[0 10][0 10]]})q
 
-(def b1 {:internals (vec (repeat 6 [0 5]))})
-(def b2 {:internals (vec (repeat 6 [3 10]))})
+(def b1 {:internals (vec (repeat 2 [0 5]))})
+(def b2 {:internals (vec (repeat 2 [3 10]))})
+(def b1x {:internals (vec (repeat 2 [20 25]))})
+(def b2x {:internals (vec (repeat 2 [23 30]))})
+
 (def b3 {:internals (vec (repeat 6 [0 20]))})
 (def b4 {:internals (vec (repeat 6 [8 14]))})
 (def b5 {:internals (vec (repeat 6 [12 20]))})
 (def b6 {:internals (vec (repeat 6 [19 24]))})
 
+(defn two-boxes [x y ]
+  [b1 b2 b1x b2x])
+
+
+; (defn gen-random-boxes
+;   [n-dims n-boxes]
+;   {:post [(do (println "POST n-dims" (num-dims (first %)) "n-boxes" (count %)
+;               "ccs" (map count (intersecting-components %))) true)]}
+;   (println "n-dims" n-dims "n-boxes" n-boxes)
+;   (repeatedly n-boxes
+;     #(make-abstraction
+;       (vec (for [dim (range n-dims)
+;                 :let [mid (rand)]]
+;            [(- mid (rand)) (+ mid (rand))]))
+;       'no-formula)))
 
 (defn gen-random-boxes
   [n-dims n-boxes]
-  (repeatedly n-boxes
-    #(make-abstraction
-      (vec (for [dim (range n-dims)
-                :let [mid (rand)]]
-           [(- mid (rand)) (+ mid (rand))]))
-      'no-formula)))
+  {:post [(do (println "POST n-dims" (num-dims (first %)) "n-boxes" (count %)
+              "ccs" (map count (intersecting-components %))
+              "total vol" (sum (map volume %))) true)]}
+  (println "n-dims" n-dims "n-boxes" n-boxes)
+  (let [side-len (/ (Math/pow (/ 1.0 (* n-dims n-boxes)) (/ 1.0 n-dims)) 2.0)]
+    (repeatedly n-boxes
+      #(make-abstraction
+        (vec (for [dim (range n-dims)
+                  :let [mid (rand)]]
+             [(- mid side-len) (+ mid side-len)]))
+        'no-formula))))
 
 ; (defn -main []
 ;   ; (union-volume b1 b2 b3))
@@ -405,7 +427,31 @@
   (o :n-boxes count (cover-abstr x)))
 
 
-
 (defn -main []
   (scaling tt gen-random-boxes [[2 10][3 10]]
            5))
+; (defn -main []
+;   (scaling cover-abstr gen-random-boxes [[1 1][1 2][1 3][1 4][1 5]]
+;            2))
+
+(comment 
+  (defn -main []
+    (get-scaling-data (ok) 0 [:whole :mean]))
+  (defn tests[& x]
+    ; (println "IN TESTs" (num-dims (first x))))
+    (println "num boxes is" (count x) "dim" (num-dims (first x))))
+
+  (defn vol-f
+    [boxes]
+    (let [v1 (apply union-volume boxes)
+          v2 (sum
+              (map #(apply union-volume %) (intersecting-components boxes)))]
+          (println "vols" v1 "-" v2)
+          v1))
+
+  (defn ok []
+   (scaling #(apply union-volume %) gen-random-boxes
+            (make-input 200 (positive-numbers 1) (repeat 10))
+            2))
+
+  )
