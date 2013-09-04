@@ -9,15 +9,15 @@
 ;; Symbolic value abstractions
 (defn symbolic? [val]
   "is this value symbolic?"
-  (tagged-list? val 'symbolic))
+  (tagged-list? val 'sym))
 
 (defn make-symbolic [val]
   "Create a symbolic version of a val"
-  (list 'symbolic val))
+  (list 'sym val))
 
 (defn define-symbolic! [var env]
   "Creates a symbolic variable unconstrained"
-  (define-variable! var (list 'symbolic var) env))
+  (define-variable! var (list 'sym var) env))
 
 (defn symbolic-value [val]
   (nth val 1))
@@ -137,6 +137,6 @@
     formula))
 
 (defn conjoin
-  "Conjoin an expression"
+  "Conjoin an expression symbolically"
   [& exprs]
   `(~'and ~@exprs))

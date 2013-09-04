@@ -105,6 +105,16 @@
   {:pre [(= 2 (count vect))]}
   [(- y) x])
 
+; (defn point-in-box?
+;   [point box]
+  
+
+; (defn avoid-box-obs
+;   "path is "
+;   [path boxes]
+;   (let [valid-point (map #(point-in-box? % boxes) path)]
+;     (some true? valid-point)))  
+
 (defn avoid-orthotope-obs
   "Creates a program which when evaluated on a path will return true
    only if that path passes through no obstacles

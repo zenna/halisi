@@ -54,6 +54,21 @@
   (let [extended-env (extend-environment vars sample the-pure-environment)]
     (every? true? (map #(evalcs % extended-env) formula))))
 
+(defn to-dnf-new
+  "Takes a program and converts it to disjunctive normal form"
+  [vars model-constraints pred]
+
+  ; Add variables to environment
+  (doall
+    (for [variable vars]
+      (define-symbolic! variable the-global-environment)))
+
+  (println "the the-global-environment is" the-global-environment "\n")
+  (println "Original Predicate Is" pred  "\n")
+
+  (let [x (evalcs pred the-global-environment)]
+    (mapv (comp vec conjun-operands) (disjun-operands x))))
+
 (defn to-dnf
   "Takes a program and converts it to disjunctive normal form"
   [vars model-constraints pred]
@@ -102,11 +117,9 @@
         ; pvar (println "ORIGINAL BOX UNFILT" (map #(bound-clause % vars) clauses))
         large-abstrs (filterv has-volume? 
                              (map #(bound-clause % vars) clauses))
-        pvar (println "BEFORE" (count large-abstrs))
-        pvar (println "BEFORE" (count large-abstrs))
+        pvar (println "After removing empty" (count large-abstrs))
         large-abstrs (cover-abstr large-abstrs)]
-    (println "ORIGINAL BOX" (count large-abstrs))
-    (println "ORIGINAL BOX" (count large-abstrs))
+    (println "After dissection" (count large-abstrs) large-abstrs)
     (loop [abstrs large-abstrs n-iters 10]
       (println "NUMBOXES" (count abstrs) (reduce + (map volume abstrs)))
       ; (println "NEWBOX" abstrs)
@@ -155,15 +168,9 @@
          {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
          (recur (inc n-sampled) (inc n-rejected)))))))
 
-(defn -main[]
-  (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
-        ; {vars :vars pred :pred}
-        ; (avoid-orthotope-obs 3 [1 1] [9 9] [[[2 5][5 7]] [[5 8][0 3]]])
-        vars (vec vars)
-        ; pred exp-rand-and-3d
-        n-samples 100
-        ; vars '[x1 x2 x3 x4]
-        intervals (mapv #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)
+(defn take-samples
+  [pred vars n-samples]
+  (let [intervals (mapv #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)
         new-model (constrain-uniform-divisive
                     vars
                     (reduce concat intervals)
@@ -186,82 +193,23 @@
         ; (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
         samples))
 
+(defn -main[]
+  (let [{vars :vars pred :pred}
+        (avoid-orthotope-obs 3 [1 1] [9 9] [[[2 5][5 7]] [[5 8][0 3]]])
+        vars (vec vars)]
+  (take-samples pred vars 100)))
+
+(def pred-x
+  '(and
+     a
+     b
+
+     (or c d e f)
+     (or g h i j)))
+
+(defn -main[]
+  (let [dnf (to-dnf-new '[a b c d e f g h i j] nil pred-x)]
+    (println "count" (count dnf) "\n" dnf)))
+
 ; (defn -main[]
-;   (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
-;         intervals (vec (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 1)) vars)))
-;         new-model (constrain-uniform-divisive
-;                     (vec vars)
-;                     intervals
-;                     pred)
-;         data (repeatedly 1 new-model)
-;         samples (extract data :sample)
-;         n-sampled (sum (extract data :n-sampled))
-;         n-rejected (sum (extract data :n-rejected))]
-;   (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
-;   (samples-to-file "opx" samples)
-;   samples))
-
-(defn overlapping-sampler [n-samples]
-  (let [box1 {:name 'box1 :internals [[0 20][0 20]]}
-        box2 {:name 'box2 :internals [[18 22][18 22]]}
-        ; box3 {:name 'box3 :internals [[0 10][0 12]]}
-        vars '[x0 x1]
-        boxes [box2 box1]
-        formula-maker
-        (fn [box]
-          `(~'and
-            ~@(reduce concat
-                (for [[low upp i] (map #(conj %1 %2) box (range (count box)))]
-              `((~'> ~(symbol (str "x" i)) ~low)
-                (~'< ~(symbol (str "x" i)) ~upp))))))
-        boxes (map #(assoc % :formula
-                              (make-lambda-args (formula-maker (:internals %)) vars))
-                    boxes)
-        volumes (map volume boxes)]
-    (loop [samples [] cache (zipmap boxes []) n-samples n-samples]
-      (println cache "\n")
-      (cond
-        (zero? n-samples)
-        samples
-
-        :else
-        (let [box (categorical boxes volumes)
-              cache-item (peek (cache box))]
-          ; Do I have a cache?
-          (if (nil? cache-item)
-              ; If not proceed normally
-              (let [sample (interval-sample (:internals box))
-                    all-boxes (map #(apply (:formula %) sample) boxes)
-                    pos-dominant (max-pred-index true? all-boxes)
-                    pos-box (max-pred-index #(= box %) boxes)]
-                    (if (= pos-dominant pos-box)
-                        (recur (conj samples sample) cache (dec n-samples))
-                        (recur samples cache n-samples)))
-                        ; (recur samples
-                        ;        (update-in cache [(nth boxes pos-dominant)]
-                        ;                   #(conj % {:from box :sample sample}))
-                        ;        n-samples)))
-
-              ; Otherwise with prob p=ratio of overlapping region/box, take sample
-              (if (flip (/ (volume (overlap box (:from cache-item))) (volume box)))
-                  (recur (conj samples (:sample cache-item)) ; I should take the sample
-                         (update-in cache [box]
-                                    #(pop %))
-                         (dec n-samples))
-                  ; and 1-p generate sample in non-overlapping region
-                  ; Treat as normal sample
-                  (let [sample (gen-until #(interval-sample (:internals box))
-                                    #(and (apply (:formula box) %)
-                                          (not (apply (:formula (:from cache-item)) %))))]
-                        ; all-boxes (map #(apply (:formula %) sample) boxes)
-                        ; pos-dominant (max-pred-index true? all-boxes)
-                        ; pos-box (max-pred-index #(= box %) boxes)]
-                        ; (if (= pos-dominant pos-box)
-                            (recur (conj samples sample) cache (dec n-samples))))))))))
-                            ; (recur samples
-                            ;        (update-in cache [(nth boxes pos-dominant)]
-                            ;                   #(conj % {:from box :sample sample}))
-                            ;        n-samples))))))))))
-
-; (defn -main []
-;   (samples-to-file "kidding2" (overlapping-sampler 20000)))
+;   (take-samples exp-linear '[x1 x2] 100))

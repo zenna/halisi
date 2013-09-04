@@ -1,4 +1,13 @@
-(ns ^{:doc "A concrete and symbolic metacircular evaluator"
+(ns ^{:doc "A concrete and symbolic metacircular evaluator.
+            
+            This is a evaluator of lisp expressions as in SICP.
+            Primary difference is that expressions are evaluated
+            symbolically and abstractly.
+            Input variables are symbolic values, and any function on them 
+            shall yield a symbolic value.
+            If symbolic values are found in the conditions of conditional
+            functions such as if, then both branches must be explored (since
+            the concrete value is unknown)."
       :author "Zenna Tavares"}
   relax.evalcs
   (:use relax.env)
@@ -6,12 +15,83 @@
   (:use relax.common)
   (:use relax.conditionalvalue)
   (:use relax.multivalue)
-  (:use clozen.helpers))
+  (:use clozen.helpers)
+  (:require [clojure.math.combinatorics :as combo]))
 
-; TODO 1. Get constraints 
-; Pushup Constraints
+;; Notes
+; Are we doing symbolic execution or conversion of a logical expression to
+; DNF?
+; In normal symbolic execution we are typically looking for paths which lead to some output, perhaps an error.  In particular we are looking for constraints on the path
+; Then, using some constraint solver we can determine whether these constraint are consistent, and hence, determine whether or not we can enounter this error on any permissible input.
+; I analagously are looking for constraints which lead to true
+; THe confusion stems from what precisely is a path in a functional program
+; What if I don't explictly have true or false values.
 
-; Forward declarations
+; Something like
+; (and
+;   (or a b)
+;   (or c d))
+; There is no true or false explicirly, but (or a b), is a binary funtion for tru eand false and so is AND.
+; (if (or a b)
+;     5
+;     6)
+; The output is: 5|(a or b), which is 5|a or 5|b or 6|(not a and not b)
+; SO what's special about if?
+; It's not clear to me why if is special, on the one hand it is special because I need to define it to not explore both branches of a program.
+; IS there a problem with evaluating both branches of an expression.
+; Well efficiency, if only one value is going to be returned then I should only return that
+; Side effects, if a branch has side effects which I do not wnat to be evaluated then that could be problmenatic
+; Recursion.  It could lead to non termination.
+
+; However if the entire interpretation is lazy, thenif need not be special
+; in normal evaluation, but it is still special in symbolic evaluation.
+; If should return a conditional value
+; (if (> a b) 5 6)
+; It's not clear how lazy evauation would work.  But for my intents
+; Assume that
+; (if (or (> x 2) false)
+;     (> x 3)
+;     true)
+
+; ; Proposals:
+; ; 1. if does produce a conditional value
+; ; 2. (> x 3)|(> x 2) (> x 3)|false true|[(< x 2)^ (not false)]
+
+; (and
+;   (if (or (> x 2) false)
+;     (> x 3)
+;     true)
+;   (or (y > 3) (y < 20)))
+
+; TODO
+; 1. I need a (defn handle-and) which if given symbolic input will do something interesting
+; 1. I need a (defn handle-or) which if given symbolic input will do something interesting
+
+; Interplay between conditional values and not
+; 
+; Subsumption
+; Joins
+; REMOVE FALSES
+; COVERT NOT TRUES INTO FALSES AND VICE VERSA
+; 
+
+; (defn handle-and
+;   "")
+
+
+
+
+; or're doing symbolic execution, but conditioning on the output being true
+
+; (if (or (> x 3))
+;     10)
+
+; THen it's a matter of turning conditional values into joint ones
+; e.g. (> x 2) | true -> (> x 2)
+
+; What actually has to change.
+; 1. (and (or (and b c)))
+
 (declare evalcs)
 
 (defn list-of-values
@@ -78,7 +158,6 @@
                     env)
   'ok)
   
-;;
 (defn self-evaluating?
   [exp]
   (or (number? exp)
@@ -90,7 +169,7 @@
 (defn quoted? [exp] (tagged-list? exp 'quote))
 (defn text-of-quotation [exp] (rest exp))
 
-; Conditionals
+;; Conditionals
 (defn if? [exp] (tagged-list? exp 'if))
 (defn if-predicate [exp] (nth exp 1))
 (defn if-consequent [exp] (first (rest (rest exp))))
@@ -100,25 +179,14 @@
       'false))
 
 (defn eval-if-concrete
-  "Evaluate a predicate part of an if expression in the given environment.
-   If the result is true, eval-if evaluates the consequent, otherwise it evaluates
-   the alternative"
+  "Evaluate condition in the given environment.
+   If cond is true, eval consequent, otherwise it eval the alternative"
   [exp eval-cond env]
   ; (println "EVAL-IF-CONCRETE" (evalcs (if-predicate exp) env) "HMM" env "\n")
   (if (true? eval-cond)
       (evalcs (if-consequent exp) env)
       (evalcs (if-alternative exp) env)))
 
-; If the condition is a multivalue, I need to consider both paths with
-; getting a multivalue from the if
-; I need to use this multivalue with the multivalue of the 
-
-; The problem is if the thing is 
-; Condition Symbolic : alt/con Symbolic - Fine
-; Condition Symbolic : alt/con Conditional 
-; Condition conditional  : Symbolic
-
-; NOTEST
 (defn eval-if-symbolic
   "Evaluate an expression symbolically
    I want to find path constraints that lead to true"
@@ -150,7 +218,6 @@
     ;       (multify add-condition (evalcs (if-alternative exp) env)
     ;                               [eval-cond-compl])
     ;       'inconsistent)))
-
 
 (defn eval-if-conditional
   "blag"
@@ -214,7 +281,152 @@
 
       eval-cond)))
 
-; Procedures
+(defn disjun?
+  [exp]
+  (tagged-list? exp 'disjun))
+
+(defn disjun-operands
+  [disjun]
+  (second disjun))
+
+(defn make-disjun
+  [terms]
+  {:pre [(set? terms)]}
+  `(~'disjun ~terms))
+
+(defn make-conjun
+  [terms]
+  `(~'conjun ~terms))
+
+(defn conjun?
+  [exp]
+  (tagged-list? exp 'conjun))
+
+(defn conjun-operands
+  [conjun]
+  (second conjun))
+
+(defn eval-disjoin
+  [args]
+  (make-disjun
+    (loop [vals args disjun-terms #{}]
+      ; (println "or operands" vals)
+      (cond
+        (empty? (first vals))
+        disjun-terms
+
+        (true? (first vals))
+        (recur (rest vals) disjun-terms)
+
+        (false? (first vals))
+        #{false}
+
+        (conjun? (first vals))
+        (recur (rest vals) (conj disjun-terms (first vals)))
+
+        (symbolic? (first vals))
+        (recur (rest vals)
+               (conj disjun-terms (first vals)))
+
+        (disjun? (first vals))
+        (recur (rest vals)
+               (reduce conj disjun-terms (disjun-operands (first vals))))
+
+        ; (conditional-value? (first vals))
+        ; (recur (rest vals)
+        ;        (concat (terms (first val)) disjun-terms))
+
+        :else
+        (error "unknown argument to or" val)))))
+
+(defn or? [exp] (tagged-list? exp 'or))
+
+(defn eval-or
+  "or returns a disjunction, which is a set of values
+   1. eval all the operands
+   2. "
+  [exp env]
+  (eval-disjoin (list-of-values (operands exp) env)))
+
+(declare eval-conjoin)
+
+(defn handle-combos
+  [cart-prod]
+  "CASES: could be true/false
+   Could be just a conkunction
+   Could be empty
+   -- {{}} if everything was true
+   -- if there were no args
+   "
+   (println "cart-prod" cart-prod)
+  (cond
+    (= #{#{true}} cart-prod) true
+    (= #{#{false}} cart-prod) false
+    (= 1 (count cart-prod)) (make-conjun (first cart-prod))
+    :else
+    (let [product (apply combo/cartesian-product cart-prod)
+          ; pvar (println "cartesian product" product)
+          disjun-terms (map eval-conjoin product)]
+      (eval-disjoin disjun-terms))))
+
+(defn eval-conjoin
+  [args]
+  "if I see a disjunction then I'll make a new set call eval-conjoin on.
+   What does AND return
+   Well in concrete case it should return true or false
+   If its arguments are ors then it should return a disjunction
+   If its arguments are not ors then it should return a disjunction of one
+   or a just a conjunction
+   If we make it return a disjunction of one, how will we ever recognise a conjunction
+   Let's say we make it return a conjunction for simplicity then
+   ()
+   "
+  (println "conjoin args" args "\n")
+  (handle-combos
+    (loop [vals args conjun-terms #{} cart-prod #{}]
+      (cond
+        (empty? (first vals))
+        (if (empty? conjun-terms)
+            cart-prod
+            (conj cart-prod conjun-terms))
+
+        (true? (first vals))
+        (recur (rest vals) conjun-terms cart-prod)
+
+        (false? (first vals))
+        false
+
+        (conjun? (first vals))
+        (recur (rest vals)
+               (reduce conj conjun-terms (conjun-operands (first vals)))
+               cart-prod)
+
+        (symbolic? (first vals))
+        (recur (rest vals)
+               (conj conjun-terms (first vals)) cart-prod)
+
+        (disjun? (first vals))
+        (recur (rest vals)
+               conjun-terms
+               (conj cart-prod (disjun-operands (first vals))))
+
+        ; (conditional-value? (first vals))
+        ; (recur (rest vals)
+        ;        (concat (terms (first vals)) disjun-terms))
+
+        :else
+        (error "unknown argument to AND" val)))))
+
+(defn and? [exp] (tagged-list? exp 'and))
+
+(defn eval-and
+  "or returns a disjunction, which is a set of values
+   1. eval all the operands
+   2. "
+  [exp env]
+  (eval-conjoin (list-of-values (operands exp) env)))
+
+;; Procedures
 (defn make-procedure [parameters body env]
   (list 'procedure parameters body env))
 (defn compound-procedure? [p]
@@ -307,6 +519,10 @@
     ;                   env)
     ; (begin? exp)
     ;   (eval-sequence (begin-actions exp) env)
+
+    (and? exp) (eval-and exp env)
+    (or? exp) (eval-or exp env)
+
     (application? exp)
       (applycs (evalcs (operator exp) env)
                (list-of-values (operands exp) env)
