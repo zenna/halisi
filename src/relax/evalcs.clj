@@ -302,6 +302,10 @@
   [exp]
   (tagged-list? exp 'conjun))
 
+(defn add-conjun-operands
+  [conjun operands]
+  (reduce conj conjun operands))
+
 (defn conjun-operands
   [conjun]
   (second conjun))
@@ -351,22 +355,31 @@
 (declare eval-conjoin)
 
 (defn handle-combos
-  [cart-prod]
+  [[conjun-terms cart-prod]]
   "CASES: could be true/false
    Could be just a conkunction
    Could be empty
    -- {{}} if everything was true
    -- if there were no args
    "
-   (println "cart-prod" cart-prod)
+   ; (println "cart-prod" cart-prod)
   (cond
-    (= #{#{true}} cart-prod) true
-    (= #{#{false}} cart-prod) false
-    (= 1 (count cart-prod)) (make-conjun (first cart-prod))
+    (false? cart-prod) false
+
+    ; No disjunction terms
+    (and (empty? conjun-terms) (empty? cart-prod))
+    true
+
+    (empty? cart-prod)
+    (make-conjun conjun-terms)
+
+    ; not empty? then I need to find the cart product
     :else
     (let [product (apply combo/cartesian-product cart-prod)
           ; pvar (println "cartesian product" product)
-          disjun-terms (map eval-conjoin product)]
+          disjun-terms
+          (map (comp eval-conjoin #(concat % conjun-terms))
+               product)]
       (eval-disjoin disjun-terms))))
 
 (defn eval-conjoin
@@ -380,21 +393,22 @@
    If we make it return a disjunction of one, how will we ever recognise a conjunction
    Let's say we make it return a conjunction for simplicity then
    ()
+
+   first prim terms
+   find or terms
    "
-  (println "conjoin args" args "\n")
+  ; (println "conjoin args" args "\n")
   (handle-combos
     (loop [vals args conjun-terms #{} cart-prod #{}]
       (cond
         (empty? (first vals))
-        (if (empty? conjun-terms)
-            cart-prod
-            (conj cart-prod conjun-terms))
+        [conjun-terms cart-prod]
 
         (true? (first vals))
         (recur (rest vals) conjun-terms cart-prod)
 
         (false? (first vals))
-        false
+        [false #{}] 
 
         (conjun? (first vals))
         (recur (rest vals)

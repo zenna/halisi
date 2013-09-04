@@ -143,18 +143,20 @@
     (~'>= ~evy ~(- ey pos-delta))
     (~'<= ~evy ~(+ ey pos-delta))
 
+    ; Points must be certain distane apart
     ~@(reduce concat
         (for [[[path-x0 path-y0] [path-x1 path-y1]] (partition 2 1 vars)]
           `[(~'>= (~'+ ~path-x1 (~'* -1 ~path-x0)) 0)
             (~'<= (~'+ ~path-x1 (~'* -1 ~path-x0)) ~max-step)]))
 
+    ; Points must not be within obstacles
     ~@(for [[x y] vars
               [[x-min x-max][y-min y-max]] obstacles]
           `(~'or
-            (~'>= ~x ~x-min)
-            (~'<= ~x ~x-max)
-            (~'>= ~y ~y-min)
-            (~'<= ~y ~y-max))))}))
+            (~'<= ~x ~x-min)
+            (~'>= ~x ~x-max)
+            (~'<= ~y ~y-min)
+            (~'>= ~y ~y-max))))}))
 
 ;; Inverse Graphics
 ; (defn gen-poly [])

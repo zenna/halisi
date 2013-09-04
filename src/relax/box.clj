@@ -427,9 +427,9 @@
   (o :n-boxes count (cover-abstr x)))
 
 
-(defn -main []
-  (scaling tt gen-random-boxes [[2 10][3 10]]
-           5))
+; (defn -main []
+;   (scaling tt gen-random-boxes [[2 10][3 10]]
+;            5))
 ; (defn -main []
 ;   (scaling cover-abstr gen-random-boxes [[1 1][1 2][1 3][1 4][1 5]]
 ;            2))

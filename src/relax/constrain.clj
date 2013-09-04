@@ -65,6 +65,7 @@
 
   (println "the the-global-environment is" the-global-environment "\n")
   (println "Original Predicate Is" pred  "\n")
+  (println "vars is" vars "\n")
 
   (let [x (evalcs pred the-global-environment)]
     (mapv (comp vec conjun-operands) (disjun-operands x))))
@@ -118,8 +119,9 @@
         large-abstrs (filterv has-volume? 
                              (map #(bound-clause % vars) clauses))
         pvar (println "After removing empty" (count large-abstrs))
-        large-abstrs (cover-abstr large-abstrs)]
-    (println "After dissection" (count large-abstrs) large-abstrs)
+        ; large-abstrs (cover-abstr large-abstrs)
+        ]
+    (println "After dissection" (count large-abstrs))
     (loop [abstrs large-abstrs n-iters 10]
       (println "NUMBOXES" (count abstrs) (reduce + (map volume abstrs)))
       ; (println "NEWBOX" abstrs)
@@ -146,7 +148,7 @@
   "Make a sampler"
   [vars model-constraints pred]
   (let [pred-fn (make-lambda-args pred vars)
-        dnf (to-dnf vars model-constraints pred)
+        dnf (to-dnf-new vars model-constraints pred)
         pvar (println "DNF" (count dnf))
         covers (cover dnf vars)
         volumes (map volume covers)]
@@ -195,7 +197,7 @@
 
 (defn -main[]
   (let [{vars :vars pred :pred}
-        (avoid-orthotope-obs 3 [1 1] [9 9] [[[2 5][5 7]] [[5 8][0 3]]])
+        (avoid-orthotope-obs 4 [1 1] [9 9] [[[2 5][5 7]] [[5 8][0 3]]])
         vars (vec vars)]
   (take-samples pred vars 100)))
 
@@ -203,13 +205,22 @@
   '(and
      a
      b
+     
 
      (or c d e f)
      (or g h i j)))
 
-(defn -main[]
-  (let [dnf (to-dnf-new '[a b c d e f g h i j] nil pred-x)]
-    (println "count" (count dnf) "\n" dnf)))
+; cases, there are no disjunctions as argumenets
+;; Then itll just be a case of a cojunction of terms
+
+;; There ARE only disjunctions
+
+
+;; there's a mix
+
+; (defn -main[]
+;   (let [dnf (to-dnf-new '[a b c d e f g h i j x] nil pred-x)]
+;     (println "count" (count dnf) "\n" dnf)))
 
 ; (defn -main[]
 ;   (take-samples exp-linear '[x1 x2] 100))
