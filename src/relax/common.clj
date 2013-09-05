@@ -32,6 +32,19 @@
 (defn first-operand [ops] (first ops))
 (defn rest-operands [ops] (rest ops))
 
+;; Debug
+(defn dnf-to-sets
+  [dnf]
+  (map (comp set (fn [conj] (map second conj))) dnf))
+
+(defn filter-terms
+  [dnf-sets must-contain]
+  (let [contain-funcs
+        (map #(fn [dnf-set] (contains? dnf-set %)) must-contain)]
+    (filter (fn [dnf-set]
+              ; Check that every (f dnf-set is true)
+              (every? #(true? (% dnf-set)) contain-funcs))
+       dnf-sets)))
 
 ;; IO
 (defn matrix-to-file

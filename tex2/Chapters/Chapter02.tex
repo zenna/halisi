@@ -189,58 +189,10 @@ Fortunately, programming languages are formal objects and their meaning can be s
 Semantics, in a variety of forms (denotational, operational, predicate-transformer, gameplaying) attempts to construct mathematical objects, that describe the meaning of the language.
 Several practical langauges such as Haskell and ML have complete semantics, and are good candidates for use by the proposed method.
 
-\section{Transform rejective generative model}
-Transformational Programming is a prominent method used in automated program development.
-A formal, declarative specification of a program is {\em refined} into a complete program by applying a sequence of correctness-preserving transformations.
-We can appropriate this framework for our purposes; first constrain a naive generative through rejection sampling, then transform into a semantically equivalent, but more efficient program.
+\section{Geometric Perspective}
 
-From a stochasic program $P$ and constraint $C$, we construct a new program $R_P^C$ with rejection sampling semantics.
-$R_P^C$ executes $P$ to sample from its prior and returns the sample $C$ is satisfied, otherwise a further attempt is made.
-$R_P^C$ is what is returned from application of \spacedlowsmallcaps{constrain} to $P$ and $C$, and can also be viewed as the partial-evaluation of the following lisp function:
+First consider a simplified instance of the problem: our generative model defines a distribution over linear transformations of a random vector of uniformly distributed real values, where the length of this vector and parameters to each random variable (both lower and upper bound) are fixed and known ahead of time.
 
-\graffito{Partial evaluation of a program means to take some subset of its arguments, and compile a new program with this subset fixed (under closure) and no longer arguments.}
-\begin{verbatim}
-(defn R [P C]
-  (let [sample (P)]
-  (if (true? (C sample))
-      sample
-      (R P C))))
-\end{verbatim}
-
-Our next objective is to perform a series of transformations to improve the efficiency $R_P^C$.
-By constraining this set of transformations to be semantic preserving - any new program is \textit{equivalent} to the original program, our program will describe the same distribution.
-r
-It does not follow immediately that a transformed program will be constructive, this depends entirely on the transformations applied.
-The follow example illustrates one method, which may fall short of constructivism but could improve upon rejection sampling.
-
-Consider a naive generative model which generates polygons by sampling points uniformly over some two dimensional interval.
-Clearly, the majority of generated polygons will not be convex, most will not even be simple.
-We wish our polygons to be convex and so specify this as some computable predicate $C$.
-$R_P^C$  will construct a fully formed polygon, then reject it if it is not convex.
-One obvious transformation will result in a new program which applies the convexity test to partially constructed proposals, exploting the fact that if some part of a polygon is not convex, neither will the whole polygon ever be.
-Clearly the effiency gains will depend on the complexity of the test, the size of the polygons being generated and the frequency with which it is applied to partial solutions.
-Additionally this kind of transformation cannot be applied unconditionally; there instances of constraints which may fail partial solutions but permit whole solutions compsoed of these failing parts.
-
-\subsection{Domain General and Specific Transformations}
-
-Three well known program transformations are \textit{finite differencing, partial evaluation and dominated convergence}.
-Partial evaluation \citep{paige} is perhaps the mot practical transformation commonly used, and forms the basis of \spacedlowsmallcaps{constrain}.
-It is based on the idea in which a highly parameterised program is concretised by simplification , when some subet of the parameters are fixed.
-It uses a highly generic strategy which traces a portion of the computation for which expressions can be evaluated.
-As a result, partial evaluation must be implemented in full accordance with language semantics
-
-Transformations such as these are deductive in the sense that every one has an associated proof that it is semantic preserving.
-These proofs are typically domain independent; they apply to any program and exploit the denotations, i.e., the meaning of the program syntax to make valid changes.
-Clearly however, many semantic preserving transformations will depend on domain specific proofs.
-A program transformation for the convex polygon example above could depend upon geometric proofs for instance.
-Automatically generating domain specific transformations then must defer to the problem of automated theorem proving.
-This is indeed an active area of research in program transformation.
-
-\section{Sampling}
-
-First I'll consider a simplified instance of the problem, in anticipation that it will yield insight into the feasibility, or otherwise, of approaches to the more general solution, and may in its own right be applicable to many practical domains.
-
-This simplication can be stated simply as follows: our generative model defines a distribution over linear transformations of a random vector of uniformly distributed real values, where the length of this vector and parameters to each random variable (both lower and upper bound) are fixed and known ahead of time.
 A constraint involves the conjunction and disjunction of any number of linear equalities and inequalities on these samples.
 Both the generative model and the constraint are represented as programs in a limited functional language, which importantly is side-effect free and lacks general recursion.
 
@@ -268,35 +220,76 @@ The entire formulae in this form can then be viewed as dividing $\mathbb{R}^n$ i
 The gist of the proposed method, is to find and isolate these polytopes by statically analysing the predicate, and to focus our sampling within surroudign regions.
 Restating the objective more formally, we intend to draw samples from $P(X \vert C)$, where   .
 
-Simple Rejection Sampling
+\section{Issues}
+What Am I doing exactly
+- How does it compare to Church?
+-- What is  the real difference between a condition and a constraint
+- What are application areas
 
-Polytope Sampling
+Three stages
+Extraction of convex polyhedra from program
+- number of convex polyhedra typically exponential in number of variables
+- We need tocounter act this, first pass:
+-- Subsumption/redundancy, some expressions are redundant
+-- infeasible, some expressions when in a conjunction become infeasible
+--- These sets of expressions appear in sets of regularity
 
-\section{Abstract Sampling}
+Join
+- Joining means placing an abstraction aorund some terms
 
-Claim: Naive rejection sampling, volume sampling and abstraction sampling all draw samples from the same distribution namely $P(X | C)$.
+Regularities
+- In many problems the convex polyhedra are positioned with some regularity
+- Can we exploit this
+- parameterised boxes
 
-Definitions
-$X = (x_1,..,x_n)^T$ is a random vector composed of $n$ uniformly distributed random variables.
-Parameters of these rando mvariables
-$C$
+\section{Overlapping Polyhedra}
+Covering of these convex polyhedra
+Accounting for overlapping convex polyhedra
+- Overlapping polyhedra cause 2 problems
+-- 1. Bias, if not accounted for
+-- 2. Inefficiencies when covering
+
+\subsection{Removing overlap}
+First solution is to find intersection between two convex polyhedra.
+Problem 1. This would require conversion to vertex representation which can be exponential
+2. A\B and B\A would not necessarily be convex any more.
+
+Hence we are more interesting in dissecting the abstraction
+
+Dissecting exactly
+The problem then can be stated as given a set of overlapping intervals in the domain, we wish to disect these into a set of non-overlaping intervals.
+It's not clear how hard this problem is, and it is little studied in higher than two or three dimensions.
+
+It should be clear that must be at least as hard as Klee's problem, which is to fine the volume of the union of a set of boxes.
+
+Naive approach is to form a grid of every bound for every box in every dimension.  This results in aworse case peroramnce, which is exponential in d.
+
+There are two areas in which we could relax this problem.  First we can permit some overlap, in accodinace with preceeding paragraph.  If an exact solution is infeasible we would like to be able to tune how much overlap, such that it can be managed.  2. We can tolerate some overextension into free space because 1) Such space may be removed in our divisive stage 2) anypoint landingin free space will be a rejected sample.  Undesirable, but not changing the distribution
+
+Our output sensitive growth algorithm.
+
+Problem 1: In order to be able to disect boxes we ned to know which boxes are overlapping (Do we?), how ca we do this efficiently.
+
+Problem 2: How can we make the expansion of the algorithm constant time
+
+\subsection{Permitting overlap}
+A simple way to permit overlap is to assign every element of the set to a single abstraction.
+Numerous reasonable ways exist to do this, one obious way is to enforce a total order on the abstraction, such that any point is assigned to the most dominant abstraction which encapulates that point
+
+If a sampled point as not selected by first selecting its dominant abstraction it is discard.
+The problem with this is that we are wasting points, perhaps a large percentalge of points.
+What we can do instead is have a cache for each abstraction
+
+PROBLEMTOSOLVE: Does This method work with abstractions as it does with polytopes.
+
+PROBLEMTOSOLVE: How can we find a good assignment
+
+\subsection{Trading them}
 
 
-\section{Joining and Meeting}
-In a partially ordered set $P$, the join and meet of a subset $S$ are respectively the supremum (least upper bound) denoted $\lor S$ and infimum (greatest upper bound) denoted $\land S$, if they exist.
-If $a$ and $b$ are the elements from $P$, the join is denoted $a \lor b$ and meet $a \land b$.
+Overlapping Samplers
+- Caches
 
-Join and meet are symmetric duals.  In a partially ordered set $P$ gives rise to a dual partially ordered set $P^d$, which is the set with the inverse order, i.e. $x \ge y$ in $P^d$ iff $y \ge x$ holds in $P$.
-Join and meet bineg symmetric duals with respect to order of inversion.
-
-A lattice is a partially ordered set in which any two elements have a join and a meet.
-
-What is a join here? How does it relate to the lattice join?
-
-A join calculates the topological clojure of the convex hull of two polyhedra $P_1, P_2$.
-
-There are a few things here:
-First there is a choice of join.  I think a join  
 
 
 \section{Conclusion}

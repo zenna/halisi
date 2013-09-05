@@ -68,12 +68,12 @@ print n_samples, n_vars
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
-for i in range(14,17):
+for i in range(0,99):
     verts = [x for x in chunks(X[i,:],2)]
     codes = [Path.MOVETO] + [Path.LINETO]*(n_vars/2 - 1)
     # print "verts", verts, "codes", codes
     path = Path(verts, codes)
-    patch = patches.PathPatch(path, facecolor='none', lw=1)
+    patch = patches.PathPatch(path, facecolor='none', lw=.05)
     ax.add_patch(patch)
 
 # BOXES

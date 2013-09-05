@@ -68,7 +68,7 @@
   (println "vars is" vars "\n")
 
   (let [x (evalcs pred the-global-environment)]
-    (mapv (comp vec conjun-operands) (disjun-operands x))))
+    (mapv (comp vec #(if (conjun? %) (conjun-operands %) [%])) (disjun-operands x))))
 
 (defn to-dnf
   "Takes a program and converts it to disjunctive normal form"
@@ -210,6 +210,14 @@
      (or c d e f)
      (or g h i j)))
 
+(def exp1
+  '(or (and
+        (or a b)
+        c
+        (and e f))
+        g))
+
+
 ; cases, there are no disjunctions as argumenets
 ;; Then itll just be a case of a cojunction of terms
 
@@ -218,9 +226,9 @@
 
 ;; there's a mix
 
-; (defn -main[]
-;   (let [dnf (to-dnf-new '[a b c d e f g h i j x] nil pred-x)]
-;     (println "count" (count dnf) "\n" dnf)))
+(defn -main[]
+  (let [dnf (to-dnf-new '[a b c d e f g h i j x] nil exp1)]
+    (println "count" (count dnf) "\n" dnf)))
 
 ; (defn -main[]
 ;   (take-samples exp-linear '[x1 x2] 100))
