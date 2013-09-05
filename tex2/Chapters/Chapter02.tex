@@ -4,7 +4,7 @@
 
 We address the problem of tractably drawing exact samples from conditional probability distributions.
 In particular we propose a formalism for constructively incorporating constraints into generative models for probabilstic inference.
-Two potential implementations are outlined, both of which build upon formalisms of inference as conditional execution of a program, and analyse such programs with respect to their formal semantics.
+The presented approach builds upon formalisms of inference as conditional execution of a program, and analysis of such programs with respect to their formal semantics.
 
 \section{Introduction}
 \label{ch:examples} % For referencing the chapter elsewhere, use \autoref{ch:examples} 
@@ -99,97 +99,8 @@ The rest of this study is devoted into proposed means of doing this.
 
 \chapter{Constrained Generative Models}
 
-To recap: we wish to construct a probabilstic program which when evaluated draws samples from a conditonal distribution $P^*(x) = P(x \vert C^*)$.
-And we aim to do so constructively: to synthesise an efficient procedure of this declarative goal, which posseses improved complexity and efficiency properties.
-
-Possible methods are numerous, and vary principally in dependence on domain specific knowledge.
-Two proposals will be outlined informally; both draw primarily from subdomains of program semantics: the automated reasoning, formal verification, debugging, and symbolic execution of programs.
-
-\section{Fault localising evaluation}
-Constraining generative models without knowledge specific to the domain seems implausible; how can one generate only convex polygons without any understanding of convexity or geometry?
-Yet the complexities of representing, incorporating and devising algorithms to exploit domain specific knowledge is best avoided.
-Black box optimisation methods succeed in obviating domain specific requirements, but at the cost of discarding useful information about the structure of the problem and causes of error in proposals.
-This approach posits that when considered in accordance to the semantics of program in which they are represented, $P$, $C^*$ and $x$ are sufficiently meaningful to sidestep any need to inject domain specific knowledge.
-
-The constraint predicate $C^*$ itself contains a wealth of information to aid in both transforming particular samples to force them to adhere to constraints, and transforming the generative model itself.
-The central idea is of \textit{transparency}: to treat neither constraint $C^*$ nor sample $x$ as monolithic and impenetrable entities.
-They are viewed instead as structured objects, composed of parts which individually and in concert have a rigorously defined meaning.
-Failure to satisfy a constraint is not the fault indiscriminately of the whole object then, it can be {\em blamed} on subcomponents.
-This idea is easily explained by example, consider the following predicate on a real valued pair of values $x_1$ and $x_2$:
-
-\begin{verbatim}
-(defn C [x1 x2]
-  (if (and (pos? x1) (neg? x2))   ; If x1 is +ve and x2 -ve
-      true                        ; return true
-      false))                     ; else return false
-\end{verbatim}
-
-Given a sample $(x_1, x_2) = (2.0, 3.0)$ this predicate will return false.
-An understanding of the program will lead a reasoner to blame this failure on the fact that $x_2$ is not negative, and furthermore conclude that any change to $x_2$ to make it negative, such as $x_2 = -0.5$ will satisfy the constraint.
-Hence in order to fix this particular sample such that it satisfies the constraint, we have found a local constraint that needs to be satisfied, namely $x_2$ must be negative.
-We have attributed blame to part of the sample.
-We can extend this idea to the generative model:
-
-\begin{verbatim}
-(defn gen-pair []
-  (list (rand 0 10) (rand -10 10)))
-\end{verbatim}
-
-Now we can ask see what caused $x_2$ to be positive, from the generative model we can clearly see that the evaluation of (rand -10 10), which returns a uniform value between -10 and 10, is to blame.
-Tt is the cause unsatisfiability at the level of the generative model.
-In order to correct this, a local constraint can be applied on the second argument of list (the cause of the value of $x_2$).  That is, a change to (rand -10 10) that will only evaluate to negative values is to be found.
-
-\subsection{An informal algorithm}
-The concepts of \textit{fault localisation}, \textit{counter factual reasoning}, \textit{local consistency} and \textit{causal chaining} can be seen in the example, and are central to the proposed method.
-Informally, the approach can be stated as follows:
-\begin{enumerate}
-\item Evaluate the program until failure (if the constraint is satisfied then we are done), and attribute fault to parts of the program that caused the failure.
-
-A cause of failure could be the evaluation of an expression or the execution of an imperative statement.
-There may be multiple causes, and interdependencies between them.
-
-\item Consider counterfactuals.
-
-Alternative worlds where a particular cause of failure do not occur are considered.
-Specifically we seek a local constraint on the cause closest to failure of the entire predicate, that describes the change required result in satisfiability.
-
-\item Chain causes.
-A causal chain from the cause of failure back to our object of interest is made.
-This object is either the sample if our goal is to fix one particular sample, or the generative model itself.
-
-\item Transform generative model
-Taking both our constraints and generative model, we seek a transformation of the model that causes the constraints to be satisfied.
-This requires reasoning about the probabilstic semantics of the model.
-
-\item Repeat
-This algorithm is iterative; we sample a new value from our transformed generative model and continue to refine it with the previous steps.
-
-\end{enumerate}
-
-This approach can be viewed as a special kind of evaluation, where the objectiveis not to return a value, but instead to work backwards from points of failure to their cause in the generative model.
-In order to do this we must evaluate both forwards to the point of failure, and backwards to infer the causes.  
-
-\subsection{Program Sematnics}
-This method relies on understanding the meaning of a program, its semantics.
-To illustrate let us consider a slight variation of the previous predicate:
-
-\begin{verbatim}
-(defn C2 [x1 x2]
-  (if (foo (pos? x1) (neg? x2)) 
-      true                        
-      false))
-\end{verbatim}
-
-We have substituted the \textit{and} for \textit{foo}, a function of unknown semantics.
-As a result, the program has become meaningless to us.
-We can no longer reason about its behaviour or infer what the cause of failure will be since foo could be any arbitrarily complex or simple function of two arguments.
-Neither then could we expect any automated reasoner to be able to perform this task.
-
-Fortunately, programming languages are formal objects and their meaning can be specified exactly.
-Semantics, in a variety of forms (denotational, operational, predicate-transformer, gameplaying) attempts to construct mathematical objects, that describe the meaning of the language.
-Several practical langauges such as Haskell and ML have complete semantics, and are good candidates for use by the proposed method.
-
-\section{Geometric Perspective}
+% We wish to construct a probabilstic program which when evaluated draws samples from a conditonal distribution $P^*(x) = P(x \vert C^*)$.
+% And we aim to do so constructively: to synthesise an efficient procedure of this declarative goal, which posseses improved complexity and efficiency properties.
 
 First consider a simplified instance of the problem: our generative model defines a distribution over linear transformations of a random vector of uniformly distributed real values, where the length of this vector and parameters to each random variable (both lower and upper bound) are fixed and known ahead of time.
 
@@ -210,23 +121,68 @@ Defines a logical formula of the form:
 x_1 > 10 \lor (x_1 \le 10 \land x_2 > 10) \lor (x_1 \le 10 \land x_1 > 2)
 \end{equation}
 
-The extraction of this logical expression from a the program is important, and the first step of the proposed methods.
-The formula is one of an infinite number of equivalent alternatives, but is distinct in that it is the disjunction of a number of clauses, where each clause is the conjunction of a number of literals.
+The extraction of this logical expression from the program is important, and the first step of the proposed method.
+The formula is in disjunctive normal form: one of an infinite number of equivalent alternatives but unique in that it is the disjunction of a minimal number of clauses, where each clause is the conjunction of a number of literals.
 Each clause can be thought of as a set of local conditions which when all are simultaneously true, will cause the constraint to be satisfied.
-Geometrically, each literal is a linear inequality defininig a half space which splits $\mathbb{R}^n$ into two, and designates one side of the split as feasible and the other infeasible.
-The entire clause is the intersection of a number of these half spaces and is thus a convex polyhedron.
+Geometrically, each literal is a linear inequality defininig a half-space which splits $\mathbb{R}^n$ into two, and designates one side of the split as feasible and the other infeasible.
+The entire clause is the intersection of a number of these half-spaces and is thus a convex polyhedron.
 The entire formulae in this form can then be viewed as dividing $\mathbb{R}^n$ into a number of possibly overlapping convex polyhedrons, within which our sample is permitted to lie.
 
-The gist of the proposed method, is to find and isolate these polytopes by statically analysing the predicate, and to focus our sampling within surroudign regions.
-Restating the objective more formally, we intend to draw samples from $P(X \vert C)$, where   .
+Both the generative model $G$, and condition $C$ define constraints on samples.
+These constraints are compiled into a disjunctive normal form, i.e. a set of convex polyhedra.
+Then we sample points within the volumes of these convex polyhedra.
 
-\section{Issues}
-What Am I doing exactly
-- How does it compare to Church?
--- What is  the real difference between a condition and a constraint
-- What are application areas
+\section{A motivating example: motion planning}
+Planning is a critical problem in robotics, computer graphics, aritificial intelligence.
+Purely geometric strategies have been supplanted by probabilstic methods, which broadly, rely on efficient collision detection to find feasible points, and grow path trees between these points.
+While geometric methods suffer from local minima, probabilstic methods can suffer from not being able to pass through small gaps.
 
-Three stages
+We can take our approach to a simplified instance of the motion planning problem, in a two of three dimensional space we seek to construct a path ${x_0,y_0,x_1,y_1,..,x_n,y_n}$ such that the first point belongs to some start region, the last to a target region, and the path avoids all obstacles.
+Obstacles can be defined as polyhedra, but for simplicity and without loss of generality we will only isothetic (axis aligned) rectangles or boxes, and represented in h-space.
+
+The obstacle avoidance constraint can be stated precisely by asserting that no edge $x_i,y_i,x_{i+1},y_{i+1}$ may cross the boundary of an obstacle.
+This is a non-linear problem, since each point. TODO: Describe non-linear problem mathematically.
+A similar linear problem is to enforce that each vertex does not fall within an obstacle.
+While necessary, this alone is insufficient since the vertices of an edge may not collide with an obstacle but the path between them may cross the obstacle.
+
+I suggest this can be overcome by incorporating two extra details.  First we ensure that the maximum edge length is within some radius.
+This is a linear problem.  Then we increase the number of points.
+
+Effectively we have found a linear equivalent of a nonlinear problem, with the trade off that we increase the dimensionality of the problem. 
+
+Constraint can be described like this:
+
+And in logical form
+
+Hence the trade-off is severe.
+For every new point we add we will gain two new dimensions, and described in more detail in the following paragraph, you'll get b more polytopes.
+
+Niavely scales very badly.  But we can ask many questions, are all these polytopes important, perhaps some contain others.  Perhaps some while logically true are geometrically impossible.  Perhaps we can have a coarser representation of these convex polytopes.  Perhaps there is structure in the way in which they are growing
+
+\{Algorithms}
+
+\section{Program Analysis}
+Program analysis
+if or and functions primitive recursion
+symbolic exection
+
+\section{Sampling}
+Polytope Sampling
+Abstraction
+Our primary results are methods in ensuring the correctness , we analyse these points in detail after a first motivating example.
+
+We then analyse $P$ to extract further constraints on the samples.
+These constraints will define regions of convex polyhedra
+We sample from these regions
+
+Theorem: Polytope sampling is correct.
+
+Theorem: we can sample from disjoint polytopes by first selecting a box and then sampling within that box.
+
+Difficulties arise primarily from two sources, first is avoiding bias and second is handling complexity.
+
+\section{Handling Complexity}
+Problem
 Extraction of convex polyhedra from program
 - number of convex polyhedra typically exponential in number of variables
 - We need tocounter act this, first pass:
@@ -234,10 +190,19 @@ Extraction of convex polyhedra from program
 -- infeasible, some expressions when in a conjunction become infeasible
 --- These sets of expressions appear in sets of regularity
 
-Join
-- Joining means placing an abstraction aorund some terms
+\subsection{Inconsistency}
+Logical inconsistency denotes infeasibility of the conjunction.
+We can determine this efficiently using linear programming.
 
-Regularities
+\subsection{Subsumption}
+Handling this logically
+Geometrically
+
+\section{Abstract Interpretation}
+- Previous methods may help in removing redundant clauses but number of polytopes may and likely will still be exponential
+- Joining means placing an abstraction around some terms
+
+\subsection{Exploiting Regularities}
 - In many problems the convex polyhedra are positioned with some regularity
 - Can we exploit this
 - parameterised boxes
@@ -284,13 +249,9 @@ PROBLEMTOSOLVE: Does This method work with abstractions as it does with polytope
 
 PROBLEMTOSOLVE: How can we find a good assignment
 
-\subsection{Trading them}
+\section{Results}
 
-
-Overlapping Samplers
-- Caches
-
-
+\section{Non-linear case}
 
 \section{Conclusion}
 Here the probabilstic inference framework \spacedlowsmallcaps{query} was given a constructive perspective with \spacedlowsmallcaps{constrain}.
@@ -423,3 +384,118 @@ The synergy between the fields of program semantics and probability is likely to
 % {\includegraphics[width=.45\linewidth]{gfx/example_4}}
 % \caption[Tu duo titulo debitas latente]{Tu duo titulo debitas latente.}\label{fig:example}
 % \end{figure}
+
+% \section{Fault localising evaluation}
+% Constraining generative models without knowledge specific to the domain seems implausible; how can one generate only convex polygons without any understanding of convexity or geometry?
+% Yet the complexities of representing, incorporating and devising algorithms to exploit domain specific knowledge is best avoided.
+% Black box optimisation methods succeed in obviating domain specific requirements, but at the cost of discarding useful information about the structure of the problem and causes of error in proposals.
+% This approach posits that when considered in accordance to the semantics of program in which they are represented, $P$, $C^*$ and $x$ are sufficiently meaningful to sidestep any need to inject domain specific knowledge.
+
+% The constraint predicate $C^*$ itself contains a wealth of information to aid in both transforming particular samples to force them to adhere to constraints, and transforming the generative model itself.
+% The central idea is of \textit{transparency}: to treat neither constraint $C^*$ nor sample $x$ as monolithic and impenetrable entities.
+% They are viewed instead as structured objects, composed of parts which individually and in concert have a rigorously defined meaning.
+% Failure to satisfy a constraint is not the fault indiscriminately of the whole object then, it can be {\em blamed} on subcomponents.
+% This idea is easily explained by example, consider the following predicate on a real valued pair of values $x_1$ and $x_2$:
+
+% \begin{verbatim}
+% (defn C [x1 x2]
+%   (if (and (pos? x1) (neg? x2))   ; If x1 is +ve and x2 -ve
+%       true                        ; return true
+%       false))                     ; else return false
+% \end{verbatim}
+
+% Given a sample $(x_1, x_2) = (2.0, 3.0)$ this predicate will return false.
+% An understanding of the program will lead a reasoner to blame this failure on the fact that $x_2$ is not negative, and furthermore conclude that any change to $x_2$ to make it negative, such as $x_2 = -0.5$ will satisfy the constraint.
+% Hence in order to fix this particular sample such that it satisfies the constraint, we have found a local constraint that needs to be satisfied, namely $x_2$ must be negative.
+% We have attributed blame to part of the sample.
+% We can extend this idea to the generative model:
+
+% \begin{verbatim}
+% (defn gen-pair []
+%   (list (rand 0 10) (rand -10 10)))
+% \end{verbatim}
+
+% Now we can ask see what caused $x_2$ to be positive, from the generative model we can clearly see that the evaluation of (rand -10 10), which returns a uniform value between -10 and 10, is to blame.
+% Tt is the cause unsatisfiability at the level of the generative model.
+% In order to correct this, a local constraint can be applied on the second argument of list (the cause of the value of $x_2$).  That is, a change to (rand -10 10) that will only evaluate to negative values is to be found.
+
+% \subsection{An informal algorithm}
+% The concepts of \textit{fault localisation}, \textit{counter factual reasoning}, \textit{local consistency} and \textit{causal chaining} can be seen in the example, and are central to the proposed method.
+% Informally, the approach can be stated as follows:
+% \begin{enumerate}
+% \item Evaluate the program until failure (if the constraint is satisfied then we are done), and attribute fault to parts of the program that caused the failure.
+
+% A cause of failure could be the evaluation of an expression or the execution of an imperative statement.
+% There may be multiple causes, and interdependencies between them.
+
+% \item Consider counterfactuals.
+
+% Alternative worlds where a particular cause of failure do not occur are considered.
+% Specifically we seek a local constraint on the cause closest to failure of the entire predicate, that describes the change required result in satisfiability.
+
+% \item Chain causes.
+% A causal chain from the cause of failure back to our object of interest is made.
+% This object is either the sample if our goal is to fix one particular sample, or the generative model itself.
+
+% \item Transform generative model
+% Taking both our constraints and generative model, we seek a transformation of the model that causes the constraints to be satisfied.
+% This requires reasoning about the probabilstic semantics of the model.
+
+% \item Repeat
+% This algorithm is iterative; we sample a new value from our transformed generative model and continue to refine it with the previous steps.
+
+% \end{enumerate}
+
+% This approach can be viewed as a special kind of evaluation, where the objectiveis not to return a value, but instead to work backwards from points of failure to their cause in the generative model.
+% In order to do this we must evaluate both forwards to the point of failure, and backwards to infer the causes.  
+
+% \subsection{Program Sematnics}
+% This method relies on understanding the meaning of a program, its semantics.
+% To illustrate let us consider a slight variation of the previous predicate:
+
+% \begin{verbatim}
+% (defn C2 [x1 x2]
+%   (if (foo (pos? x1) (neg? x2)) 
+%       true                        
+%       false))
+% \end{verbatim}
+
+% We have substituted the \textit{and} for \textit{foo}, a function of unknown semantics.
+% As a result, the program has become meaningless to us.
+% We can no longer reason about its behaviour or infer what the cause of failure will be since foo could be any arbitrarily complex or simple function of two arguments.
+% Neither then could we expect any automated reasoner to be able to perform this task.
+
+% Fortunately, programming languages are formal objects and their meaning can be specified exactly.
+% Semantics, in a variety of forms (denotational, operational, predicate-transformer, gameplaying) attempts to construct mathematical objects, that describe the meaning of the language.
+% Several practical langauges such as Haskell and ML have complete semantics, and are good candidates for use by the proposed method.
+
+% \section{Geometric Perspective}
+
+% First consider a simplified instance of the problem: our generative model defines a distribution over linear transformations of a random vector of uniformly distributed real values, where the length of this vector and parameters to each random variable (both lower and upper bound) are fixed and known ahead of time.
+
+% A constraint involves the conjunction and disjunction of any number of linear equalities and inequalities on these samples.
+% Both the generative model and the constraint are represented as programs in a limited functional language, which importantly is side-effect free and lacks general recursion.
+
+% Both a logical and geometric perspective brings some clarity; our constraint program $C$ implicitly defines a logical formula composed of the conjunction and disjunction of a fixed number of literals, each literal representing an inequality of the form $Ax \le b$ (note we can always convert an equality to two inequalities, as well as convert a greater than relation to a less than through negation).
+% For instance the expression:
+
+% \begin{verbatim}
+% (if (> x1 10)                   ; If val satisfies conditions
+%     true                        ; then our constraint is satisfied
+%     (or (> x2 10) (> x1 2)))    ; Otherwise if x2>10 or x1>2
+% \end{verbatim}
+
+% Defines a logical formula of the form:
+% \begin{equation}
+% x_1 > 10 \lor (x_1 \le 10 \land x_2 > 10) \lor (x_1 \le 10 \land x_1 > 2)
+% \end{equation}
+
+% The extraction of this logical expression from a the program is important, and the first step of the proposed methods.
+% The formula is one of an infinite number of equivalent alternatives, but is distinct in that it is the disjunction of a number of clauses, where each clause is the conjunction of a number of literals.
+% Each clause can be thought of as a set of local conditions which when all are simultaneously true, will cause the constraint to be satisfied.
+% Geometrically, each literal is a linear inequality defininig a half space which splits $\mathbb{R}^n$ into two, and designates one side of the split as feasible and the other infeasible.
+% The entire clause is the intersection of a number of these half spaces and is thus a convex polyhedron.
+% The entire formulae in this form can then be viewed as dividing $\mathbb{R}^n$ into a number of possibly overlapping convex polyhedrons, within which our sample is permitted to lie.
+
+% The gist of the proposed method, is to find and isolate these polytopes by statically analysing the predicate, and to focus our sampling within surroudign regions.
+% Restating the objective more formally, we intend to draw samples from $P(X \vert C)$, where   .
