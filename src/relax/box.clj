@@ -2,7 +2,7 @@
                 :author "Zenna Tavares"}
   relax.box
   (:use relax.abstraction)
-  (:use clozen.profile)
+  ; (:use clozen.profile)
   (:use clozen.helpers)
   (:require [clojure.math.combinatorics :as combo])
   (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)]))

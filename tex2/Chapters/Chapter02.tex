@@ -102,7 +102,8 @@ The rest of this study is devoted into proposed means of doing this.
 % We wish to construct a probabilstic program which when evaluated draws samples from a conditonal distribution $P^*(x) = P(x \vert C^*)$.
 % And we aim to do so constructively: to synthesise an efficient procedure of this declarative goal, which posseses improved complexity and efficiency properties.
 
-First consider a simplified instance of the problem: our generative model defines a distribution over linear transformations of a random vector of uniformly distributed real values, where the length of this vector and parameters to each random variable (both lower and upper bound) are fixed and known ahead of time.
+First consider a simplified instance of the problem: our generative model defines a distribution over linear transformations of a random vector of uniformly distributed real values, where the number of variables and its parameters to each random variable (both lower and upper bound) are fixed and known ahead of time.
+For example:
 
 A constraint involves the conjunction and disjunction of any number of linear equalities and inequalities on these samples.
 Both the generative model and the constraint are represented as programs in a limited functional language, which importantly is side-effect free and lacks general recursion.
@@ -129,19 +130,25 @@ The entire clause is the intersection of a number of these half-spaces and is th
 The entire formulae in this form can then be viewed as dividing $\mathbb{R}^n$ into a number of possibly overlapping convex polyhedrons, within which our sample is permitted to lie.
 
 Both the generative model $G$, and condition $C$ define constraints on samples.
-These constraints are compiled into a disjunctive normal form, i.e. a set of convex polyhedra.
-Then we sample points within the volumes of these convex polyhedra.
+Since only linear transformations of random variables are permitted within $G$, it defines a $d$ dimensional interval - a hyper-rectangle - within the sample space $\mathbb{R}^d$.
+$P$ carves a set of convex polyhedra within the this hyperrectangle.
+
+The problem of constrained inference in this setting is then reduced to discovering these convex polyhedra, and efficiently sampling from them without deviating from.
 
 \section{A motivating example: motion planning}
-Planning is a critical problem in robotics, computer graphics, aritificial intelligence.
-Purely geometric strategies have been supplanted by probabilstic methods, which broadly, rely on efficient collision detection to find feasible points, and grow path trees between these points.
-While geometric methods suffer from local minima, probabilstic methods can suffer from not being able to pass through small gaps.
+Planning covers a number of problems critical to robotics, computer graphics and artificial intelligence.
+Here we consider one instance of the problem, which is to find a path between two points or regions within a two or three dimensional space, which avoids collision with any obstacles.
+While numerous approaches exist, sampling based methods such as rapidly exploring random trees (RRT) and probabilistic road maps (PRM) have become established as efficient and practical methods.
+Broadly, they rely on efficient collision detection to find feasible points followed by growth of potential paths between these points.
+However, performance can degrade rapidly in complex environments with narrow passages, where the probability of sampling a point within a the passage is relatively small.
 
-We can take our approach to a simplified instance of the motion planning problem, in a two of three dimensional space we seek to construct a path ${x_0,y_0,x_1,y_1,..,x_n,y_n}$ such that the first point belongs to some start region, the last to a target region, and the path avoids all obstacles.
-Obstacles can be defined as polyhedra, but for simplicity and without loss of generality we will only isothetic (axis aligned) rectangles or boxes, and represented in h-space.
+One application of constrained inference is a straightforward generalisation of the problem statement: from all possible paths within a region, sample a .
+More formally we seek to construct a path $\{x_0,y_0,x_1,y_1,..,x_n,y_n\}$.
+Obstacles can be defined as polyhedra, but for simplicity and without loss of generality we will assume them to be isothetic (axis aligned) rectangles or boxes, and represented in h-space.
 
-The obstacle avoidance constraint can be stated precisely by asserting that no edge $x_i,y_i,x_{i+1},y_{i+1}$ may cross the boundary of an obstacle.
-This is a non-linear problem, since each point. TODO: Describe non-linear problem mathematically.
+The obstacle avoidance constraint can be stated precisely by asserting that no edge $\{x_i,y_i,x_{i+1},y_{i+1}}$ may cross the boundary of an obstacle.
+This is a non-linear problem, which can be seen intuively by observing that the constraints on any point depend on the previous point.
+
 A similar linear problem is to enforce that each vertex does not fall within an obstacle.
 While necessary, this alone is insufficient since the vertices of an edge may not collide with an obstacle but the path between them may cross the obstacle.
 
@@ -150,9 +157,12 @@ This is a linear problem.  Then we increase the number of points.
 
 Effectively we have found a linear equivalent of a nonlinear problem, with the trade off that we increase the dimensionality of the problem. 
 
-Constraint can be described like this:
+And in first order logic logical form
 
-And in logical form
+...
+
+In a functional programming language, we get:
+Note one power of using a programming languages, our program is now of constant length  
 
 Hence the trade-off is severe.
 For every new point we add we will gain two new dimensions, and described in more detail in the following paragraph, you'll get b more polytopes.
@@ -248,6 +258,10 @@ What we can do instead is have a cache for each abstraction
 PROBLEMTOSOLVE: Does This method work with abstractions as it does with polytopes.
 
 PROBLEMTOSOLVE: How can we find a good assignment
+
+\section{NOTES}
+1. Perhaps I need to abstract away the covering problem from the other problems
+2. The
 
 \section{Results}
 

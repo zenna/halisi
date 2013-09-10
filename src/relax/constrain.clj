@@ -12,40 +12,8 @@
   (:use relax.box)
   (:use clozen.helpers)
   (:use relax.evalcs)
+  (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)])
   (:require [clojure.math.combinatorics :as combo]))
-
-(defn ineq-as-matrix
-  "Takes an inequality expression, e.g. (> x 2) and converts it
-   into a matrix for use with the linear programming solver"
-  [exp vars]
-  (let [var-id (zipmap vars (range (count vars)))
-        exp (symbolic-value exp)
-        second-arg (symbolic-value (second exp))
-        add-sub (if (coll? second-arg)
-                    (eval (operator second-arg))
-                    +)
-        arguments (if (coll? second-arg)
-                      (rest second-arg)
-                      [(make-symbolic second-arg)])]
-    [(pass
-        (fn [term row]
-          (cond
-            (tagged-list? (symbolic-value term) '*)
-            (let [{num :num symb :symb} (decompose-binary-exp (symbolic-value term))]
-              (assoc row (var-id (symbolic-value symb)) (* (add-sub 1) num)))
-
-            (symbolic? term)
-            (assoc row (var-id (symbolic-value term)) (add-sub 1))
-
-            :else
-            (error "UNKOWN TERM" term)))
-
-        (vec (zeros (count vars)))
-        arguments)
-    
-    (range 1 (inc (count vars)))
-    (operator exp)
-    (last exp)]))
 
 (defn satisfiable?
   "Does a solution satisfy the constraint or subc constraint"
@@ -123,7 +91,10 @@
         ]
     (println "After dissection" (count large-abstrs))
     (loop [abstrs large-abstrs n-iters 10]
-      (println "NUMBOXES" (count abstrs) (reduce + (map volume abstrs)))
+      ; (println "NUMBOXES" (count abstrs)
+      ;   (let [sum-vol (reduce + (map volume abstrs))
+      ;         union-vol (apply union-volume abstrs)]
+      ;     [sum-vol union-vol (/ union-vol sum-vol)]))
       ; (println "NEWBOX" abstrs)
 
       (cond
@@ -199,7 +170,7 @@
   (let [{vars :vars pred :pred}
         (avoid-orthotope-obs 4 [1 1] [9 9] [[[2 5][5 7]] [[5 8][0 3]]])
         vars (vec vars)]
-  (take-samples pred vars 100)))
+  (profile :info :whatevs (p :FYLL (take-samples pred vars 100)))))
 
 (def pred-x
   '(and
@@ -226,9 +197,9 @@
 
 ;; there's a mix
 
-(defn -main[]
-  (let [dnf (to-dnf-new '[a b c d e f g h i j x] nil exp1)]
-    (println "count" (count dnf) "\n" dnf)))
+; (defn -main[]
+;   (let [dnf (to-dnf-new '[a b c d e f g h i j x] nil exp1)]
+;     (println "count" (count dnf) "\n" dnf)))
 
 ; (defn -main[]
 ;   (take-samples exp-linear '[x1 x2] 100))

@@ -113,7 +113,31 @@
 ;   "path is "
 ;   [path boxes]
 ;   (let [valid-point (map #(point-in-box? % boxes) path)]
-;     (some true? valid-point)))  
+;     (some true? valid-point)))
+
+; (defn avoid-orthotope-obs-f
+;   "Creates a program which when evaluated on a path will return true
+;    only if that path passes through no obstacles
+;    obstacles is a vector of points = [[x1-min x1-max][x2-min x2-max]]"
+;   [path start-region end-region obstacles]
+;   (let [max-step 5
+;         [x0 y0] (first path)
+;         [xn yn] (last vars)]
+;     (and
+;       ; First (last) point must be in start (end) region
+;       (point-in-box? start-point start-region)
+;       (point-in-box? end-point end-region)
+
+;       ; Points must be certain distance apart
+;       (apply and
+;         (for [point path]
+;           (point-in-box? point (make-cube-around-point point step))))
+
+;       ; Points must not be within obstacles
+;       (apply or
+;         (for [point path
+;               obstacle obstacles]
+;               (not (point-in-box? point obstacle))))
 
 (defn avoid-orthotope-obs
   "Creates a program which when evaluated on a path will return true

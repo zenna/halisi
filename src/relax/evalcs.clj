@@ -16,81 +16,8 @@
   (:use relax.conditionalvalue)
   (:use relax.multivalue)
   (:use clozen.helpers)
+  (:use clojure.set)
   (:require [clojure.math.combinatorics :as combo]))
-
-;; Notes
-; Are we doing symbolic execution or conversion of a logical expression to
-; DNF?
-; In normal symbolic execution we are typically looking for paths which lead to some output, perhaps an error.  In particular we are looking for constraints on the path
-; Then, using some constraint solver we can determine whether these constraint are consistent, and hence, determine whether or not we can enounter this error on any permissible input.
-; I analagously are looking for constraints which lead to true
-; THe confusion stems from what precisely is a path in a functional program
-; What if I don't explictly have true or false values.
-
-; Something like
-; (and
-;   (or a b)
-;   (or c d))
-; There is no true or false explicirly, but (or a b), is a binary funtion for tru eand false and so is AND.
-; (if (or a b)
-;     5
-;     6)
-; The output is: 5|(a or b), which is 5|a or 5|b or 6|(not a and not b)
-; SO what's special about if?
-; It's not clear to me why if is special, on the one hand it is special because I need to define it to not explore both branches of a program.
-; IS there a problem with evaluating both branches of an expression.
-; Well efficiency, if only one value is going to be returned then I should only return that
-; Side effects, if a branch has side effects which I do not wnat to be evaluated then that could be problmenatic
-; Recursion.  It could lead to non termination.
-
-; However if the entire interpretation is lazy, thenif need not be special
-; in normal evaluation, but it is still special in symbolic evaluation.
-; If should return a conditional value
-; (if (> a b) 5 6)
-; It's not clear how lazy evauation would work.  But for my intents
-; Assume that
-; (if (or (> x 2) false)
-;     (> x 3)
-;     true)
-
-; ; Proposals:
-; ; 1. if does produce a conditional value
-; ; 2. (> x 3)|(> x 2) (> x 3)|false true|[(< x 2)^ (not false)]
-
-; (and
-;   (if (or (> x 2) false)
-;     (> x 3)
-;     true)
-;   (or (y > 3) (y < 20)))
-
-; TODO
-; 1. I need a (defn handle-and) which if given symbolic input will do something interesting
-; 1. I need a (defn handle-or) which if given symbolic input will do something interesting
-
-; Interplay between conditional values and not
-; 
-; Subsumption
-; Joins
-; REMOVE FALSES
-; COVERT NOT TRUES INTO FALSES AND VICE VERSA
-; 
-
-; (defn handle-and
-;   "")
-
-
-
-
-; or're doing symbolic execution, but conditioning on the output being true
-
-; (if (or (> x 3))
-;     10)
-
-; THen it's a matter of turning conditional values into joint ones
-; e.g. (> x 2) | true -> (> x 2)
-
-; What actually has to change.
-; 1. (and (or (and b c)))
 
 (declare evalcs)
 
@@ -310,20 +237,86 @@
   [conjun]
   (second conjun))
 
+(defn num-conj-operands
+  [term]
+  (if (conjun? term)
+      (count (conjun-operands term))
+      1))
+; FIX
+(defn sub-conj?
+  "is term-term a subset of conjun
+   Both conjun do subset
+   test not conjun, conjun is, do contains
+   test conjun, conjun not, return false but this will never happen
+
+   neither: conjun --> test equality
+   "
+  [test-term conjun]
+  ; (println "test" test-term "conjun" conjun)
+  (cond
+    (and (conjun? test-term) (conjun? conjun))
+    (clojure.set/subset? (conjun-operands test-term)
+                         (conjun-operands conjun))
+
+    (conjun? test-term)
+    false
+
+    (conjun? conjun)
+    (contains? (conjun-operands conjun) test-term)
+
+    :else
+    (= conjun-operands test-term)))
+
+(defn check-subsumption
+  "Check whether one term subsumes another logically, and if
+   so reduce it to a simpler form, e.g.
+   (check-subsumption
+    #{(make-conjun '#{a b c})
+     (make-conjun '#{a b})
+     (make-conjun '#{d e f})}
+   -> #{a b} #{d e f}"
+  [terms]
+  {:post [(do (println "same?" (= % terms)) true)]}
+  (let [pvar (println "term count" (count terms))
+        sorted-terms
+        (apply sorted-set-by #(<= (num-conj-operands %1)
+                            (num-conj-operands %2))
+          terms)]
+      ; (println "sorted terms" sorted-terms)
+    (loop [sorted-terms sorted-terms good-set #{}]
+      (println (count sorted-terms))
+      (if
+        (empty? sorted-terms) good-set
+        (let [colliding-terms ;for which is a sub and romve them
+              (remove #(sub-conj? (first sorted-terms) %) (rest sorted-terms))]
+          ; (println (first sorted-terms) "-" colliding-terms "\n")
+          (recur (set colliding-terms)
+                 (conj good-set (first sorted-terms))))))))
+
 (defn eval-disjoin
+  "Take a bunch of terms which maybe be booleans, primtive constaints,
+   disjunctions or conjunctions and evaluate/simplify it.
+   If they're all false: return false
+   If one is true return true
+   Otherwise filter out all the booleans
+   Merge in the disjunctions
+   and Concatenate on the conjunctions"
   [args]
+  ; (println "ARGS are" args)
+  ; (println "ARGS are" args)
   (make-disjun
     (loop [vals args disjun-terms #{}]
       ; (println "or operands" vals)
       (cond
-        (empty? (first vals))
+        (empty? vals)
         disjun-terms
 
         (true? (first vals))
-        (recur (rest vals) disjun-terms)
+        #{true}
 
+        ; incorrect!
         (false? (first vals))
-        #{false}
+        (recur (rest vals) disjun-terms)
 
         (conjun? (first vals))
         (recur (rest vals) (conj disjun-terms (first vals)))
@@ -369,6 +362,10 @@
     ; No disjunction terms
     (and (empty? conjun-terms) (empty? cart-prod))
     true
+
+    ; NIL BECAUSE FEASIBLE IS EXPECTING ENV FOR SOME REASON
+    (not (feasible? conjun-terms nil))
+    false
 
     (empty? cart-prod)
     (make-conjun conjun-terms)

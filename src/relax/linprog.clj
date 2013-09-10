@@ -10,13 +10,10 @@
   ({'>= LpSolve/GE '> LpSolve/GE 
     '<= LpSolve/LE '< LpSolve/LE} symb))
 
-(defn bounding-box-lp
-  "Find bounding box around system of linear inequalities by making and 
-   solving 2 * n-vars linear programming problems.
-   Constraint in form [[coeffs var-is rhs] .. [..]]
-
-   Returns nil if cannot solve"
-  [constraint vars]
+(defn classify-ineqs
+  "What kind of polyhedron is a system of linear inequalities?
+   Options are 'feasible 'unbounded 'infeasible"
+  [constraints vars]
   (let [n-vars (count vars)
         lp (LpSolve/makeLp 0 n-vars)]
     ; (println "LINPROG: find bounding box, NUM VARS :" n-vars)
@@ -25,7 +22,51 @@
   
     ; Create the linear program
     (doall
-      (for [[coeffs var-is le-ge rhs] constraint]
+      (for [[coeffs var-is le-ge rhs] constraints]
+        (.addConstraintex lp
+          n-vars
+          (double-array coeffs)
+          (int-array var-is)
+          (conv-ineq le-ge) rhs)))
+
+    (.setAddRowmode lp false)
+    
+    ; Make arbitrary linear program: minimise all coefs 1.0
+    ; We're just trying to find if constraints are feasible 
+    ; (could prob do a better way)
+    (.setMinim lp)
+    (.setObjFnex lp
+                  n-vars
+                  (double-array (vec (repeat n-vars 1.0)))
+                  (int-array (range 1 (inc n-vars))))
+    (try
+      (condp = (.solve lp)
+        0 'optimal
+        1 'suboptimal
+        2 'infeasible
+        3 'unbounded
+        4 'degenerate
+        :else 'other
+        )
+      (finally
+        (.deleteLp lp)))))
+
+(defn bounding-box-lp
+  "Find bounding box around system of linear inequalities by making and 
+   solving 2 * n-vars linear programming problems.
+   constraints in form [[coeffs var-is rhs] .. [..]]
+
+   Returns nil if cannot solve"
+  [constraints vars]
+  (let [n-vars (count vars)
+        lp (LpSolve/makeLp 0 n-vars)]
+    ; (println "LINPROG: find bounding box, NUM VARS :" n-vars)
+    (.setAddRowmode lp true)
+    (.setVerbose lp LpSolve/IMPORTANT)
+  
+    ; Create the linear program
+    (doall
+      (for [[coeffs var-is le-ge rhs] constraints]
         (.addConstraintex lp
           n-vars
           (double-array coeffs)

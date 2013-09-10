@@ -3,6 +3,7 @@
   relax.symbolic
   (:use relax.env)
   (:use relax.common)
+  (:use relax.linprog)
   (:use clozen.helpers)
   (:require [clojure.math.combinatorics :as combo]))
 
@@ -101,10 +102,6 @@
     '>= (replace-in-list pred 0 '<)
     (list 'not pred)))
 
-; TODO
-(defn feasible? [conda env]
-  true)
-
 ;; Symbol manipulations (as if there were anything else)
 (defn decompose-binary-exp
   "Takes a binary exp involving a symbol and a concrete number
@@ -140,3 +137,74 @@
   "Conjoin an expression symbolically"
   [& exprs]
   `(~'and ~@exprs))
+
+(defn extract-vars
+  "Extract the variables from a symbolci expr
+   '(> (+ (* 2 (sym x1))
+              (- (sym x2))
+              (sym x2))
+            5))
+    --> #{x1 x2}"
+  [constraint]
+  (reduce
+    (fn [variables sub-exp]
+      ; (println "vars" variables "sub-exp" sub-exp)
+      (cond
+        (symbolic? sub-exp)
+        (if (coll? (symbolic-value sub-exp))
+            (reduce conj variables
+                         (extract-vars (symbolic-value sub-exp)))
+            (conj variables (symbolic-value sub-exp)))
+
+        (coll? sub-exp)
+        (reduce conj variables (extract-vars sub-exp))
+
+        :else
+        variables))
+    #{}
+    constraint))
+
+(defn ineq-as-matrix
+  "Takes an inequality expression, e.g. (> x 2) and converts it
+   into a matrix for use with the linear programming solver"
+  [exp vars]
+  ; (println "exp" exp  "vars" vars "\n")
+  (let [var-id (zipmap vars (range (count vars)))
+        exp (symbolic-value exp)
+        second-arg (symbolic-value (second exp))
+        add-sub (if (coll? second-arg)
+                    (eval (operator second-arg))
+                    +)
+        arguments (if (coll? second-arg)
+                      (rest second-arg)
+                      [(make-symbolic second-arg)])]
+    [(pass
+        (fn [term row]
+          (cond
+            (tagged-list? (symbolic-value term) '*)
+            (let [{num :num symb :symb} (decompose-binary-exp (symbolic-value term))]
+              (assoc row (var-id (symbolic-value symb)) (* (add-sub 1) num)))
+
+            (symbolic? term)
+            (assoc row (var-id (symbolic-value term)) (add-sub 1))
+
+            :else
+            (error "UNKOWN TERM" term)))
+
+        (vec (zeros (count vars)))
+        arguments)
+    
+    (range 1 (inc (count vars)))
+    (operator exp)
+    (last exp)]))
+
+(defn feasible? [conjun-terms env]
+  "Is this set of terms feasible, i.e. consistent
+   e.g. (and (> x 2) (< x 0)) is not feasible
+   since the conjunction can be satisfied by no points"
+  (let [vars (vec (merge-sets (map extract-vars conjun-terms)))
+        ; pvar (println "VARS IS " vars)
+        constraints (mapv #(ineq-as-matrix % vars) conjun-terms)
+        classification (classify-ineqs constraints vars)]
+    ; (println "Type is classification" classification)
+    (not= classification 'infeasible)))
