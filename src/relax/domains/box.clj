@@ -1,6 +1,6 @@
 (ns ^{:doc "Axis Aligned Box (Orthorope) abstractions"
                 :author "Zenna Tavares"}
-  relax.box
+  relax.domains.box
   (:use relax.abstraction)
   ; (:use clozen.profile)
   (:use clozen.helpers)

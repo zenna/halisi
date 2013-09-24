@@ -4,12 +4,13 @@
   (:use relax.common)
   (:use relax.env)
   (:use relax.symbolic)
+  (:use relax.join)
   (:use relax.conditionalvalue)
   (:use relax.multivalue)
   (:use relax.examples)
   (:use relax.linprog)
   (:use relax.abstraction)
-  (:use relax.box)
+  (:require [relax.domains.box :refer :all])
   (:use clozen.helpers)
   (:use relax.evalcs)
   (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)])
@@ -168,37 +169,31 @@
 
 (defn -main[]
   (let [{vars :vars pred :pred}
-        (avoid-orthotope-obs 4 [1 1] [9 9] [[[2 5][5 7]] [[5 8][0 3]]])
+        (avoid-orthotope-obs 3   [1 1] [9 9] 
+                            [[[1.5 4.5][3 7]] [[5 8][0 3]]]
+                            10)
         vars (vec vars)]
   (profile :info :whatevs (p :FYLL (take-samples pred vars 100)))))
 
-(def pred-x
-  '(and
-     a
-     b
+; (def pred-x
+;   '(and
+;      a
+;      b
      
 
-     (or c d e f)
-     (or g h i j)))
+;      (or c d e f)
+;      (or g h i j)))
 
-(def exp1
-  '(or (and
-        (or a b)
-        c
-        (and e f))
-        g))
-
-
-; cases, there are no disjunctions as argumenets
-;; Then itll just be a case of a cojunction of terms
-
-;; There ARE only disjunctions
-
-
-;; there's a mix
+; (def exp1
+;   '(or (and
+;         (or a b)
+;         c
+;         (and e f))
+;         g))
 
 ; (defn -main[]
-;   (let [dnf (to-dnf-new '[a b c d e f g h i j x] nil exp1)]
+;   (let [dnf (to-dnf-new '[a b c d e f g h i j x] nil
+;               (join-substitute pred-x ['[c d e f]]))]
 ;     (println "count" (count dnf) "\n" dnf)))
 
 ; (defn -main[]

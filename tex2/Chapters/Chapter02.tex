@@ -290,6 +290,15 @@ Hence, often times even if such an algorithm is known, it is not used regularly.
 In spite of these issues the synthesis perspective on inference is appealing, and seeks to appeal to the intuition that whether explicitly or otherwise, almost all approaches to probabilstic inference are implemented on computers as probabilistic programs.
 The synergy between the fields of program semantics and probability is likely to yield continued insight.
 
+\section{Abstract Interpretation}
+Abstract program denotes computations in some universe of objects.
+Abstract interpration of programs consists in using that denotation to describe computations in another universe of abstract objects, so that the results of the abstract execution give some information on the actual computations.
+
+Abstract interpretation is typically used to prove numerical properties of teh program.  Requirement suc as "all the array indexes are within the correct bounds, " "division by zero is impossible" to complex loop inariants.
+Moreover, numerical properties may help other kind of analyses, such as termination analyses, timing analyses, shape analyses, stiring cleanness analyses, and so on.
+
+has been employed as a program analysis technique to answe
+
 % \subsection*{Filter generative model}.  From $D$ derive a {\em filter function} $f$ which transforms a sample from a naive model to one which satisfies $D$.
 % That is $f:O \rightarrow O^*$, where $ \bigwedge\limits_{i} d_i(o^*) = 1$.
 % Examples of $f$ could be convex hull algorithms, cycle removing, or variable separation.

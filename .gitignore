@@ -13,3 +13,5 @@ pom.xml.asc
 *.pdf
 *.so
 *.a
+*.aux
+*.log

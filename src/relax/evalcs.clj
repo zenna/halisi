@@ -12,6 +12,7 @@
   relax.evalcs
   (:use relax.env)
   (:use relax.symbolic)
+  (:use relax.join)
   (:use relax.common)
   (:use relax.conditionalvalue)
   (:use relax.multivalue)
@@ -325,6 +326,10 @@
         (recur (rest vals)
                (conj disjun-terms (first vals)))
 
+        (join? (first vals))
+        (recur (rest vals)
+               (conj disjun-terms (first vals)))
+
         (disjun? (first vals))
         (recur (rest vals)
                (reduce conj disjun-terms (disjun-operands (first vals))))
@@ -364,8 +369,8 @@
     true
 
     ; NIL BECAUSE FEASIBLE IS EXPECTING ENV FOR SOME REASON
-    (not (feasible? conjun-terms nil))
-    false
+    ; (not (feasible? conjun-terms nil))
+    ; false
 
     (empty? cart-prod)
     (make-conjun conjun-terms)
@@ -416,6 +421,10 @@
         (recur (rest vals)
                (conj conjun-terms (first vals)) cart-prod)
 
+        (join? (first vals))
+        (recur (rest vals)
+               (conj conjun-terms (first vals)) cart-prod)
+
         (disjun? (first vals))
         (recur (rest vals)
                conjun-terms
@@ -436,6 +445,17 @@
    2. "
   [exp env]
   (eval-conjoin (list-of-values (operands exp) env)))
+
+;; Join
+(defn join-exp?
+  "is it a join exp?"
+  [exp]
+  (tagged-list? exp 'join))
+
+(defn eval-join
+  "evaluate a join operator"
+  [exp env]
+  (make-join (list-of-values (operands exp) env)))
 
 ;; Procedures
 (defn make-procedure [parameters body env]
@@ -533,6 +553,7 @@
 
     (and? exp) (eval-and exp env)
     (or? exp) (eval-or exp env)
+    (join-exp? exp) (eval-join exp env)
 
     (application? exp)
       (applycs (evalcs (operator exp) env)

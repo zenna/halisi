@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012/Debian) (format=pdflatex 2013.5.15)  5 SEP 2013 12:33
+This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012/Debian) (format=pdflatex 2013.5.15)  13 SEP 2013 16:09
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -680,7 +680,7 @@ Package: prelim2e 2009/05/29 v1.3 prelim2e Package (MS)
 Package: everyshi 2001/05/15 v3.00 EveryShipout Package (MS)
 ))
 (/usr/share/texlive/texmf-dist/tex/latex/carlisle/remreset.sty))) (./main.aux
-(./Chapters/Chapter02.aux))
+(./Chapters/Qualexam.aux))
 \openout1 = `main.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 39.
@@ -768,9 +768,50 @@ Package microtype Info: No adjustment of character kerning.
 File: mt-ppl.cfg 2005/11/16 v1.6 microtype config. file: Palatino (RS)
 )
 ABD: EveryShipout initializing macros
-\openout2 = `Chapters/Chapter02.aux'.
+\openout2 = `Chapters/Qualexam.aux'.
 
- (./Chapters/Chapter02.tex
+ (./Chapters/Qualexam.tex
+Package microtype Info: Character `029' is missing
+(microtype)             in font `T1/pplj/m/sc/10.95'.
+(microtype)             Ignoring protrusion settings for this character.
+LaTeX Font Info:    Try loading font information for U+zeur on input line 34.
+
+(/usr/share/texlive/texmf-dist/tex/latex/eulervm/uzeur.fd
+File: uzeur.fd 2005/01/11 v4.0 (WaS)
+)
+(/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-eur.cfg
+File: mt-eur.cfg 2006/07/31 v1.1 microtype config. file: AMS Euler Roman (RS)
+)
+LaTeX Font Info:    Try loading font information for U+zeus on input line 34.
+
+(/usr/share/texlive/texmf-dist/tex/latex/eulervm/uzeus.fd
+File: uzeus.fd 2005/01/11 v4.0 (WaS)
+)
+(/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-eus.cfg
+File: mt-eus.cfg 2006/07/28 v1.2 microtype config. file: AMS Euler Script (RS)
+)
+LaTeX Font Info:    Try loading font information for U+zeuex on input line 34.
+
+(/usr/share/texlive/texmf-dist/tex/latex/eulervm/uzeuex.fd
+File: uzeuex.fd 2005/01/11 v4.0 (WaS)
+)
+LaTeX Font Info:    Try loading font information for OT1+zplm on input line 34.
+
+
+(/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1zplm.fd
+File: ot1zplm.fd 2002/09/08 Fontinst v1.914 font definitions for OT1/zplm.
+)
+LaTeX Font Info:    Try loading font information for T1+fvm on input line 34.
+
+(/usr/share/texlive/texmf-dist/tex/latex/bera/t1fvm.fd
+File: t1fvm.fd 2004/09/07 scalable font definitions for T1/fvm.
+)
+LaTeX Font Info:    Font shape `T1/fvm/m/n' will be
+(Font)              scaled to size 7.65005pt on input line 34.
+ [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
+
+
+] [2]
 Chapter 1.
 
 Class scrreprt Warning: \float@addtolists detected!
@@ -779,141 +820,142 @@ Class scrreprt Warning: \float@addtolists detected!
 (scrreprt)              Support for \float@addtolists may be removed from
 (scrreprt)              `scrreprt' soon .
 
-Package microtype Info: Character `029' is missing
-(microtype)             in font `T1/pplj/m/sc/10.95'.
-(microtype)             Ignoring protrusion settings for this character.
+
+Overfull \hbox (4.56pt too wide) in paragraph at lines 60--63
+\T1/pplj/m/n/10.95 mod-els for prob-a-bil-stic in-fer-ence. The pre-sented ap-p
+roach builds upon
+ []
+
+! Undefined control sequence.
+l.65 \setion
+            {Main points}
+? 
 LaTeX Font Info:    Font shape `T1/pplj/m/sl' in size <10.95> not available
-(Font)              Font shape `T1/pplj/m/it' tried instead on input line 25.
+(Font)              Font shape `T1/pplj/m/it' tried instead on input line 94.
 LaTeX Font Info:    Font shape `T1/pplj/m/sl' in size <9> not available
-(Font)              Font shape `T1/pplj/m/it' tried instead on input line 25.
-LaTeX Font Info:    Try loading font information for U+zeur on input line 27.
-(/usr/share/texlive/texmf-dist/tex/latex/eulervm/uzeur.fd
-File: uzeur.fd 2005/01/11 v4.0 (WaS)
-)
-(/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-eur.cfg
-File: mt-eur.cfg 2006/07/31 v1.1 microtype config. file: AMS Euler Roman (RS)
-)
-LaTeX Font Info:    Try loading font information for U+zeus on input line 27.
-
-(/usr/share/texlive/texmf-dist/tex/latex/eulervm/uzeus.fd
-File: uzeus.fd 2005/01/11 v4.0 (WaS)
-)
-(/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-eus.cfg
-File: mt-eus.cfg 2006/07/28 v1.2 microtype config. file: AMS Euler Script (RS)
-)
-LaTeX Font Info:    Try loading font information for U+zeuex on input line 27.
-
-(/usr/share/texlive/texmf-dist/tex/latex/eulervm/uzeuex.fd
-File: uzeuex.fd 2005/01/11 v4.0 (WaS)
-)
-LaTeX Font Info:    Try loading font information for OT1+zplm on input line 27.
+(Font)              Font shape `T1/pplj/m/it' tried instead on input line 94.
+[3
 
 
-(/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1zplm.fd
-File: ot1zplm.fd 2002/09/08 Fontinst v1.914 font definitions for OT1/zplm.
-)
-LaTeX Font Info:    Try loading font information for T1+fvm on input line 38.
-
-(/usr/share/texlive/texmf-dist/tex/latex/bera/t1fvm.fd
-File: t1fvm.fd 2004/09/07 scalable font definitions for T1/fvm.
-)
-LaTeX Font Info:    Font shape `T1/fvm/m/n' will be
-(Font)              scaled to size 7.65005pt on input line 38.
- [1
-
-
-
-
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-Overfull \hbox (0.13475pt too wide) in paragraph at lines 49--51
+]
+Overfull \hbox (0.13475pt too wide) in paragraph at lines 118--120
 \T1/pplj/m/sc/10.95/80ls query \T1/pplj/m/n/10.95 for-malises prob-a-bilis-tic 
 in-fer-ence as a \T1/pplj/m/it/10.95 pro-gram \T1/pplj/m/n/10.95 in a cor-re-sp
 ond-
  []
 
 LaTeX Font Info:    Font shape `T1/fvm/m/n' will be
-(Font)              scaled to size 9.30756pt on input line 56.
+(Font)              scaled to size 9.30756pt on input line 125.
 
-Overfull \hbox (22.60156pt too wide) in paragraph at lines 62--62
+Overfull \hbox (22.60156pt too wide) in paragraph at lines 131--131
 []  \T1/fvm/m/n/10.95 (let ((val (eval exp))        ; sample from model, call i
 t val[] 
  []
 
 
-Overfull \hbox (5.79211pt too wide) in paragraph at lines 62--62
+Overfull \hbox (5.79211pt too wide) in paragraph at lines 131--131
 []    \T1/fvm/m/n/10.95 (if (pred val)              ; If val satisfies conditio
 ns[] 
  []
 
-[2] [3] [4
-
-
-]
+[4] [5] [6]
 Chapter 2.
 
-Overfull \hbox (5.79211pt too wide) in paragraph at lines 118--118
+Overfull \hbox (5.79211pt too wide) in paragraph at lines 187--187
 []\T1/fvm/m/n/10.95 (if (> x1 10)                   ; If val satisfies conditio
 ns[] 
  []
 
 
-Overfull \hbox (33.80786pt too wide) in paragraph at lines 118--118
+Overfull \hbox (33.80786pt too wide) in paragraph at lines 187--187
 []    \T1/fvm/m/n/10.95 true                        ; then our constraint is sa
 tisfied[] 
  []
 
 
-Overfull \hbox (0.18896pt too wide) in paragraph at lines 118--118
+Overfull \hbox (0.18896pt too wide) in paragraph at lines 187--187
 []    \T1/fvm/m/n/10.95 (or (> x2 10) (> x1 2)))    ; Otherwise if x2>10 or x1>
 2[] 
  []
 
-LaTeX Font Info:    Try loading font information for U+fplmbb on input line 128
+LaTeX Font Info:    Try loading font information for U+fplmbb on input line 197
 .
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ufplmbb.fd
 File: ufplmbb.fd 2003/10/30 Fontinst v1.914 font definitions for U/fplmbb.
-) [5]
+) [7
+
+
+]
+Overfull \hbox (58.4548pt too wide) in paragraph at lines 214--217
+\T1/pplj/m/n/10.95 gion, sam-ple a . More for-mally we seek to con-struct a pat
+h $\U/zeus/m/n/10.95 f\U/zeur/m/n/10.95 x[]\T1/pplj/m/n/10.95 , \U/zeur/m/n/10.
+95 y[]\T1/pplj/m/n/10.95 , \U/zeur/m/n/10.95 x[]\T1/pplj/m/n/10.95 , \U/zeur/m/
+n/10.95 y[]\T1/pplj/m/n/10.95 , .., \U/zeur/m/n/10.95 x[]\T1/pplj/m/n/10.95 , \
+U/zeur/m/n/10.95 y[]\U/zeus/m/n/10.95 g$\T1/pplj/m/n/10.95 .
+ []
+
 ! Extra }, or forgotten $.
-l.149 ... that no edge $\{x_i,y_i,x_{i+1},y_{i+1}}
+l.218 ... that no edge $\{x_i,y_i,x_{i+1},y_{i+1}}
                                                   $ may cross the boundary o...
 
 ? 
-[6]
+[8]
 ! Too many }'s.
-l.169 \{Algorithms}
+l.241 \{Algorithms}
                    
 ? 
-[7]
+[9]
 ! Undefined control sequence.
-l.227 2. A\B
+l.299 2. A\B
              and B\A would not necessarily be convex any more.
 ? 
 ! Undefined control sequence.
-l.227 2. A\B and B\A
+l.299 2. A\B and B\A
                      would not necessarily be convex any more.
 ? 
-[8] [9]) [10] [11
+[10] [11] [12]
+Overfull \hbox (1.86534pt too wide) in paragraph at lines 399--400
+[]\T1/pplj/m/n/10.95 And then it is find-ing a the-ory which gen-er-ates a the-
+ory con-structed
+ []
+
+[13]) [14] [15
 
 
 
 ]
 Package atveryend Info: Empty hook `BeforeClearDocument' on input line 119.
 Package atveryend Info: Empty hook `AfterLastShipout' on input line 119.
- (./main.aux (./Chapters/Chapter02.aux))
+ (./main.aux (./Chapters/Qualexam.aux)
+
+Package mparhack Warning: Marginpars may have changed.
+(mparhack)                Rerun to get them right.
+
+)
 Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 119.
 Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 119.
-Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: BFB1A27B760768E46C1FC80A524D3C5F;1324.
+
+
+Package rerunfilecheck Warning: File `main.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `main.out':
+(rerunfilecheck)             Before: BF0230C66338E801A78EFD85EDBE76E5;1558
+(rerunfilecheck)             After:  AEF5DF84FDCF260A4B707AFCAAD4FF9C;1677.
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 119.
  ) 
 Here is how much of TeX's memory you used:
- 14350 strings out of 493485
- 218438 string characters out of 3143526
- 490894 words of memory out of 3000000
- 17313 multiletter control sequences out of 15000+200000
+ 14368 strings out of 493485
+ 218634 string characters out of 3143526
+ 489894 words of memory out of 3000000
+ 17321 multiletter control sequences out of 15000+200000
  56552 words of font info for 93 fonts, out of 3000000 for 9000
  957 hyphenation exceptions out of 8191
- 47i,14n,67p,563b,410s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 45i,14n,67p,594b,492s stack positions out of 5000i,500n,10000p,200000b,50000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/share/texliv
 e/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf
 -dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/
@@ -930,10 +972,10 @@ exlive/texmf-dist/fonts/type1/public/bera/fvmr8a.pfb></usr/share/texlive/texmf-
 dist/fonts/type1/public/amsfonts/symbols/msam10.pfb></usr/share/texlive/texmf-d
 ist/fonts/type1/urw/palatino/uplr8a.pfb></usr/share/texlive/texmf-dist/fonts/ty
 pe1/urw/palatino/uplri8a.pfb>
-Output written on main.pdf (11 pages, 135196 bytes).
+Output written on main.pdf (15 pages, 146922 bytes).
 PDF statistics:
- 219 PDF objects out of 1000 (max. 8388607)
- 187 compressed objects within 2 object streams
- 37 named destinations out of 1000 (max. 500000)
- 10905 words of extra memory for PDF output out of 12000 (max. 10000000)
+ 256 PDF objects out of 1000 (max. 8388607)
+ 219 compressed objects within 3 object streams
+ 47 named destinations out of 1000 (max. 500000)
+ 10937 words of extra memory for PDF output out of 12000 (max. 10000000)
 

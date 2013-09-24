@@ -143,9 +143,8 @@
   "Creates a program which when evaluated on a path will return true
    only if that path passes through no obstacles
    obstacles is a vector of points = [[x1-min x1-max][x2-min x2-max]]"
-  [n-points [sx sy :as start] [ex ey :as end] obstacles]
+  [n-points [sx sy :as start] [ex ey :as end] obstacles max-step]
   (let [pos-delta 0.1
-        max-step 5
         vars
         (for [i (range n-points)]
           [(symbol (str "x" i)) (symbol (str "y" i))])
@@ -174,7 +173,7 @@
             (~'<= (~'+ ~path-x1 (~'* -1 ~path-x0)) ~max-step)]))
 
     ; Points must not be within obstacles
-    ~@(for [[x y] vars
+    ~@(for [[x y] (subvec (vec vars) 1 (dec (count vars)))
               [[x-min x-max][y-min y-max]] obstacles]
           `(~'or
             (~'<= ~x ~x-min)
