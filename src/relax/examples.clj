@@ -115,6 +115,27 @@
 ;   (let [valid-point (map #(point-in-box? % boxes) path)]
 ;     (some true? valid-point)))
 
+; (defn avoids-obstacles?
+;   [path start target obstacles max-step]
+;   (let [p-start (first path)
+;         p-end (last vars)]
+
+;     (and
+;       (in-box? p-start start)     ; First point must be in start
+;       (in-box? p-end target)      ; Last point must be in target
+
+;                                   ; Points must be at most max-distance apart
+;       (apply and
+;         (for [p path]
+;           (in-box? p (make-square-around-point point step))))
+
+;                                   ; Points must not be within obstacles
+;       (apply or
+;         (for [p path              ; Consider all combinations of points
+;               o obstacles]        ;   and obstacles
+;           (not (in-box? p o))))   ; Check point is not in obstacle 
+
+
 ; (defn avoid-orthotope-obs-f
 ;   "Creates a program which when evaluated on a path will return true
 ;    only if that path passes through no obstacles

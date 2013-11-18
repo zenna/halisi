@@ -16,6 +16,12 @@
   (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)])
   (:require [clojure.math.combinatorics :as combo]))
 
+; The variables have some history
+; Originally I would add on at the end when I found the bounding box using lp
+; Then I changed it so that I included them in the actual code
+; This was problemantic as I got some kind of stack overflow
+; But then I changed to and or model. and now I am not sure what the current status is.
+
 (defn satisfiable?
   "Does a solution satisfy the constraint or subc constraint"
   [sample formula vars]
@@ -24,8 +30,9 @@
     (every? true? (map #(evalcs % extended-env) formula))))
 
 (defn to-dnf-new
-  "Takes a program and converts it to disjunctive normal form"
-  [vars model-constraints pred]
+  "Evaluates pred using abstract interpretation.
+   vars - list of symbols which the interpreter should treat as variables"
+  [vars pred]
 
   ; Add variables to environment
   (doall
@@ -39,26 +46,26 @@
   (let [x (evalcs pred the-global-environment)]
     (mapv (comp vec #(if (conjun? %) (conjun-operands %) [%])) (disjun-operands x))))
 
-(defn to-dnf
-  "Takes a program and converts it to disjunctive normal form"
-  [vars model-constraints pred]
+; (defn to-dnf
+;   "Takes a program and converts it to disjunctive normal form"
+;   [vars model-constraints pred]
 
-  ; Add variables to environment
-  (doall
-    (for [variable vars]
-      (define-symbolic! variable the-global-environment)))
+;   ; Add variables to environment
+;   (doall
+;     (for [variable vars]
+;       (define-symbolic! variable the-global-environment)))
 
-  (println "the the-global-environment is" the-global-environment "\n")
-  (println "Original Predicate Is" pred  "\n")  
-  (println "the expanded predicate is"(andor-to-if pred)  "\n")
+;   (println "the the-global-environment is" the-global-environment "\n")
+;   (println "Original Predicate Is" pred  "\n")  
+;   (println "the expanded predicate is"(andor-to-if pred)  "\n")
 
-  (let [ineqs (multivalues
-                (all-possible-values 
-                (evalcs (andor-to-if pred)
-                                            ; (conj model-constraints pred)))
-                        the-global-environment)))]
-    (map value-conditions
-         (filter #(true? (conditional-value %)) ineqs))))
+;   (let [ineqs (multivalues
+;                 (all-possible-values 
+;                 (evalcs (andor-to-if pred)
+;                                             ; (conj model-constraints pred)))
+;                         the-global-environment)))]
+;     (map value-conditions
+;          (filter #(true? (conditional-value %)) ineqs))))
 
 (defn bound-clause
   "Take a clause (from dnf) and find bounding box"
@@ -118,9 +125,9 @@
 
 (defn constrain-uniform-divisive
   "Make a sampler"
-  [vars model-constraints pred]
+  [vars pred]
   (let [pred-fn (make-lambda-args pred vars)
-        dnf (to-dnf-new vars model-constraints pred)
+        dnf (to-dnf-new vars pred)
         pvar (println "DNF" (count dnf))
         covers (cover dnf vars)
         volumes (map volume covers)]
@@ -131,7 +138,7 @@
               {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
               (recur (inc n-sampled) (inc n-rejected)))))))
 
-;; Other
+  ;; Other
 (defn naive-rejection
   "Just sample and accept or reject"
   [variable-intervals pred]
@@ -142,59 +149,41 @@
          {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
          (recur (inc n-sampled) (inc n-rejected)))))))
 
+(defn make-uniform-prior
+  "Construct a uniform prior from some symbol names and intervals.
+   This is a hack which should, and will eventually be done through normal
+   abstract interpretation
+   vars - list of variables, e.g. [x1 x2 x3]. Order matters
+   var - map from variable to [lower-bound upper-bound]"
+   [vars var-intervals]
+   #(interval-sample (map var-intervals vars)))
+
+;; Other
+(defn naive-rejection2
+  "Return a sampler that will keep generating sample from prior until it
+   satisfies pred"
+  [vars pred prior]
+  (let [pred-fn (make-lambda-args pred vars)]
+    #(loop [n-sampled 0 n-rejected 0]
+      (let [sample (prior)]
+       (if (apply pred-fn sample)
+           {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
+           (recur (inc n-sampled) (inc n-rejected)))))))
+
 (defn take-samples
+  "Constructs a sampler using constrain-uniform-divisive and writes results
+   to file"
   [pred vars n-samples]
-  (let [intervals (mapv #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)
+  (let [;intervals (mapv #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)
         new-model (constrain-uniform-divisive
                     vars
-                    (reduce concat intervals)
                     pred)
         data (repeatedly n-samples new-model)
         samples (extract data :sample)
         n-sampled (sum (extract data :n-sampled))
-        n-rejected (sum (extract data :n-rejected))
-
-        ; srs-model (naive-rejection
-        ;   (zipmap vars (repeat (count vars) (vector 0 10))) pred)
-        ; srs-data (repeatedly n-samples srs-model)
-        ; srs-samples (extract srs-data :sample)
-        ; srs-n-sampled (sum (extract srs-data :n-sampled))
-        ; srs-n-rejected (sum (extract srs-data :n-rejected))
-        ]
+        n-rejected (sum (extract data :n-rejected))]
         (samples-to-file "op" samples)
         ; (samples-to-file "srsop" srs-samples)
         (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
         ; (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
         samples))
-
-(defn -main[]
-  (let [{vars :vars pred :pred}
-        (avoid-orthotope-obs 3   [1 1] [9 9] 
-                            [[[1.5 4.5][3 7]] [[5 8][0 3]]]
-                            10)
-        vars (vec vars)]
-  (profile :info :whatevs (p :FYLL (take-samples pred vars 100)))))
-
-; (def pred-x
-;   '(and
-;      a
-;      b
-     
-
-;      (or c d e f)
-;      (or g h i j)))
-
-; (def exp1
-;   '(or (and
-;         (or a b)
-;         c
-;         (and e f))
-;         g))
-
-; (defn -main[]
-;   (let [dnf (to-dnf-new '[a b c d e f g h i j x] nil
-;               (join-substitute pred-x ['[c d e f]]))]
-;     (println "count" (count dnf) "\n" dnf)))
-
-; (defn -main[]
-;   (take-samples exp-linear '[x1 x2] 100))

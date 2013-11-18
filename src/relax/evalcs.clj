@@ -352,9 +352,45 @@
 
 (declare eval-conjoin)
 
+; (defn num-product-terms-elimated
+;   "Given a set (of sets) X = [X_1, X_2, ...], e.g. [[a b c][d e f][g h i][j k]]
+;    and a ignore set I = [I_1, I_2, ...], e.g. [[a d][d g][c][g j]],
+;    of the cartesian product of sets of X, compute the number that are eliminated by the ignore sets.
+
+;    For a single ignore tuple I_i, the number of terms eliminated is:
+
+;    For two ignore tuples I_i, I_(i+1) we must consider the number that
+;    they mutually eliminate, and subtract thi value.
+;    There appear to be three cases of interest.
+;    Let cover(X, I_i) return a subset of X, X* where each set in X* contains an element of I_i.
+
+;    There are three cases
+;    1. There is no overlap in the sets covered by the ignore
+;    The number of terms is the product of the size of the remaining sets
+;    (reduce * (map count X)), or 1 if there are no others.
+
+;    2. There is overlap
+;    a) But the elements are different
+;    Then the number shared is zero
+;    b) Shared elements
+;    The number of terms is the product of the size of the remaining sets
+;    (reduce * (map count X)), or 1 if there are no others.
+
+;    For more than two ignore tuples
+;    We can build it incrementaly, by starting with a single tuple,
+;    computing the number of eliminated terms, adding a a new tuple,
+;    finding the number of terms and subtracting shared number of terms,
+;    adding a new tuple and finding the new number of terms minus the shared
+;    number of terms with all the previous. 
+;    "
+
 (defn handle-combos
   [[conjun-terms cart-prod]]
-  "CASES: could be true/false
+  "Handles evaluation of conjoin (and ..)
+   arguments to and are separated into terms which are a disjunction
+   and the rest.
+
+   CASES: could be true/false
    Could be just a conkunction
    Could be empty
    -- {{}} if everything was true
@@ -377,7 +413,43 @@
 
     ; not empty? then I need to find the cart product
     :else
-    (let [product (apply combo/cartesian-product cart-prod)
+    (let [n-terms (apply * (map count cart-prod))
+          n-check (min 10 n-terms)
+          inconsistent          
+          (loop [inconsistent #{} n-check n-check]
+            (cond
+              (zero? n-check)
+              inconsistent
+
+              :else
+              (let [to-check  
+                    (set (doall (remove nil?
+                      (for [term cart-prod]
+                        (if (flip 0.1)
+                            (rand-nth (vec term))
+                            nil)))))]
+                (cond 
+                  (empty? to-check)
+                  (recur inconsistent (dec n-check))
+
+                  (feasible? (reduce conj conjun-terms to-check) nil)
+                  (recur inconsistent (dec n-check))
+
+                  ; Avoid finding ignore elements which are supersets of
+                  ; Ones found already, since that's redundant.
+                  (some #(clojure.set/superset? to-check %) inconsistent)
+                  (recur inconsistent (dec n-check))
+
+                  :else
+                  (recur (conj inconsistent to-check) (dec n-check))))))
+
+          slimmed-down (map #(Math/pow 4 (- (count cart-prod) %)) (map count inconsistent))
+
+          slimmed-down (- n-terms (sum slimmed-down))
+
+          pvar (println "n-terms" n-terms " inconsistent count" (count inconsistent) ": " (map count inconsistent) " slimmed-down" slimmed-down)
+          ; product (apply combo/cartesian-product cart-prod)
+          product (cartesian-product-ignore inconsistent (vec cart-prod))
           ; pvar (println "cartesian product" product)
           disjun-terms
           (map (comp eval-conjoin #(concat % conjun-terms))
