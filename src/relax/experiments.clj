@@ -4,27 +4,42 @@
   (:require [relax.constrain :refer :all])
   (:require [relax.examples :refer :all])
   (:require [clozen.helpers :refer :all])
-  (:require [clozen.profile :refer :all])
+  (:require [clozen.profile.scaling :refer :all])
   (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)]))
 
-; How to interface the prior and the predicate
-; Prior returns list. Interpreter applies predicate to list
-; if we just do function application then all our predicates will be unary.
-; Go with apply
+; The scientific questions I want to answer are:
+; 1. What is the effect of 
+; . a) doing the reduction, the pruning
+;   b) doing the inconsistency checking
+;   c) doing the joining
 
+; On run-time and rejected samples.
+; For rejected samples I just need a bar chart
+
+; How to interface the prior and the predicate
 ; TODO: Need to fix scaling so that it works with n-samples = 1
 ; TODO: Need to make more efficient so I can just pipe into python script
-; TODO: Need easy way to compare with rejection sampling
 ; TODO: Need easy way to compare wit h different versions
+; TODO: Disable printing, use loggin
+; TODO: Write tests to see if samplers are actually working
+; How to enable/disable different parts for testing
+; -- Simplest solution. Just rename different functions
 
-; ; 1. Comparison with rejection
+; (defn my-test-function
+;   (let [x (bucket (my-first-function 10 20 30)
+;                   (my-second-function 10 20 30))]
 
-; Goal: (compare orthotope-experiment
-;                rejection-sampling
-;                what-sampling)
+; I am looking for a way to differentially test different version of the code
+; One example is in using different versions
 
-; This is at least sillyly named because our rejection sampler
-; is in orthotope sampler.
+; The problem with interopabiltiy with scaling is that there's no way for
+; scaling as a function to know that there are two buckets to test
+; And what if you have multiple buckets.
+
+; There's a more elegant way to construct this I am sure, but for now I'll just
+; do it manually.
+; What to test
+;; Impact of 
 
 (defn plan-by-rejection
   "Path planning example with rejection sampler"
@@ -46,7 +61,7 @@
           var-intervals (assoc var-intervals 'y9 [8.9 9.1])
 
           prior (make-uniform-prior vars var-intervals)
-          sampler (naive-rejection2 vars pred prior)]
+          sampler (naive-rejection vars pred prior)]
     (p :sampling-time (doall (repeatedly n-samples sampler)))))
 
 (defn plan-by-construct
@@ -69,13 +84,13 @@
   []
   (let [
         construct-results (scaling plan-by-construct identity
-                         [[100] [200] [300] [400] [500]] 2)
+                         (map vector (range 10 800 60)) 2)
         construct-run-times
         (scale-indep-input construct-results
           [:taoensso.timbre.profiling/whole :max]
           [:taoensso.timbre.profiling/sampling-time :max])
         reject-results (scaling plan-by-rejection identity
-                       [[10] [20] [30] [40] [50]] 2)
+                       (map vector (range 10 800 60)) 2)
         reject-run-times
         (scale-indep-input reject-results
           [:taoensso.timbre.profiling/whole :max]
@@ -86,22 +101,4 @@
      construct-run-times
     (flatten-scaling-data construct-run-times)
     (flatten-scaling-data reject-run-times)]))
-
-; Problems
-; 1. I have a lot of duplication
-; 2. I have two samples
-
-; (def a [{[10] [[295133622 150166917]], [20] [[145979261 127165609]], [30] [[115351336 134856436]], [40] [[124280018 114019402]], [50] [[102789291 140268403]]}])
-
-; In this case it's 100 times slower
-; There are many possible reasons for this.
-;; 1. The compilation time is taking up too much of the run time
-;; - This would be become clear as the number of samples increases heavily
-;; - Or separating out compilation time from whole time
-
-;; 2. The printing to screen is making a big difference
-;; - This would become clear by removing the printing to screen
-
-;; 3. My rejection sampler isn't actually working
-;; - Should check this
 

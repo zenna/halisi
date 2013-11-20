@@ -139,16 +139,6 @@
               (recur (inc n-sampled) (inc n-rejected)))))))
 
   ;; Other
-(defn naive-rejection
-  "Just sample and accept or reject"
-  [variable-intervals pred]
-  (let [pred-fn (make-lambda-args pred (vec (keys variable-intervals)))]
-  #(loop [n-sampled 0 n-rejected 0]
-    (let [sample (interval-sample (vals variable-intervals))]
-     (if (apply pred-fn sample)
-         {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
-         (recur (inc n-sampled) (inc n-rejected)))))))
-
 (defn make-uniform-prior
   "Construct a uniform prior from some symbol names and intervals.
    This is a hack which should, and will eventually be done through normal
@@ -159,7 +149,7 @@
    #(interval-sample (map var-intervals vars)))
 
 ;; Other
-(defn naive-rejection2
+(defn naive-rejection
   "Return a sampler that will keep generating sample from prior until it
    satisfies pred"
   [vars pred prior]
