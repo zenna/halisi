@@ -61,17 +61,58 @@
         sampler (constrain-uniform-divisive vars pred)]
   (p :sampling-time (doall (repeatedly n-samples sampler)))))
 
+  (defn map-to-python-dict
+    [clojure-map]
+    "Replace symbols and keywords by strings"
+    (let [pythonise
+          (fn [elem]
+            (println "elem" elem)
+            (cond
+              (or (keyword? elem) (symbol? elem))
+              (str elem)
+
+              (map? elem)
+              (map-to-python-dict elem)
+
+              :else
+              elem))]
+    (zipmap (map pythonise (keys clojure-map))
+            (map pythonise (vals clojure-map)))))
+
 (defn run-all-experiments
   ""
   []
-  (coll-to-file
-    (bucket-scaling-plot
-      (bucket-test
-        [:sample-type]
-        (scaling (bucket :sample-type plan-by-construct plan-by-rejection)
-                 identity
-                 (map vector (range 10 800 120)) 2))
-       [:taoensso.timbre.profiling/whole :max]
-       [:taoensso.timbre.profiling/sampling-time :max])
-    "zennabadman"))
+  (let [plot-legend 
+        {:x-label "Number of samples"
+         :y-label "Run-time (ns)"
+         :title "Comparison of different samplers"
+         :inspect-legend 
+         {":taoensso.timbre.profiling/whole :max" "Whole run time"
+          ":taoensso.timbre.profiling/sampling-time :max" "Sampling time only"}
+         :bucket-legend
+         {":sample-type"
+          {:name "Sampler Type"
+           :options {0 "Construct Sampler" 1 "Rejection Sampler"}}}}
+         plot-legend-python
+         "{':x-label' : 'Number of samples',
+          ':y-label' : 'Run-time (ns)',
+          ':title' : 'Comparison of different samplers',
+          ':inspect-legend' : 
+          {':taoensso.timbre.profiling/whole :max' : 'Whole run time',
+           ':taoensso.timbre.profiling/sampling-time :max' : 'Sampling time only'},
+          ':bucket-legend' :
+          {':sample-type' :
+           {':name' : 'Sampler Type',
+            ':options' : {0 : 'Construct Sampler', 1 : 'Rejection Sampler'}}}}"]
+    (coll-to-file
+      (bucket-scaling-plot
+        (bucket-test
+          [:sample-type]
+          (scaling (bucket :sample-type plan-by-construct plan-by-rejection)
+                   identity
+                   (map vector (range 10 100 50)) 2))
+        plot-legend-python
+         [:taoensso.timbre.profiling/whole :max]
+         [:taoensso.timbre.profiling/sampling-time :max])
+      "zennabadman")))
 
