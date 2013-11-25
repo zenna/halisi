@@ -45,7 +45,32 @@
 ; How can I know if i've reached a budget?
 ; Once I've reached a budget how can I backtrack?
 ; Thi would interoduce an arbitrary order dependence.
-;1 
+;1
+
+; So join will be an operation that happens in evaluation
+; Most importantly in handle-combos.
+; It will look deep into the nested structure and consider any joins
+; joining def
+
+; it needs to know what that will entail.
+;; Complexiy in terms of reduction in dnf can be easily computed
+;; Consider comparing joining (join x y z) with (join d e f)
+;; if i do (join x y z) i know i'll get entities (join x y z)
+
+; There are many questions of myopia nad ordering, for this example it's enough
+; as a first approximation the joiner will do something like
+; look at entities in its operands, decide whether to join one thing over another
+; based on the reduction the number of terms
+; and when you join these things.
+; I'll construct a graph of all the abstract entities and use a louvain style decision
+; saying basically if i joined these two
+
+; Here's the thin
+
+; For a cartesian product
+; THe onbvious joins are the terms inside a disjunction
+; Less obvio  
+
 (defn join?
   [obj]
   (tagged-list? obj 'join-obj))
@@ -53,6 +78,15 @@
 (defn make-join
   [args]
   `(~'join-obj ~(set args)))
+
+; (def my-set [a b c][d e f][g h])
+; (def joined ['(a d (joined g h))
+;               ((joined a b) d)])
+
+; (defn cartesian-product-x
+;   "Find the cartesian product of"
+;   [colls joined]
+
 
 (defn join-substitute
   "Take an expression and join some terms in it

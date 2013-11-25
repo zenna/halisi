@@ -34,7 +34,7 @@ for line in bucket_file:
   if ":inspect-legend" in axis_legends and inspect in axis_legends[':inspect-legend']:
     inspect = axis_legends[":inspect-legend"][inspect]
 
-  legends.append(bucket_human_name + "=" + bucket_human_option + ", " + inspect)
+  legends.append(bucket_human_name + "=" + str(bucket_human_option) + ", " + str(inspect))
   plt.plot(np.sort(x_vals), y_vals)
   print "x", np.sort(x_vals), "y", y_vals
 

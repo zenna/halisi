@@ -1,20 +1,19 @@
 (ns ^{:doc "Constrain a generative model"
       :author "Zenna Tavares"}
   relax.constrain
-  (:use relax.common)
-  (:use relax.env)
-  (:use relax.symbolic)
-  (:use relax.join)
-  (:use relax.conditionalvalue)
-  (:use relax.multivalue)
-  (:use relax.examples)
-  (:use relax.linprog)
-  (:use relax.abstraction)
-  (:require [relax.domains.box :refer :all])
-  (:use clozen.helpers)
-  (:use relax.evalcs)
-  (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)])
-  (:require [clojure.math.combinatorics :as combo]))
+  (:require [relax.common :refer :all]
+            [relax.env :refer :all]
+            [relax.symbolic :refer :all]
+            [relax.conditionalvalue :refer :all]
+            [relax.multivalue :refer :all]
+            [relax.examples :refer :all]
+            [relax.linprog :refer :all]
+            [relax.abstraction :refer :all]
+            [relax.domains.box :refer :all]
+            [relax.evalcs :refer :all]
+            [clozen.helpers :refer :all]
+            [taoensso.timbre.profiling :as profiling :refer (p o profile)]
+            [clojure.math.combinatorics :as combo]))
 
 ; The variables have some history
 ; Originally I would add on at the end when I found the bounding box using lp
@@ -46,27 +45,6 @@
   (let [x (evalcs pred the-global-environment)]
     (mapv (comp vec #(if (conjun? %) (conjun-operands %) [%])) (disjun-operands x))))
 
-; (defn to-dnf
-;   "Takes a program and converts it to disjunctive normal form"
-;   [vars model-constraints pred]
-
-;   ; Add variables to environment
-;   (doall
-;     (for [variable vars]
-;       (define-symbolic! variable the-global-environment)))
-
-;   (println "the the-global-environment is" the-global-environment "\n")
-;   (println "Original Predicate Is" pred  "\n")  
-;   (println "the expanded predicate is"(andor-to-if pred)  "\n")
-
-;   (let [ineqs (multivalues
-;                 (all-possible-values 
-;                 (evalcs (andor-to-if pred)
-;                                             ; (conj model-constraints pred)))
-;                         the-global-environment)))]
-;     (map value-conditions
-;          (filter #(true? (conditional-value %)) ineqs))))
-
 (defn bound-clause
   "Take a clause (from dnf) and find bounding box"
   [clause vars]
@@ -89,7 +67,6 @@
 (defn cover
   "Cover each polytope individually"
   [clauses vars]
-  ; (println  "CLAUSES" clauses)
   (let [budget 2500
         ; pvar (println "ORIGINAL BOX UNFILT" (map #(bound-clause % vars) clauses))
         large-abstrs (filterv has-volume? 
@@ -135,7 +112,12 @@
         (let [abstr (categorical covers volumes)
               sample (abstraction-sample abstr)]
           (if (apply pred-fn sample)
-              {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
+              (o :reject-ratio ; Profile the rejection count
+                  (fn [{n-rejected :n-rejected  n-sampled :n-sampled}]
+                    (/ n-rejected (+ n-rejected n-sampled)))
+                {:sample sample
+                 :n-sampled (inc n-sampled)
+                 :n-rejected n-rejected})
               (recur (inc n-sampled) (inc n-rejected)))))))
 
   ;; Other
@@ -157,7 +139,12 @@
     #(loop [n-sampled 0 n-rejected 0]
       (let [sample (prior)]
        (if (apply pred-fn sample)
-           {:sample sample :n-sampled (inc n-sampled) :n-rejected n-rejected}
+           (o :reject-ratio ; Profile the rejection count
+                  (fn [{n-rejected :n-rejected  n-sampled :n-sampled}]
+                    (/ n-rejected (+ n-rejected n-sampled)))
+                {:sample sample
+                 :n-sampled (inc n-sampled)
+                 :n-rejected n-rejected})
            (recur (inc n-sampled) (inc n-rejected)))))))
 
 (defn take-samples

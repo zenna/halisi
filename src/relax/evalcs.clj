@@ -18,7 +18,8 @@
   (:use relax.multivalue)
   (:use clozen.helpers)
   (:use clojure.set)
-  (:require [clojure.math.combinatorics :as combo]))
+  (:require [clozen.profile.bucket :refer :all]
+            [clojure.math.combinatorics :as combo]))
 
 (declare evalcs)
 
@@ -384,6 +385,41 @@
 ;    number of terms with all the previous. 
 ;    "
 
+(defn inconsistent-sets
+  [cart-prod conjun-terms]
+  (let [n-terms (apply * (map count cart-prod))
+        n-check (min 100000  n-terms)
+        inconsistent          
+        (loop [inconsistent #{} n-check n-check]
+          (cond
+            (zero? n-check)
+            inconsistent
+
+            :else
+            (let [to-check  
+                  (set (doall (remove nil?
+                    (for [term cart-prod]
+                      (if (flip 0.1)
+                          (rand-nth (vec term))
+                          nil)))))]
+              (cond 
+                (empty? to-check)
+                (recur inconsistent (dec n-check))
+
+                (feasible? (reduce conj conjun-terms to-check) nil)
+                (recur inconsistent (dec n-check))
+
+                ; Avoid finding ignore elements which are supersets of
+                ; Ones found already, since that's redundant.
+                (some #(clojure.set/superset? to-check %) inconsistent)
+                (recur inconsistent (dec n-check))
+
+                :else
+                (recur (conj inconsistent to-check) (dec n-check))))))
+
+        pvar (println "n-terms" n-terms " inconsistent count" (count inconsistent) ": " (map count inconsistent))]
+        inconsistent))
+
 (defn handle-combos
   [[conjun-terms cart-prod]]
   "Handles evaluation of conjoin (and ..)
@@ -413,48 +449,19 @@
 
     ; not empty? then I need to find the cart product
     :else
-    (let [n-terms (apply * (map count cart-prod))
-          n-check (min 10 n-terms)
-          inconsistent          
-          (loop [inconsistent #{} n-check n-check]
-            (cond
-              (zero? n-check)
-              inconsistent
-
-              :else
-              (let [to-check  
-                    (set (doall (remove nil?
-                      (for [term cart-prod]
-                        (if (flip 0.1)
-                            (rand-nth (vec term))
-                            nil)))))]
-                (cond 
-                  (empty? to-check)
-                  (recur inconsistent (dec n-check))
-
-                  (feasible? (reduce conj conjun-terms to-check) nil)
-                  (recur inconsistent (dec n-check))
-
-                  ; Avoid finding ignore elements which are supersets of
-                  ; Ones found already, since that's redundant.
-                  (some #(clojure.set/superset? to-check %) inconsistent)
-                  (recur inconsistent (dec n-check))
-
-                  :else
-                  (recur (conj inconsistent to-check) (dec n-check))))))
-
-          slimmed-down (map #(Math/pow 4 (- (count cart-prod) %)) (map count inconsistent))
-
-          slimmed-down (- n-terms (sum slimmed-down))
-
-          pvar (println "n-terms" n-terms " inconsistent count" (count inconsistent) ": " (map count inconsistent) " slimmed-down" slimmed-down)
-          ; product (apply combo/cartesian-product cart-prod)
-          product (cartesian-product-ignore inconsistent (vec cart-prod))
-          ; pvar (println "cartesian product" product)
-          disjun-terms
-          (map (comp eval-conjoin #(concat % conjun-terms))
-               product)]
-      (eval-disjoin disjun-terms))))
+    (bucket :remove-inconsistent?
+      (let [inconsistent (inconsistent-sets cart-prod conjun-terms)
+            product (cartesian-product-ignore inconsistent (vec cart-prod))
+            disjun-terms
+            (map (comp eval-conjoin #(concat % conjun-terms))
+                 product)]
+        (eval-disjoin disjun-terms))
+        
+      (let [product (apply combo/cartesian-product (vec cart-prod))
+            disjun-terms
+            (map (comp eval-conjoin #(concat % conjun-terms))
+                 product)]
+        (eval-disjoin disjun-terms)))))
 
 (defn eval-conjoin
   [args]

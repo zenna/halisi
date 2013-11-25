@@ -25,14 +25,8 @@
 
 (defn plan-by-rejection
   "Path planning example with rejection sampler"
-  [n-samples]
-  (let [{vars :vars pred :pred}
-          (avoid-orthotope-obs 3
-                               [1 1] [9 9] 
-                               [[[3 6][0 3.5]]
-                                [[0 2][5 7]]
-                                [[4 7][5 7]]]
-                               10)
+  [constraint n-samples]
+  (let [{vars :vars pred :pred} constraint
           vars (vec vars)
           var-intervals (zipmap vars (repeat (count vars) [0 10]))
 
@@ -49,14 +43,8 @@
 (defn plan-by-construct
   "This experiment tests how methods scale
    Returns a function of the number of samples" 
-  [n-samples]
-  (let [{vars :vars pred :pred}
-        (avoid-orthotope-obs 3
-                             [1 1] [9 9] 
-                             [[[3 6][0 3.5]]
-                              [[0 2][5 7]]
-                              [[4 7][5 7]]]
-                             10)
+  [constraint n-samples]
+  (let [{vars :vars pred :pred} constraint
         vars (vec vars)
         sampler (constrain-uniform-divisive vars pred)]
   (p :sampling-time (doall (repeatedly n-samples sampler)))))
@@ -79,7 +67,48 @@
     (zipmap (map pythonise (keys clojure-map))
             (map pythonise (vals clojure-map)))))
 
-(defn run-all-experiments
+(defn complexity-vs-reject-ratio
+  "Compare the run time versus the complexity"
+  []
+  (let [plot-legend-python
+         "{':x-label' : 'Number of Points',
+          ':y-label' : 'Reject Ratio',
+          ':title' : 'Comparison of different samplers',
+          ':inspect-legend' : 
+          {':reject-ratio' : 'Rejection Ratio'},
+           ':bucket-legend' :
+          {':sample-type' :
+           {':name' : 'Sampler Type',
+            ':options' : {0 : 'Construct Sampler', 1 : 'Rejection Sampler'}}},
+           ':remove-inconsistent?' :
+           {':name' : 'Remove Inconsistent?',
+            ':options' : {0 : 'Remove', 1 : 'Do not remove'}}}"
+        complexity-test
+        (fn [n-points]
+          (let [n-samples 50
+                constraint
+                (avoid-orthotope-obs n-points
+                                     [1 1] [9 9] 
+                                     [[[3 6][0 3.5]]
+                                      [[0 2][5 7]]
+                                      [[4 7][5 7]]]
+                                     10)
+                sampler (bucket :sample-type plan-by-construct
+                                             plan-by-rejection)]
+            (sampler constraint n-samples)))]
+    (coll-to-file
+      (bucket-scaling-plot
+        (bucket-test
+          [:sample-type :remove-inconsistent?]
+          (scaling complexity-test
+                   identity
+                   (map vector [3 4 5])
+                   2))
+        plot-legend-python
+         [:reject-ratio :mean])
+      "zennabadman")))
+
+(defn n-samples-vs-runtime
   ""
   []
   (let [plot-legend 
@@ -103,12 +132,22 @@
           ':bucket-legend' :
           {':sample-type' :
            {':name' : 'Sampler Type',
-            ':options' : {0 : 'Construct Sampler', 1 : 'Rejection Sampler'}}}}"]
+            ':options' : {0 : 'Construct Sampler', 1 : 'Rejection Sampler'}}}}"
+
+          constraint
+          (avoid-orthotope-obs 3
+                               [1 1] [9 9] 
+                               [[[3 6][0 3.5]]
+                                [[0 2][5 7]]
+                                [[4 7][5 7]]]
+                               10)
+          ]
     (coll-to-file
       (bucket-scaling-plot
         (bucket-test
           [:sample-type]
-          (scaling (bucket :sample-type plan-by-construct plan-by-rejection)
+          (scaling (bucket :sample-type (partial plan-by-construct constraint)
+                                        (partial plan-by-rejection constraint))
                    identity
                    (map vector (range 10 100 50)) 2))
         plot-legend-python
@@ -116,3 +155,7 @@
          [:taoensso.timbre.profiling/sampling-time :max])
       "zennabadman")))
 
+(defn run-all-experiments
+  []
+  (do
+    (complexity-vs-reject-ratio)))

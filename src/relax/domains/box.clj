@@ -1,11 +1,11 @@
 (ns ^{:doc "Axis Aligned Box (Orthorope) abstractions"
                 :author "Zenna Tavares"}
   relax.domains.box
-  (:use relax.abstraction)
-  ; (:use clozen.profile)
-  (:use clozen.helpers)
-  (:require [clojure.math.combinatorics :as combo])
-  (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)]))
+  (:require [relax.abstraction :refer :all]
+            [clozen.profile :refer :all]
+            [clozen.helpers :refer :all]
+            [clojure.math.combinatorics :as combo]
+            [taoensso.timbre.profiling :as profiling :refer (p o profile)]))
 
 ; ;; 
 ; The profiling tells us,
@@ -13,7 +13,6 @@
 ; -This means that more time is being spent in each call to expand as the number of boxes is increasing
 
 ; The number of calls to expand grows exponentially then linearly with the number of boxes in the output
-
 
 (defn lower-bound [interval]
   (first interval))
@@ -56,12 +55,13 @@
   [box]
   (apply combo/cartesian-product (:internals box)))
 
-; THIS IS INCORRECT
+; FIXME: THIS IS INCORRECT
 (defn completely-within?
   [box vars]
   false)
   ; (every? #(satisfiable? % (:formula box) vars) (abstraction-vertices box)))
 
+; FIXME: AND HENCE THIS IS INCORRECT
 (defn on-boundary?
   [box vars]
   (not (completely-within? box vars)))
@@ -105,7 +105,7 @@
 
 ;TODO
 (defn overlap
-  "Compute overlapping hyperrectangle from two overlappign ones"
+  "Compute overlapping hyperrectangle from two overlapping ones"
   [box1 box2]
   (if (intersect? box1 box2)
       {:formula #(and (apply (:formula box1) %) (apply (:formula box2) %))
@@ -164,18 +164,18 @@
   [box dim]
   (assoc box :internals (vec-remove (:internals box) dim)))
 
-; TODO
 (defn edit-interval
-  ""
+  "Change the interval at a particular dimension"
   [box dim interval]
   (assoc-in box [:internals dim] interval))
 
-; TODO
 (defn edit-lower-bound
+  "Change hte lower bound at a particular dimension"
   [box dim new-bound]
   (assoc-in box [:internals dim 0] new-bound))
 
 (defn edit-upper-bound
+  "Change the upper bound at a particular dimension"
   [box dim new-bound]
   (assoc-in box [:internals dim 1] new-bound))
 
@@ -267,11 +267,10 @@
   [[side-box dim lower-upper]]
   (update-in side-box [:internals dim] #(vector (nth % lower-upper)
                                                 (nth % lower-upper))))
-
 ;TODO
 (defn intersecting-components
   "Partition set of possibly overlapping boxes into subsets of connected
-  components:  Naive n^2 algorithm"
+   components:  Naive n^2 algorithm"
   [boxes]
   (loop [ccs [] boxes boxes]
     (if
@@ -315,11 +314,6 @@
   "What dim is the side on"
   [side]
   (nth side 1))
-
-; ([[{:formula #<box$overlap$fn__86 relax.box$overlap$fn__86@2483f9de>, :internals [[5 5] [2 5]]}]]
-
-;  [[{:formula #<box$overlap$fn__86 relax.box$overlap$fn__86@5489`08c>, :internals [[3 5] [5 5]]}]])
-
 
 ; NO TEST
 (defn cover-connected-abstr
@@ -371,35 +365,6 @@
     (println "union" (apply union-volume boxes) "sum volume" (sum (map volume boxes)))
     cover))
 
-; (def b1 {:internals [[0 5][0 5]]}) def b2 {:internals [[3 6][2 10]]}) def b3
-; ({:internals [[0 10][0 10]]})q
-
-(def b1 {:internals (vec (repeat 2 [0 5]))})
-(def b2 {:internals (vec (repeat 2 [3 10]))})
-(def b1x {:internals (vec (repeat 2 [20 25]))})
-(def b2x {:internals (vec (repeat 2 [23 30]))})
-
-(def b3 {:internals (vec (repeat 6 [0 20]))})
-(def b4 {:internals (vec (repeat 6 [8 14]))})
-(def b5 {:internals (vec (repeat 6 [12 20]))})
-(def b6 {:internals (vec (repeat 6 [19 24]))})
-
-(defn two-boxes [x y ]
-  [b1 b2 b1x b2x])
-
-
-; (defn gen-random-boxes
-;   [n-dims n-boxes]
-;   {:post [(do (println "POST n-dims" (num-dims (first %)) "n-boxes" (count %)
-;               "ccs" (map count (intersecting-components %))) true)]}
-;   (println "n-dims" n-dims "n-boxes" n-boxes)
-;   (repeatedly n-boxes
-;     #(make-abstraction
-;       (vec (for [dim (range n-dims)
-;                 :let [mid (rand)]]
-;            [(- mid (rand)) (+ mid (rand))]))
-;       'no-formula)))
-
 (defn gen-random-boxes
   [n-dims n-boxes]
   {:post [(do (println "POST n-dims" (num-dims (first %)) "n-boxes" (count %)
@@ -414,29 +379,39 @@
              [(- mid side-len) (+ mid side-len)]))
         'no-formula))))
 
-; (defn -main []
-;   ; (union-volume b1 b2 b3))
-;   (count (cover-abstr [b1 b2 b3 b4 b5 b6])))
-
-; (defn -main []
-;   ; (union-volume b1 b2 b3))
-;   (profile :info :Arithmetic
-;   (count (cover-abstr (gen-random-boxes 2 20)))))
-
-(defn tt [x]
-  (o :n-boxes count (cover-abstr x)))
-
-
-; (defn -main []
-;   (scaling tt gen-random-boxes [[2 10][3 10]]
-;            5))
-; (defn -main []
-;   (scaling cover-abstr gen-random-boxes [[1 1][1 2][1 3][1 4][1 5]]
-;            2))
-
 (comment 
-  (defn -main []
-    (get-scaling-data (ok) 0 [:whole :mean]))
+  ;; Some test boxes
+  (def b1 {:internals (vec (repeat 2 [0 5]))})
+  (def b2 {:internals (vec (repeat 2 [3 10]))})
+  (def b1x {:internals (vec (repeat 2 [20 25]))})
+  (def b2x {:internals (vec (repeat 2 [23 30]))})
+
+  (def b3 {:internals (vec (repeat 6 [0 20]))})
+  (def b4 {:internals (vec (repeat 6 [8 14]))})
+  (def b5 {:internals (vec (repeat 6 [12 20]))})
+  (def b6 {:internals (vec (repeat 6 [19 24]))})
+
+  (defn two-boxes [x y ]
+    [b1 b2 b1x b2x])
+
+  (defn tt [x]
+    (o :n-boxes count (cover-abstr x)))
+
+  (scaling tt gen-random-boxes [[2 10][3 10]] 5)
+
+  (scaling cover-abstr gen-random-boxes [[1 1][1 2][1 3][1 4][1 5]] 2)
+
+  (get-scaling-data (ok) 0 [:whole :mean])
+
+  (defn a-test []
+    ; (union-volume b1 b2 b3))
+    (count (cover-abstr [b1 b2 b3 b4 b5 b6])))
+
+  (defn a-test []
+    ; (union-volume b1 b2 b3))
+    (profile :info :Arithmetic
+    (count (cover-abstr (gen-random-boxes 2 20)))))
+
   (defn tests[& x]
     ; (println "IN TESTs" (num-dims (first x))))
     (println "num boxes is" (count x) "dim" (num-dims (first x))))
@@ -452,6 +427,4 @@
   (defn ok []
    (scaling #(apply union-volume %) gen-random-boxes
             (make-input 200 (positive-numbers 1) (repeat 10))
-            2))
-
-  )
+            2)))
