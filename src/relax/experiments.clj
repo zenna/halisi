@@ -98,14 +98,15 @@
             (sampler constraint n-samples)))]
     (coll-to-file
       (bucket-scaling-plot
-        (bucket-test
+          (bucket-test
           [:sample-type :remove-inconsistent?]
           (scaling complexity-test
                    identity
-                   (map vector [3 4 5])
+                   (map vector [3 4])
                    2))
         plot-legend-python
-         [:reject-ratio :mean])
+         [:taoensso.timbre.profiling/whole :max]
+         [:taoensso.timbre.profiling/sampling-time :max])
       "zennabadman")))
 
 (defn n-samples-vs-runtime

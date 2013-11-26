@@ -105,20 +105,23 @@
   {:pre [(= 2 (count vect))]}
   [(- y) x])
 
-; (defn point-in-box?
-;   [point box]
-  
-
 ; (defn avoid-box-obs
 ;   "path is "
 ;   [path boxes]
 ;   (let [valid-point (map #(point-in-box? % boxes) path)]
 ;     (some true? valid-point)))
 
+; (defn point-in-box?
+;   [point box]
+;   true)
+
 ; (defn avoids-obstacles?
+;   "When evaluated on a path will return true
+;    only if that path passes through no obstacles
+;    obstacles is a vector of points = [[x1-min x1-max][x2-min x2-max]]"
 ;   [path start target obstacles max-step]
 ;   (let [p-start (first path)
-;         p-end (last vars)]
+;         p-end (last path)]
 
 ;     (and
 ;       (in-box? p-start start)     ; First point must be in start
@@ -127,38 +130,13 @@
 ;                                   ; Points must be at most max-distance apart
 ;       (apply and
 ;         (for [p path]
-;           (in-box? p (make-square-around-point point step))))
+;           (in-box? p (square-around-point point step))))
 
 ;                                   ; Points must not be within obstacles
 ;       (apply or
 ;         (for [p path              ; Consider all combinations of points
 ;               o obstacles]        ;   and obstacles
-;           (not (in-box? p o))))   ; Check point is not in obstacle 
-
-
-; (defn avoid-orthotope-obs-f
-;   "Creates a program which when evaluated on a path will return true
-;    only if that path passes through no obstacles
-;    obstacles is a vector of points = [[x1-min x1-max][x2-min x2-max]]"
-;   [path start-region end-region obstacles]
-;   (let [max-step 5
-;         [x0 y0] (first path)
-;         [xn yn] (last vars)]
-;     (and
-;       ; First (last) point must be in start (end) region
-;       (point-in-box? start-point start-region)
-;       (point-in-box? end-point end-region)
-
-;       ; Points must be certain distance apart
-;       (apply and
-;         (for [point path]
-;           (point-in-box? point (make-cube-around-point point step))))
-
-;       ; Points must not be within obstacles
-;       (apply or
-;         (for [point path
-;               obstacle obstacles]
-;               (not (point-in-box? point obstacle))))
+;           (not (in-box? p o)))))))   ; Check point is not in obstacle 
 
 (defn avoid-orthotope-obs
   "Creates a program which when evaluated on a path will return true
@@ -191,7 +169,9 @@
     ~@(reduce concat
         (for [[[path-x0 path-y0] [path-x1 path-y1]] (partition 2 1 vars)]
           `[(~'>= (~'+ ~path-x1 (~'* -1 ~path-x0)) 0)
-            (~'<= (~'+ ~path-x1 (~'* -1 ~path-x0)) ~max-step)]))
+            (~'<= (~'+ ~path-x1 (~'* -1 ~path-x0)) ~max-step)
+            (~'>= (~'+ ~path-y1 (~'* -1 ~path-y0)) 0)
+            (~'<= (~'+ ~path-y1 (~'* -1 ~path-y0)) ~max-step)]))
 
     ; Points must not be within obstacles
     ~@(for [[x y] (subvec (vec vars) 1 (dec (count vars)))

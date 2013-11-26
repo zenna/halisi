@@ -14,10 +14,10 @@ for line in bucket_file:
   line = line.strip().split(",")
   bucket_name = line[0]
   bucket_option = int(line[1])
-  inspect = line[2]
+  inspect = line[1]
 
-  x_vals_str = line[3].strip("[").strip("]")
-  y_vals_str = line[4].strip("[").strip("]")
+  x_vals_str = line[2].strip("[").strip("]")
+  y_vals_str = line[3].strip("[").strip("]")
   x_vals = np.loadtxt(StringIO(x_vals_str))
   y_vals = np.loadtxt(StringIO(y_vals_str))
 

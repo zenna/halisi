@@ -84,9 +84,10 @@ codes = [Path.MOVETO,
          Path.CLOSEPOLY,
          ]
 pos_delta = 0.1
-targets = [[1, 1], [9, 9]]
+targets = [[1, 1], [9, 8]]
 #obstacles = [[[2, 5],[5,7]],[[5 ,8],[0 ,3]]]
 obstacles = [[[1.5, 4.5],[3, 7]] ,[[5, 8],[0, 3]]]
+obstacles = [[[3, 7],[0, 3]], [[3, 7],[3.5, 9]]]
 
 target_boxes = [[[x + pos_delta, x - pos_delta],[y + pos_delta, y-pos_delta]] for [x, y] in targets]
 

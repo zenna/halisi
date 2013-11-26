@@ -449,15 +449,15 @@
 
     ; not empty? then I need to find the cart product
     :else
-    (bucket :remove-inconsistent?
-      (let [inconsistent (inconsistent-sets cart-prod conjun-terms)
-            product (cartesian-product-ignore inconsistent (vec cart-prod))
+    (bucket :remove-inconsistent?        
+      (let [product (apply combo/cartesian-product (vec cart-prod))
             disjun-terms
             (map (comp eval-conjoin #(concat % conjun-terms))
                  product)]
         (eval-disjoin disjun-terms))
-        
-      (let [product (apply combo/cartesian-product (vec cart-prod))
+
+      (let [inconsistent (inconsistent-sets cart-prod conjun-terms)
+            product (cartesian-product-ignore inconsistent (vec cart-prod))
             disjun-terms
             (map (comp eval-conjoin #(concat % conjun-terms))
                  product)]
