@@ -51,6 +51,45 @@
       (finally
         (.deleteLp lp)))))
 
+(defn arbitrary-point-lp
+  "Get an arbitrary solution from linear program.
+   Currently arbitrary means a function to minimise has all on
+   coefficients"
+  [constraints vars]
+  (let [n-vars (count vars)
+        lp (LpSolve/makeLp 0 n-vars)]
+    (.setAddRowmode lp true)
+    (.setVerbose lp LpSolve/IMPORTANT)
+    
+    ; Create the linear program
+    (doall
+      (for [[coeffs var-is le-ge rhs] constraints]
+        (.addConstraintex lp
+          n-vars
+          (double-array coeffs)
+          (int-array var-is)
+          (conv-ineq le-ge) rhs)))
+
+    (.setAddRowmode lp false)
+
+    ; Make linear program with coefficients all 1
+    (let [results (double-array (vec (repeat n-vars 0.0)))
+          new-results
+          (do
+            (.setMinim lp) 
+            (.setObjFnex lp
+              n-vars
+              (double-array (vec (repeat n-vars 1.0)))
+              (int-array (range 1 (inc n-vars))))
+            (let [ret (.solve lp)]
+                  (if (zero? ret)
+                      (do
+                        (.getVariables lp results)
+                        (vec results))
+                      nil)))]
+      (.deleteLp lp)
+      new-results)))
+
 (defn bounding-box-lp
   "Find bounding box around system of linear inequalities by making and 
    solving 2 * n-vars linear programming problems.

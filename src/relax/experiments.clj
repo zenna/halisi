@@ -136,7 +136,7 @@
             ':options' : {0 : 'Construct Sampler', 1 : 'Rejection Sampler'}}}}"
 
           constraint
-          (avoid-orthotope-obs 3
+          (avoid-orthotope-obs 4
                                [1 1] [9 9] 
                                [[[3 6][0 3.5]]
                                 [[0 2][5 7]]
@@ -146,17 +146,17 @@
     (coll-to-file
       (bucket-scaling-plot
         (bucket-test
-          [:sample-type]
+          [:sample-type :remove-inconsistent?]
           (scaling (bucket :sample-type (partial plan-by-construct constraint)
                                         (partial plan-by-rejection constraint))
                    identity
-                   (map vector (range 10 100 50)) 2))
+                   (map vector (range 1 501 50)) 3))
         plot-legend-python
          [:taoensso.timbre.profiling/whole :max]
          [:taoensso.timbre.profiling/sampling-time :max])
-      "zennabadman")))
+      "zennabadman3")))
 
 (defn run-all-experiments
   []
   (do
-    (complexity-vs-reject-ratio)))
+    (n-samples-vs-runtime)))

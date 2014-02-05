@@ -68,12 +68,12 @@ print n_samples, n_vars
 
 fig = plt.figure()
 ax = fig.add_subplot(111)
-for i in range(0,5):
+for i in range(3,4):
     verts = [x for x in chunks(X[i,:],2)]
     codes = [Path.MOVETO] + [Path.LINETO]*(n_vars/2 - 1)
     # print "verts", verts, "codes", codes
     path = Path(verts, codes)
-    patch = patches.PathPatch(path, facecolor='none', lw=.1)
+    patch = patches.PathPatch(path, facecolor='none', lw=.2)
     ax.add_patch(patch)
 
 # BOXES
@@ -84,10 +84,11 @@ codes = [Path.MOVETO,
          Path.CLOSEPOLY,
          ]
 pos_delta = 0.1
-targets = [[1, 1], [9, 8]]
+targets = [[1, 1], [7, 6]]
 #obstacles = [[[2, 5],[5,7]],[[5 ,8],[0 ,3]]]
-obstacles = [[[1.5, 4.5],[3, 7]] ,[[5, 8],[0, 3]]]
-obstacles = [[[3, 7],[0, 3]], [[3, 7],[3.5, 9]]]
+# obstacles = [[[1.5, 4.5],[3, 7]] ,[[5, 8],[0, 3]]]    
+# obstacles = [[[3, 5],[0, 3]], [[3, 5],[3.5, 9]], [[5.5, 7],[2, 4]]]
+obstacles = [[[3, 5],[0, 3]], [[3, 5],[3.5, 9]], [[5.5, 7],[2, 4]]]
 
 target_boxes = [[[x + pos_delta, x - pos_delta],[y + pos_delta, y-pos_delta]] for [x, y] in targets]
 

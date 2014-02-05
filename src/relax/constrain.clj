@@ -59,23 +59,33 @@
                            (mapv #(ineq-as-matrix % vars)
                                  (concat clause interval-constraints))
                             vars)))
-              (unsymbolise clause))]
+              (unsymbolise clause))
+        box (merge box {:formula-as-matrix
+                        (mapv #(ineq-as-matrix % vars)
+                              (concat clause interval-constraints))
+                        :vars vars})]
     (if (some nil? (flatten (:internals box)))
         'empty-abstraction
         box)))
 
+(defn abstraction-sample-cheat
+  "Sample with the abstraction"
+  [box]
+  (let [lp-point (arbitrary-point-lp (:formula-as-matrix box) (:vars box))]
+    lp-point))
+
 (defn cover
   "Cover each polytope individually"
   [clauses vars]
+  (println "Covering Polytopes individually")
   (let [budget 2500
-        ; pvar (println "ORIGINAL BOX UNFILT" (map #(bound-clause % vars) clauses))
-        large-abstrs (filterv has-volume? 
+        large-abstrs (filterv #(and (has-volume? %) (not (zero? (volume %))))
                              (map #(bound-clause % vars) clauses))
         pvar (println "After removing empty" (count large-abstrs))
         ; large-abstrs (cover-abstr large-abstrs)
         ]
     (println "After dissection" (count large-abstrs))
-    (loop [abstrs large-abstrs n-iters 10]
+    (loop [abstrs large-abstrs n-iters  0]
       ; (println "NUMBOXES" (count abstrs)
       ;   (let [sum-vol (reduce + (map volume abstrs))
       ;         union-vol (apply union-volume abstrs)]
@@ -100,18 +110,29 @@
                                                         abstrs)))]
           (recur (filter #(non-empty-abstraction? % vars) new-abstrs) (dec n-iters)))))))
 
+(defn construct-box-domain
+  "Interpret pred abstractly with box domain"
+  [vars pred]
+  (let [pred-fn (make-lambda-args (long-args-to-let pred vars) '[sample])
+        pvar (println "PRED" (long-args-to-let pred vars))
+        dnf (to-dnf-new vars pred)
+        pvar (println "DNF" (count dnf))]
+    (cover dnf vars)))
+
 (defn constrain-uniform-divisive
   "Make a sampler"
   [vars pred]
-  (let [pred-fn (make-lambda-args pred vars)
+  (let [;pred-fn (make-lambda-args pred vars)
+        pred-fn (make-lambda-args (long-args-to-let pred vars) '[sample])
+        pvar (println "PRED" (long-args-to-let pred vars))
         dnf (to-dnf-new vars pred)
         pvar (println "DNF" (count dnf))
         covers (cover dnf vars)
         volumes (map volume covers)]
     #(loop [n-sampled 0 n-rejected 0]
         (let [abstr (categorical covers volumes)
-              sample (abstraction-sample abstr)]
-          (if (apply pred-fn sample)
+              sample (abstraction-sample-cheat abstr)]
+          (if (pred-fn sample)
               (o :reject-ratio ; Profile the rejection count
                   (fn [{n-rejected :n-rejected  n-sampled :n-sampled}]
                     (/ n-rejected (+ n-rejected n-sampled)))
@@ -155,6 +176,7 @@
         new-model (constrain-uniform-divisive
                     vars
                     pred)
+        pvar (println "Taking Samples...")
         data (repeatedly n-samples new-model)
         samples (extract data :sample)
         n-sampled (sum (extract data :n-sampled))

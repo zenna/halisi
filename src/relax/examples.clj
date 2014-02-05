@@ -182,6 +182,94 @@
             (~'<= ~y ~y-min)
             (~'>= ~y ~y-max))))}))
 
+(defn point-avoid-orthotope-obs
+  "Creates a program which when evaluated on a path will return true
+   only if that path passes through no obstacles
+   obstacles is a vector of points = [[x1-min x1-max][x2-min x2-max]]"
+  [n-points obstacles]
+  (let [vars
+        (for [i (range n-points)]
+          [(symbol (str "x" i)) (symbol (str "y" i))])]
+    {:vars (vec (reduce concat vars))
+     :pred
+  `(~'and
+
+    ; Points must not be within obstacles
+    ~@(for [[x y] vars
+            [[x-min x-max][y-min y-max]] obstacles]
+          `(~'or
+            (~'<= ~x ~x-min)
+            (~'>= ~x ~x-max)
+            (~'<= ~y ~y-min)
+            (~'>= ~y ~y-max))))}))
+
+(defn long-args-to-let
+  [pred vars]
+  (let [let-args (interleave vars (map #(list 'nth 'sample %)
+                                        (range (count vars))))]
+    `(let [~@let-args]
+      ~pred)))
+
+;; Non-linear planning constraint
+(defn point-in-box?
+  "Is a point inside a box?"
+  [[[px py] :as point] [[[low-x up-x][low-y up-y]] :as box]]
+  (and
+    (>= px low-x)
+    (<= px up-x)
+    (>= py low-y)
+    (<= py up-x)))
+
+(defn points-to-vec
+  [[p1x p1y] [p2x p2y]]
+  [(- p1x p2x)(- p1y p2y)])
+
+(def obstacle-eg
+  [[[3 9][7 9]]
+   [[7 9][5 7]]
+   [[5 7][3 9]]])
+
+(def path-eg
+  [[3,3][9,5]])
+
+(defn intersection-point
+  "Find the intersection point of two vectors"
+  [[a0 a1] [b0 b1]]
+  (let [[u1 u2] (points-to-vec a1 a0)
+        [v1 v2] (points-to-vec b0 b1)
+        [w1 w2] (points-to-vec b0 a1)]
+    (/ (- (* v2 w1) (* v1 w2))
+       (- (* v1 u2) (* v2 u1)))))
+
+(defn path-avoids-obstacles?
+  "Does the path avoid (not pass through) any of the obstacles?
+
+   Path is set of vertices, e.g. [[3,3][9,5]]
+   Obstacles is set of edges [e1,..,en]
+   where ei is pair of vertices.
+   e.g. obstacles = 
+   [[[3 9][7 9]]
+    [[7 9][5 7]]
+    [[5 7][3 9]]]"
+  [obstacles path]
+  (every?
+    (for [[p0 p1] (partition 2 1 path)
+          [o0 o1] obstacles
+           :let [[u1 u2] (points-to-vec p1 p0)
+                 [v1 v2] (points-to-vec o0 o1)
+                 [w1 w2] (points-to-vec o0 p1)
+                 s (/ (- (* v2 w1) (* v1 w2))
+                      (- (* v1 u2) (* v2 u1)))]]
+      (or (> s 1.0)
+          (< s 1.0)))))
+
+(defn valid-path?
+  [start target obstacles path]
+  (and
+    (point-in-box? (first path) start)
+    (point-in-box? (last path) target)
+    (path-avoids-obstacles? obstacles path)))
+
 ;; Inverse Graphics
 ; (defn gen-poly [])
 
@@ -357,6 +445,15 @@
            false) 
        (if (< x2 4) true false  )
        true))
+
+
+(defn qual-example
+  []
+  {:vars '[x y]
+   :pred
+   '(or (and (< x 5) (> (+ y (* -1 x)) 2.5))
+        (and (>= x 5) (< (+ y (* -0.5 x)) 2)
+                      (> (+ y (* 0.5 x)) 10.5)))})
 
 (def exp5
   '(and

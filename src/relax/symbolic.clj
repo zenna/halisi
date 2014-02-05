@@ -164,11 +164,14 @@
     #{}
     constraint))
 
+; (sym (> (sym (+ (sym y) (sym (- (sym x))) -5)) 0))
+; (sym (< (sym (+ (sym y) (sym (* -0.5 (sym x))) -4)) 0))
+; (sym (>= (sym (+ (sym y5) (sym (* -1 (sym y4))))) 0))
+
 (defn ineq-as-matrix
   "Takes an inequality expression, e.g. (> x 2) and converts it
    into a matrix for use with the linear programming solver"
   [exp vars]
-  ; (println "exp" exp  "vars" vars "\n")
   (let [var-id (zipmap vars (range (count vars)))
         exp (symbolic-value exp)
         second-arg (symbolic-value (second exp))

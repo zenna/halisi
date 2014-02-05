@@ -31,6 +31,7 @@
   (nth box dim-n))
 
 (defn middle-split
+  "Find middle points on each axis"
   [{box :internals}]
   (map #(double (+ (lower-bound %) (/ (- (upper-bound %) (lower-bound %)) 2))) box))
 
@@ -46,12 +47,12 @@
         dim-to-change (:internals box) split-points))))
 
 (defn split-uniform
-  "Split the box into equally sized boxes"
+  "Split box into 2^d equally sized boxes by cutting down middle of each axis"
   [box]
   (split box (middle-split box)))
 
 (defn abstraction-vertices
-  "Get the vertices of an abstraction"
+  "Get the vertices of a polyhedral abstraction"
   [box]
   (apply combo/cartesian-product (:internals box)))
 
@@ -67,6 +68,7 @@
   (not (completely-within? box vars)))
 
 (defn not-intersect?
+  "Do two boxes not intersect in cartesian space"
   [box1 box2]
   ; (println box1 "!!!" box2)
   (let [x
@@ -83,7 +85,7 @@
   (not (not-intersect? box1 box2)))
 
 (defn point-in-abstraction?
-  "Is a point within an abstraction"
+  "Is a point within a box"
   [box point]
   {:pre [(count= (:internals box) point)]}
   ; (println "PIA" point box (intersect? box (make-abstraction (mapv #(vector % %) point) 'no-formula)))
@@ -108,6 +110,7 @@
   "Compute overlapping hyperrectangle from two overlapping ones"
   [box1 box2]
   (if (intersect? box1 box2)
+      ;FIXME: This is not incorrect due to let form.
       {:formula #(and (apply (:formula box1) %) (apply (:formula box2) %))
        :internals
         (vec
@@ -117,7 +120,7 @@
       'empty-abstraction))
 
 (defn volume
-  "get the box volume"
+  "Get the box volume"
   [box]
   (apply * (map #(- (upper-bound %) (lower-bound %)) (:internals box))))
 
@@ -141,7 +144,7 @@
                     (apply union-volume
                            (filter has-volume?
                                    (map #(overlap % (first boxes))
-                                        seen-boxes))))))))) 
+                                        seen-boxes)))))))))
 
 ;TODO Does this support negative intervals?
 (defn interval-sample
@@ -154,9 +157,7 @@
 (defn abstraction-sample
   "Sample with the abstraction"
   [box]
-  (for [interval (:internals box)]
-    (+ (lower-bound interval)
-       (rand (- (upper-bound interval) (lower-bound interval))))))
+  (interval-sample (:internals box)))
 
 ;; Boolean Operations
 (defn remove-dim
@@ -179,13 +180,12 @@
   [box dim new-bound]
   (assoc-in box [:internals dim 1] new-bound))
 
-; FIXME, IM SAMPLING WITHIN THE ENTIRE EXPANDED BOX NOT JUST THE EXPANDED
-;REGION
+; FIXME, IM SAMPLING WITHIN THE ENTIRE EXPANDED BOX NOT JUST THE EXPANDED REGION
 (defn valid-ext
   "LOLZ!"
   [box exp-box boxes]
   ; (println "ext" exp-box)
-  (let [n-samples 100]
+  (let [n-samples 100000]
     (loop [n-samples n-samples]
       ; (println n-samples)
       (cond
@@ -205,7 +205,11 @@
 
 ; TODO, AVOID SELF INTERSECTION
 (defn expand-box
-  "Expand a box into greedily such tha it is contained within a union of boxes"
+  "Expand a box into greedily provided it is contained within a union of boxes
+   box - box to expand
+   boxes - set of boxes we are trying to cover
+   cover - cover created so far, i.e. regions to avoid.
+   dim-order - what order of dimension should we expand in"
   [box boxes cover dim-order]
   (let [n-dims (num-dims box)]
   ; (println "\n expanding box" box "n in cover" (count cover) "dim order" dim-order)
@@ -218,26 +222,34 @@
       (let [dim (first sides)
             ; pvar (println "dim"  dim)
             interval (nth-dim-interval box dim)
-            ; We only care about extending to places which intersect.
+            ; We only care about a subset of boxes:
+            ; Ignore dim in intersection? because even though exp-box may not
+            ;  intersect in dim with a box-a in boxes, may be possible for 
+            ;  exp-box to expand into box-a through other boxes. 
             ; Complexity: n*d
-            good-boxes (p :filter-good (filter #(intersect? (remove-dim exp-box dim)
-                                            (remove-dim % dim))
-                                boxes))
+            good-boxes (p :filter-good
+            (filter #(intersect? (remove-dim exp-box dim)
+                                 (remove-dim % dim))
+                    boxes))
             ; pvar (println "good boxes" good-boxes)
+
+            ; Flatten boxes to possible extension points in dim:
             ; Complexity- n + that of flatten
-            ext-points (p :sort (sort (flatten (map #(nth-dim-interval % dim) 
-                                            good-boxes))))
+            ext-points (p :sort (sort
+            (flatten (map #(nth-dim-interval % dim) good-boxes))))
 
             ; pvar (println "ext points" ext-points)
             ; pvar (println "filtered-high" (filterv #(>= % (upper-bound interval)) ext-points))
             ; pvar (println "filtered-low" (filterv #(<= % (lower-bound interval)) ext-points))
 
-
             ; pvar (println "collides" (collides? exp-box cover))
             ; collision: n (check every other box) * d (collison involves checking every dimension) * n
             ; in the worse case we have to check every box
-            upper
-            (p :upper (max-pred #(and (not (p :collides (collides? (edit-upper-bound exp-box dim %) cover)))
+
+            ; Find greatest extension which a) does not intersect with cover
+            ; b) is fully contained within the union 
+            upper (p :upper
+            (max-pred #(and (not (p :collides (collides? (edit-upper-bound exp-box dim %) cover)))
                             (valid-ext exp-box
                                        (edit-upper-bound exp-box dim %)
                                        boxes))
@@ -259,7 +271,7 @@
 
 (defn box-in-union
   [boxes]
-  "Give me a box inside the union."
+  "Give me an arbitrary box inside the union."
   (first boxes))
 
 (defn side-to-box
@@ -378,6 +390,21 @@
                   :let [mid (rand)]]
              [(- mid side-len) (+ mid side-len)]))
         'no-formula))))
+
+(defn tile-boxes
+  [n-dims n-boxes]
+  (let [side-len (Math/pow (/ 1.0 (* n-dims n-boxes)) (/ 1.0 n-dims))
+        inter-dist (* side-len 2.5)
+        n-per-side (Math/ceil (Math/pow n-boxes (/ 1.0 n-dims)))]
+    (mapv
+      (fn [coord-indices]
+        (make-abstraction
+          (mapv #(vector
+                   (* % inter-dist)
+                   (+ (* % inter-dist) side-len))
+            coord-indices)
+          'no-formula))
+      (apply combo/cartesian-product (repeat n-dims (range n-per-side))))))
 
 (comment 
   ;; Some test boxes

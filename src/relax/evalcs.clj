@@ -353,42 +353,12 @@
 
 (declare eval-conjoin)
 
-; (defn num-product-terms-elimated
-;   "Given a set (of sets) X = [X_1, X_2, ...], e.g. [[a b c][d e f][g h i][j k]]
-;    and a ignore set I = [I_1, I_2, ...], e.g. [[a d][d g][c][g j]],
-;    of the cartesian product of sets of X, compute the number that are eliminated by the ignore sets.
-
-;    For a single ignore tuple I_i, the number of terms eliminated is:
-
-;    For two ignore tuples I_i, I_(i+1) we must consider the number that
-;    they mutually eliminate, and subtract thi value.
-;    There appear to be three cases of interest.
-;    Let cover(X, I_i) return a subset of X, X* where each set in X* contains an element of I_i.
-
-;    There are three cases
-;    1. There is no overlap in the sets covered by the ignore
-;    The number of terms is the product of the size of the remaining sets
-;    (reduce * (map count X)), or 1 if there are no others.
-
-;    2. There is overlap
-;    a) But the elements are different
-;    Then the number shared is zero
-;    b) Shared elements
-;    The number of terms is the product of the size of the remaining sets
-;    (reduce * (map count X)), or 1 if there are no others.
-
-;    For more than two ignore tuples
-;    We can build it incrementaly, by starting with a single tuple,
-;    computing the number of eliminated terms, adding a a new tuple,
-;    finding the number of terms and subtracting shared number of terms,
-;    adding a new tuple and finding the new number of terms minus the shared
-;    number of terms with all the previous. 
-;    "
-
 (defn inconsistent-sets
   [cart-prod conjun-terms]
-  (let [n-terms (apply * (map count cart-prod))
+  (let [n-terms (apply * (map (comp double count) cart-prod))
         n-check (min 100000  n-terms)
+        pvar (println "Checking for inconsistencies")
+        ; FIXME: THIS COULD GO ON FOREVER
         inconsistent          
         (loop [inconsistent #{} n-check n-check]
           (cond
@@ -451,6 +421,7 @@
     :else
     (bucket :remove-inconsistent?        
       (let [product (apply combo/cartesian-product (vec cart-prod))
+            pvar (println "no-prune n-terms in final product" (count product))
             disjun-terms
             (map (comp eval-conjoin #(concat % conjun-terms))
                  product)]
@@ -458,6 +429,7 @@
 
       (let [inconsistent (inconsistent-sets cart-prod conjun-terms)
             product (cartesian-product-ignore inconsistent (vec cart-prod))
+            pvar (println "n-terms in final product" (count product))
             disjun-terms
             (map (comp eval-conjoin #(concat % conjun-terms))
                  product)]
