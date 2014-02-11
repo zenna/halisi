@@ -119,27 +119,29 @@
         pvar (println "DNF" (count dnf))]
     (cover dnf vars)))
 
-(defn constrain-uniform-divisive
-  "Make a sampler"
-  [vars pred]
-  (let [;pred-fn (make-lambda-args pred vars)
-        pred-fn (make-lambda-args (long-args-to-let pred vars) '[sample])
-        pvar (println "PRED" (long-args-to-let pred vars))
-        dnf (to-dnf-new vars pred)
-        pvar (println "DNF" (count dnf))
-        covers (cover dnf vars)
-        volumes (map volume covers)]
+(defn abstract-to-sampler
+  "Take an abstract object and make a sampler out of it"
+  [abstracts vars pred]
+  (let [pred-fn (make-lambda-args (long-args-to-let pred vars) '[sample])
+        volumes (map volume abstracts)]
     #(loop [n-sampled 0 n-rejected 0]
-        (let [abstr (categorical covers volumes)
-              sample (abstraction-sample-cheat abstr)]
-          (if (pred-fn sample)
-              (o :reject-ratio ; Profile the rejection count
-                  (fn [{n-rejected :n-rejected  n-sampled :n-sampled}]
-                    (/ n-rejected (+ n-rejected n-sampled)))
-                {:sample sample
-                 :n-sampled (inc n-sampled)
-                 :n-rejected n-rejected})
-              (recur (inc n-sampled) (inc n-rejected)))))))
+            (let [abstr (categorical abstracts volumes)
+                  sample (abstraction-sample abstr)]
+              (if (pred-fn sample)
+                  (o :reject-ratio ; Profile the rejection count
+                      (fn [{n-rejected :n-rejected  n-sampled :n-sampled}]
+                        (/ n-rejected (+ n-rejected n-sampled)))
+                    {:sample sample
+                     :n-sampled (inc n-sampled)
+                     :n-rejected n-rejected})
+                  (recur (inc n-sampled) (inc n-rejected)))))))
+
+(defn constrain-uniform-divisive
+  "Do Abstract Interpretation and then convert abstract object into a sampler"
+  [vars pred]
+  (abstract-to-sampler
+    (construct-box-domain vars pred)
+    vars pred))
 
   ;; Other
 (defn make-uniform-prior

@@ -1,9 +1,9 @@
-(ns ^{:doc "Heuristics for use with search algorithms ."
+(ns ^{:doc "Heuristics for use with search algorithms."
       :author "Zenna Tavares"}
-  relax.search.heuristics
-  (:require [relax.search.a-star :refer [A*]]))
+  relax.search.heuristics)
 
-(defn euclidean-distance [a b] ; multidimensional
+(defn euclidean-distance [a b]
+  "Multidimensional euclidean-distance"
   (Math/sqrt (reduce + (map #(let [c (- %1 %2)] (* c c)) a b))))
 
 (defn zero-heuristic [a b]
@@ -22,6 +22,7 @@
        [[x1 y1] [x0 y1]] 1
        [[x0 y1] [x0 y0]] 1})))
 
-(comment 
+(comment
+  (require '[relax.search.a-star :refer [A*]])
   (def g (apply dissoc (grid 0 0 4 4) (keys (grid 1 1 2 2))))
   (A* g euclidian-distance [0 3] [4 2]))

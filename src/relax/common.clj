@@ -3,6 +3,18 @@
   relax.common
   (:use clojure.java.io))
 
+(defn long-args-to-let
+  "This is a hack to get around the way the prior and condition are connected.
+   Initially construct would call the condition with num-args = num dimennsions.
+   Problematic because clojure imposes  a limit in argument size.
+   Now, condition is unary function of sample (a vector), this function creates an
+   expression to bind variable names e.g. x1, x2 to values in sample argument"
+  [pred vars]
+  (let [let-args (interleave vars (map #(list 'nth 'sample %)
+                                        (range (count vars))))]
+    `(let [~@let-args]
+      ~pred)))
+
 ;; An environment is a vector list of hashes [{}{}]
 ;Error
 (defn error
