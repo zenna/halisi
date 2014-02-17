@@ -33,29 +33,6 @@
   [num-dim num-points]
   (repeatedly num-points #(vec (repeatedly num-dim rand))))
 
-; (defn avoids-obstacles?
-;   "When evaluated on a path will return true
-;    only if that path passes through no obstacles
-;    obstacles is a vector of points = [[x1-min x1-max][x2-min x2-max]]"
-;   [path start target obstacles max-step]
-;   (let [p-start (first path)
-;         p-end (last path)]
-
-;     (and
-;       (in-box? p-start start)     ; First point must be in start
-;       (in-box? p-end target)      ; Last point must be in target
-
-;                                   ; Points must be at most max-distance apart
-;       (apply and
-;         (for [p path]
-;           (in-box? p (square-around-point point step))))
-
-;                                   ; Points must not be within obstacles
-;       (apply or
-;         (for [p path              ; Consider all combinations of points
-;               o obstacles]        ;   and obstacles
-;           (not (in-box? p o)))))))   ; Check point is not in obstacle 
-
 ;; Linear Planning Problem
 (defn avoid-orthotope-obs
   "Creates a program which when evaluated on a path will return true
@@ -144,104 +121,36 @@
               ; invert each inequality 
               `(~'> (~'+ (~'* ~a0 ~y) (~'* ~a1 ~x)) ~b)))))}))
 
-;; Non-linear planning constraint
-; (defn intersection-point
-;   "Find the intersection point of two vectors"
-;   [[a0 a1] [b0 b1]]
-;   (let [[u1 u2] (points-to-vec a1 a0)
-;         [v1 v2] (points-to-vec b0 b1)
-;         [w1 w2] (points-to-vec b0 a1)]
-;     (/ (- (* v2 w1) (* v1 w2))
-;        (- (* v1 u2) (* v2 u1)))))
+  (defn path-avoids-obstacles?
+    "Does a 2D path avoid (not pass through) any of the obstacles?
 
-(defn path-avoids-obstacles?
-  "Does the path avoid (not pass through) any of the obstacles?
-
-   Path is set of vertices, e.g. [[3,3][9,5]]
-   Obstacles is set of edges [e1,..,en]
-   where ei is pair of vertices.
-   e.g. obstacles = 
-   [[[3 9][7 9]]
-    [[7 9][5 7]]
-    [[5 7][3 9]]]"
-  [obstacles path]
-  (every?
-    (for [[p0 p1] (partition 2 1 path)
-          [o0 o1] obstacles
-           :let [[u1 u2] (points-to-vec p1 p0)
-                 [v1 v2] (points-to-vec o0 o1)
-                 [w1 w2] (points-to-vec o0 p1)
-                 s (/ (- (* v2 w1) (* v1 w2))
-                      (- (* v1 u2) (* v2 u1)))]]
-      (or (> s 1.0)
-          (< s 1.0)))))
+     Path is set of vertices, e.g. [[3,3][9,5]]
+     Obstacles is set of edges [e1,..,en]
+     where ei is pair of vertices.
+     e.g. obstacles = 
+     [[[3 9][7 9]]
+      [[7 9][5 7]]
+      [[5 7][3 9]]]"
+    [obstacles path]
+    (every?
+      (for [[p0 p1] (partition 2 1 path)
+            [o0 o1] obstacles
+             :let [[u1 u2] (points-to-vec p1 p0)
+                   [v1 v2] (points-to-vec o0 o1)
+                   [w1 w2] (points-to-vec o0 p1)
+                   s (/ (- (* v2 w1) (* v1 w2))
+                        (- (* v1 u2) (* v2 u1)))]]
+        (or (> s 1.0)
+            (< s 1.0)))))
 
 (defn valid-path?
-  "Path is valid if start is in start, dest is in dest and
-   it avoids obstacles"
+  "Path is valid if start is in start box, dest is in dest box
+   and it avoids obstacles"
   [start target obstacles path]
   (and
     (point-in-box? (first path) start)
     (point-in-box? (last path) target)
     (path-avoids-obstacles? obstacles path)))
-
-;; Box packing
-(defn gen-box-constraints-overlap
-  [n-boxes]
-  (let [vars
-       (for [i (range n-boxes)]
-          [(symbol (str "x" i)) (symbol (str "y" i)) (symbol (str "r" i))])]
-    {:vars (reduce concat vars)
-     :pred
-    `(~'and
-      ~@(reduce concat
-        (for [[[ax ay ar][bx by br]] (unique-pairs vars)]
-        `((~'< (~'+ ~ax (~'* -1 ~ar) (~'* -1 ~bx) (~'* -1 ~br)) 0)
-          (~'> (~'+ ~ax ~ar (~'* -1 ~bx) ~br ) 0)
-          (~'> (~'+ ~ay ~ar (~'* -1 ~by) ~br ) 0)
-          (~'< (~'+ ~ay (~'* -1 ~ar) (~'* -1 ~by) (~'* -1 ~br)) 0)))))}))
-
-(defn gen-box-non-overlap
-  [n-boxes]
-  (let [vars
-       (for [i (range n-boxes)]
-          [(symbol (str "x" i)) (symbol (str "y" i)) (symbol (str "r" i))])]
-    {:vars (reduce concat vars)
-     :pred
-    `(~'and
-      ~@(for [[[ax ay ar][bx by br]] (unique-pairs vars)]
-        `(~'or 
-          (~'> (~'+ ~ax (~'* -1 ~ar) (~'* -1 ~bx) (~'* -1 ~br)) 0)
-          (~'< (~'+ ~ax ~ar (~'* -1 ~bx) ~br ) 0)
-          (~'> (~'+ ~ay (~'* -1 ~ar) (~'* -1 ~by) (~'* -1 ~br)) 0)
-          (~'< (~'+ ~ay ~ar (~'* -1 ~by) ~br ) 0))))}))
-
-(defn gen-box-non-overlap-close
-  [n-boxes]
-  (let [proximity-thresh 1.0 ; How close the boxes must be
-        vars
-       (for [i (range n-boxes)]
-          [(symbol (str "x" i)) (symbol (str "y" i)) (symbol (str "r" i))])]
-    {:vars (reduce concat vars)
-     :pred
-    `(~'and
-      ~@(for [[[ax ay ar][bx by br]] (unique-pairs vars)]
-        `(~'or 
-          (~'and
-            (~'> (~'+ ~ax (~'* -1 ~ar) (~'* -1 ~bx) (~'* -1 ~br)) 0)
-            (~'< (~'+ ~ax (~'* -1 ~ar) (~'* -1 ~bx) (~'* -1 ~br)) ~proximity-thresh))
-
-          (~'and
-            (~'< (~'+ ~ax ~ar (~'* -1 ~bx) ~br ) 0)
-            (~'> (~'+ ~ax ~ar (~'* -1 ~bx) ~br ) ~(* -1 proximity-thresh)))
-
-          (~'and
-            (~'> (~'+ ~ay (~'* -1 ~ar) (~'* -1 ~by) (~'* -1 ~br)) 0)
-            (~'< (~'+ ~ay (~'* -1 ~ar) (~'* -1 ~by) (~'* -1 ~br)) ~proximity-thresh))
-
-          (~'and
-            (~'< (~'+ ~ay ~ar (~'* -1 ~by) ~br ) 0)
-            (~'> (~'+ ~ay ~ar (~'* -1 ~by) ~br ) ~proximity-thresh)))))}))
 
 (comment
   (require '[relax.examples.planning :refer :all])
