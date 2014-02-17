@@ -1,13 +1,12 @@
-(ns relax.render
+(ns ^{:doc "Rendger Geometry"
+      :author "Zenna Tavares"}
+  relax.geometry.render
+  (:require [relax.geometry.common :refer :all])
   (:import (org.lwjgl.opengl Display DisplayMode GL11 GL30 GLContext)
            (org.lwjgl.util.glu GLU)
            (org.lwjgl BufferUtils)))
 
-(use 'relax.graphics)
-
 (set! *warn-on-reflection* true)
-
-
 ;; ======================================================================
 ;; spinning triangle in OpenGL 1.1
 (defn init-window

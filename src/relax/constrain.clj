@@ -6,12 +6,11 @@
             [relax.symbolic :refer :all]
             [relax.conditionalvalue :refer :all]
             [relax.multivalue :refer :all]
-            [relax.examples :refer :all]
             [relax.linprog :refer :all]
             [relax.abstraction :refer :all]
             [relax.domains.box :refer :all]
             [relax.evalcs :refer :all]
-            [clozen.helpers :refer :all]
+            [clozen.helpers :as clzn :refer :all]
             [taoensso.timbre.profiling :as profiling :refer (p o profile)]
             [clojure.math.combinatorics :as combo]))
 
@@ -47,11 +46,14 @@
 
 (defn bound-clause
   "Take a clause (from dnf) and find bounding box"
-  [clause vars]
+  [clause vars prior]
   ; (println "clause" clause "vars" vars)
   (let [interval-constraints (map #(evalcs % the-global-environment)
                                    (vec 
-                                    (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)))) ;HACK
+                                    (reduce concat
+                                      (map 
+                                      (fn [a-var [l u]]
+                                        (vector `(~'> ~a-var ~l) `(~'< ~a-var ~u))) vars prior)))) ;HACK
         ; pvar (println "interval constraints" interval-constraints)
         box (make-abstraction
               (mapv vec (partition 2
@@ -76,11 +78,11 @@
 
 (defn cover
   "Cover each polytope individually"
-  [clauses vars]
+  [clauses vars prior]
   (println "Covering Polytopes individually")
   (let [budget 2500
         large-abstrs (filterv #(and (has-volume? %) (not (zero? (volume %))))
-                             (map #(bound-clause % vars) clauses))
+                             (map #(bound-clause % vars prior) clauses))
         pvar (println "After removing empty" (count large-abstrs))
         ; large-abstrs (cover-abstr large-abstrs)
         ]
@@ -112,12 +114,12 @@
 
 (defn construct-box-domain
   "Interpret pred abstractly with box domain"
-  [vars pred]
+  [vars prior pred]
   (let [pred-fn (make-lambda-args (long-args-to-let pred vars) '[sample])
         pvar (println "PRED" (long-args-to-let pred vars))
         dnf (to-dnf-new vars pred)
         pvar (println "DNF" (count dnf))]
-    (cover dnf vars)))
+    (cover dnf vars prior)))
 
 (defn abstract-to-sampler
   "Take an abstract object and make a sampler out of it"
@@ -136,11 +138,14 @@
                      :n-rejected n-rejected})
                   (recur (inc n-sampled) (inc n-rejected)))))))
 
-(defn constrain-uniform-divisive
-  "Do Abstract Interpretation and then convert abstract object into a sampler"
-  [vars pred]
+(defn construct
+  "Do Abstract Interpretation and then convert abstract object into a sampler
+   vars is a set of symbols with variable names
+   prior is a set of intervals"
+  [vars prior pred]
+  {:pre [(clzn/count= prior vars)]}
   (abstract-to-sampler
-    (construct-box-domain vars pred)
+    (construct-box-domain vars prior pred)
     vars pred))
 
   ;; Other
@@ -171,12 +176,13 @@
            (recur (inc n-sampled) (inc n-rejected)))))))
 
 (defn take-samples
-  "Constructs a sampler using constrain-uniform-divisive and writes results
+  "Constructs a sampler using construct and writes results
    to file"
-  [pred vars n-samples]
+  [vars prior pred n-samples]
   (let [;intervals (mapv #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)
-        new-model (constrain-uniform-divisive
+        new-model (construct
                     vars
+                    prior
                     pred)
         pvar (println "Taking Samples...")
         data (repeatedly n-samples new-model)

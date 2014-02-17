@@ -51,16 +51,6 @@
             :else
             (recur next-point (conj convex-set next-point) find-point reached-apex)))))))
 
-(defn edge-sum
-  "Sum over edges
-  If Positive, poly is clockwise (internal angles on right)
-  If negative, poly is counter clockwise (internal angles on left)"
-  [poly]
-  (sum
-    (for [pair (partition 2 1 (conj poly (first poly)))
-          :let [[[x1 y1] [x2 y2]] pair]]
-      (* (- x2 x1) (+ y2 y1)))))
-
 (defn triangle-area
   "Compute the area of a triangle"
   [[[x1 y1] [x2 y2] [x3 y3]]]

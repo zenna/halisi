@@ -3,7 +3,7 @@
   relax.search.rrt
   (:require [clozen.helpers :as clzn :refer [flip]])
   (:require [relax.graph :refer :all]
-            [relax.geometry :refer :all])
+            [relax.geometry.common :refer :all])
   (:require [clojure.data.priority-map :refer :all]))
 
 (defn nearest-node
@@ -64,7 +64,7 @@
           (println "Reached target in iteration: " (- max-nodes n-nodes-left)))
     (cond
       (= q-dest q-new)
-      (- max-nodes n-nodes-left)
+      new-graph
 
       (zero? n-nodes-left)
       new-graph ; TODO, interpolate.
@@ -75,34 +75,47 @@
 
 (comment
   (require '[relax.search.rrt :refer :all]
-           '[relax.box :refer [interval-sample]]
-           '[relax.search.heuristics :refer [euclidean-distance]])
+           '[relax.domains.box :refer [interval-sample middle-split]]
+           '[relax.search.heuristics :refer [euclidean-distance]]
+           '[clozen.helpers :as clzn])
   (def q-start [0.5 0.5])
   (def q-dest [9.9 9.9])
-  (def poly-obstacle-a [[1.0 1.0][7.0 3.0][1.0 5.0]])
-  (def poly-obstacle-b [[7 8][10 8][10 9][7 9]])
-
   (def four-bricks
     [[[1.0 1.0][4.0 1.0][4.0 4.5][1.0 4.5]]
      [[4.1 1.0][9.0 1.0][9.0 4.5][4.1 4.5]]
      [[4.1 6.0][9.0 6.0][9.0 9.5][4.1 9.5]]
      [[1.0 6.0][4.0 6.0][4.0 9.5][1.0 9.5]]])
 
-  (def max-nodes 500)
+  (require '[relax.geometry.svg :refer :all]
+           '[relax.geometry.convex :refer :all]
+           '[relax.examples.planning :refer :all])
+
+  (def svg-scene (parse-scene-data "plan_star.svg"))
+  (def obstacles (:obstacles svg-scene))
+  (def obstacles (mapv #(if (clockwise? %) (vec (reverse %)) %) obstacles))
+  (def q-start (doall (:start svg-scene)))
+  (def q-dest (doall (:dest svg-scene)))
+  (def prior (:boundary svg-scene))
+
+  (def max-nodes 2000)
   (def delta-q 0.5)
   ; Samples a point in 10 x 10 square.
-  (defn sampler [] (vec (interval-sample [[0 10] [0 10]])))
+  (defn sampler [] (vec (interval-sample prior)))
 
-  (require '[relax.constrain :refer [constrain-uniform-divisive]]
+  (require '[relax.constrain :refer [construct]]
            '[relax.examples.planning :refer [lambda-points-avoid-poly-obs]])
-  (def vars-pred (lambda-points-avoid-poly-obs 1 four-bricks))
-  (def smart-sampler (constrain-uniform-divisive (:vars vars-pred)
-                                                  (:pred vars-pred)))
+  (def vars-pred (lambda-points-avoid-poly-obs 1 obstacles))
+  (def smart-sampler (construct (:vars vars-pred) prior (:pred vars-pred)))
   (defn bright-sampler [] (-> (smart-sampler) :sample vec))
-  (bright-sampler)
-  ; Constrain the sampler to avoid points
-  ; (def smart-sampler
-  ;   (construct sampler (fn [sample] (not-any? #(intersect sample %))
-  ;                                    obstacles)))
-  (def graph (make-rdt q-start q-dest max-nodes delta-q sampler euclidean-distance four-bricks))
-  (coll-to-file (edges graph) "rrt-output2"))
+  
+  (def graph (make-rdt q-start q-dest max-nodes delta-q
+    sampler euclidean-distance obstacles))
+  (clzn/coll-to-file (edges graph) "rrt-roadmap")
+  (clzn/coll-to-file (vec (reduce concat (mapv poly-to-edges obstacles))) "hybrid-rrt-obstacles")
+  (clzn/coll-to-file (poly-to-edges 
+                       (box-to-poly (:dest-region svg-scene)))
+                      "hybrid-rrt-dest")
+  (clzn/coll-to-file (poly-to-edges 
+                       (box-to-poly (:start-region svg-scene)))
+                      "hybrid-rrt-start")
+  )

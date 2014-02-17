@@ -63,7 +63,7 @@
 (defn -main[]
   (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
         intervals (vec (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 1)) vars)))
-        new-model (constrain-uniform-divisive
+        new-model (construct
                     (vec vars)
                     intervals
                     pred)
@@ -79,7 +79,7 @@
 ; (defn -main[]
 ;   (let [{vars :vars pred :pred} (gen-box-non-overlap-close 3)
 ;         intervals (vec (reduce concat (map #(vector `(~'> ~% 0) `(~'< ~% 1)) vars)))
-;         new-model (constrain-uniform-divisive
+;         new-model (construct
 ;                     (vec vars)
 ;                     intervals
 ;                     pred)

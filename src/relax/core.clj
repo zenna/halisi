@@ -1,6 +1,6 @@
 (ns relax.core
-  (:require [relax.render :as render])
-  (:require [relax.query :as query])
+  (:require [relax.geometry.render :as render]
+  			[relax.query :as query])
   (:gen-class))
 
 ;; ======================================================================

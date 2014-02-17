@@ -1,59 +1,13 @@
-;0. Make soft measure of convexity
-; -- Two reason 1. We want
-; -- We might imagine a function
-; which takes anotehr function and some patterns
-; a
-
-; The objective is to have a test which might be easier to synthesise, and to look at the gradient
-;1 Go to an optimisation method which allows search through arbitrary spaces.
-;2 Find bottlenecks which are making code slow
-;3 Noisify program, (automatically?)
-;1 Go to an optimisation method which allows search through arbitrary spaces.
-
-; in church you defoinn e generative modend we want to condition on some aspects of the programl
-; and condition on variables in that program
-; WHat I am ataking about is 
-; The high level concept is thawe have some program and we want to pmake statements about the program
-; things which are true about the program.
-; What does this mean throughthink of an imperative program that sorts lists
-; we might want to condition on the output and observe the input
-; the thinkg is that the we can easily ask impossibl questoins such as cpndition on an unsorrted output
-; But what are we really going when we conditon on some output\
-; def a (sort b)
-; assume a is [1 2 3 4 5], what's b.  Well b could be any combination of [1 2 3 4 5]
-; in order to sample we need some probability distribution.  OR mor generally some bias of one over the others.
-; Providing a distribution allows you to take a single sample in a meaningful way, on the other hand there are at least
-; some example where we can answer the question more abstractly from a logical defintion of the program.
-
-; So we might want something of the form, where it tells us that if we condition on the output being [1 2 3 4 5],
-; an ask about the input, we know the input will be any combingatin of the input, this implies our resutls must be returned in some 
-; language.  This is a noble goal, most surely.  But what itwe is precisely.  What we are saying, is that we can condition on the
-; input or output of a program and find logical constraints on the input.  Our answers are declarative.
-
-; Another example, conider inverse graphics, we can condition on some output image.  The difference herei sthat there is 
-; no language in which to define the input in a deductive way.  Thi would require a more indepth knowledge of logic programming
-; and constraint programming to see how these things work.
-
-; A more immediate goal could be taking an arbitrary program and having holes I wish to fill.
-
-; Put noise on points, do inference over these points to
-
-; PROBLEMS
-
-; 1. Getting stuck in local minima
-; 2. using weird rendering of complex shapes
-; 3. Using wrong nuber of points
-; 4. plateaus, if there is no overlap then it wont have any gradient
-; 5. Bad stopping criterion in nelder-mead.
-; More fundamentally generative model is poor!
-; Leslie  
-
-(ns relax.query
-  (:use relax.render)
-  (:use relax.graphics)
-  (:use clozen.helpers)
-  (:use clozen.neldermead)
-  (:require [incanter.distributions :as dist]))
+(ns ^{:doc "2D inverse graphics"
+      :author "Zenna Tavares"}
+  relax.query
+  (require [relax.geometry.render :refer :all]
+           [relax.geometry.common :refer :all]
+           [relax.geometry.convex :refer :all]
+           [relax.geometry.gen :refer :all])
+  (require [clozen.helpers :refer :all]
+           [clozen.neldermead :refer :all])
+  (require [incanter.distributions :as dist]))
 
 (defn blur
   "Add Gaussian blur to image"

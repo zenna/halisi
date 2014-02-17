@@ -21,3 +21,14 @@ mvn install:install-file -Dfile=/path/to/lpsolve55j.jar -DartifactId=lpsolve -Dv
 ## Notes
 
 Much faster with latest java.
+
+# TODO:
+RRT - what do i need to do to be able to really compare RRT with RRT/Construct / construct
+
+- Plot obstacles along with graph
+- I need an example which really challenges RRT
+- Check if unions of convex polytopes are acceptable
+- Fix RRT bug
+
+- 2D self intersection test
+- Start more general construct

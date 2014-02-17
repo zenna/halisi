@@ -1,8 +1,32 @@
 (ns ^{:doc "Examples in 2D, 3D and ND planning"
 	    :author "Zenna Tavares"}
   relax.examples.planning
-  (:require [relax.geometry :refer :all])
+  (:require [relax.geometry.common :refer :all]
+            [relax.geometry.convex :refer [convex-hull-gf]]
+            [relax.geometry.svg :refer :all])
+  (:require [relax.domains.box :refer [middle-split]])
   (:require [clozen.helpers :refer :all]))
+
+(defn parse-scene-data
+  "Take an svg file and get out the obstacles, boundary and start and dest.
+   svg must be in absolute coordinates.
+   objects should be id'd 'dest' 'start' 'boundary', and othe ids will be
+   considered obstacles.
+   "
+  [svg-fname]
+  (let [svg-scene (svg-file-to-poly svg-fname)
+        boundary (:data (first (filterv #(= "boundary" (:id %)) svg-scene)))
+        q-start-reg (:data (first (filterv #(= "start" (:id %)) svg-scene)))
+        q-dest-reg (:data (first (filterv #(= "dest" (:id %)) svg-scene)))
+        q-start (middle-split {:internals q-start-reg})
+        q-dest (middle-split {:internals q-dest-reg})
+        obstacles
+          (mapv convex-hull-gf
+            (extract (filterv #(= :path (:type %)) svg-scene) :data))
+        obstacles (mapv #(if (clockwise? %) (vec (reverse %)) %) obstacles)]
+    {:boundary boundary :obstacles obstacles
+     :start q-start :dest q-dest
+     :start-region q-start-reg :dest-region q-dest-reg}))
 
 (defn gen-path-parametric
   "Generate a random path in X Y"

@@ -26,19 +26,28 @@
 
 (def poly-obstacle-a [[0.0 0.0][7.0 3.0][1.0 5.0]])
 (def poly-obstacle-b [[7 8][10 8][10 9][7 9]])
+
+(def svg-scene (parse-scene-data "plan_star.svg"))
+
 (def four-bricks
   [[[1.0 1.0][4.0 1.0][4.0 4.5][1.0 4.5]]
    [[5.0 1.0][9.0 1.0][9.0 4.5][5.0 4.5]]
    [[5.0 6.0][9.0 6.0][9.0 9.5][5.0 9.5]]
    [[1.0 6.0][4.0 6.0][4.0 9.5][1.0 9.5]]])
 
+(def obstacles (:obstacles svg-scene))
+(def prior (:boundary svg-scene))
+(use 'relax.geometry.common)
+
 (defn -main[]
   (let [{vars :vars pred :pred}
         ; (point-avoid-orthotope-obs 1 four-tiled-obstacles)
-        (lambda-points-avoid-poly-obs 1 four-bricks)]
+        (lambda-points-avoid-poly-obs 1 obstacles)]
     (samples-to-file
-      "samples.xscatter"
-      (take-samples pred vars 2000))))
+      "samples.xscatter16"
+      (take-samples vars prior pred 10000)))) 
+
+(-main)
 
 ; (defn -main[]
 ;   (let [{vars :vars pred :pred}

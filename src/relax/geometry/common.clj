@@ -23,7 +23,7 @@
     [r theta]))
 
 (defn points-to-vec
-  "convert pair of poitns to vector"
+  "convert pair of points to vector"
   [[x1 y1] [x2 y2]]
   [(- x2 x1) (- y2 y1)])
 
@@ -34,7 +34,7 @@
   [(- y) x])
 
 (defn cross-product
-  "compute cross product of two vectors"
+  "Compute cross product of two vectors"
   [[x1 y1] [x2 y2]]
   (- (* x1 y2) (* x2 y1)))
 
@@ -61,7 +61,9 @@
 
 (defn parametric-to-point
   "A line can be represented parametrically as a point
-   x = x_0 + a*t"
+   x = x_0 + a*t.
+   Given a line segment as two points and t value,
+   return point along this line."
   [[ax ay] [bx by] t]
   [(+ ax (* (- bx ax) t))
    (+ ay (* (- by ay) t))])
@@ -90,10 +92,10 @@
         nil ; No gradient
         (/ y-delta x-delta))))
 
-;; Polygons
+;; Polygons (i.e. 2D)
 (defn winding-num
   "Return winding number of polygon
-  see Alciatore "
+   see Alciatore "
   [poly point]
         ; translate poly such that point is at origin
   (let [translated-poly (map #(vec-f - % point) poly)]
@@ -132,9 +134,24 @@
             :else
             (recur (rest vertices) w)))))))
 
+(defn edge-sum
+  "Sum over edges
+  If Positive, poly is clockwise (internal angles on right)
+  If negative, poly is counter clockwise (internal angles on left)"
+  [poly]
+  (sum
+    (for [pair (partition 2 1 (conj poly (first poly)))
+          :let [[[x1 y1] [x2 y2]] pair]]
+      (* (- x2 x1) (+ y2 y1)))))
+
+(defn clockwise?
+  "Does the polygon have a clockwise ordering?"
+  [poly]
+  (pos? (edge-sum poly)))
+
 (defn point-out-poly?
   "is the point in the poly?
-  True when the winding num is zero"
+   True when the winding num is zero"
   [poly point]
   (zero? (winding-num poly point)))
 
@@ -143,6 +160,20 @@
   [poly point]
   (not (point-out-poly? poly point)))
 
+(defn point-in-box?
+  "Is a point inside a box?"
+  [[[px py] :as point] [[[low-x up-x][low-y up-y]] :as box]]
+  (and
+    (>= px low-x)
+    (<= px up-x)
+    (>= py low-y)
+    (<= py up-x)))
+
+(defn box-to-poly
+  "Converts a box defined as interval to a polygon"
+  [[[xl xu][yl yu]]]
+  [[xl yl][xu yl][xu yu][xl yu]])
+
 (defn set-complement
   [points-a points-b]
   (remove #(in? points-b %) points-a))
@@ -150,14 +181,14 @@
 (defn poly-to-edges
   "Get vector of edges of a polygon (series of points)"
   [poly]
-  (partition 2 1 (conj poly (first poly))))
+  (mapv vec (partition 2 1 (conj poly (first poly)))))
 
 (defn v-form-to-h
   "Convert from a vertex representation of a convex polygon to a halfspace
    Vertex representation: [[x0 y0][x1 y1]...] with implicit edge between
    first and last point.
    H-form: is a0*x0 + a1*x1 < b, represented as vector [a0 a1 b]
-   We assume a counter clockwise"
+   Assumes a counter clockwise ordering"
   [poly]
   (for [[[ax ay :as a] [bx by :as b]] (poly-to-edges poly)]
     (if-let [a1 (gradient a b)] ; There is a gradient, e.g. y = 2x + 4
@@ -180,15 +211,24 @@
             " > " (last lineq)))]
     (clojure.string/join " && " (map lineq-to-string h-poly))))
 
-;; Non-linear planning constraint
-(defn point-in-box?
-  "Is a point inside a box?"
-  [[[px py] :as point] [[[low-x up-x][low-y up-y]] :as box]]
-  (and
-    (>= px low-x)
-    (<= px up-x)
-    (>= py low-y)
-    (<= py up-x)))
+;; Points (i.e. N-D)
+(defn bounding-box-points
+  "Get a bounding box of a set of d dimensional points
+   e.g. [[1 2 3][4 5 6][7 8 9]] => [[1 7][2 8][3 9]]"
+  [points]
+  (let [n-dims (count (first points))
+        update-extremes
+        (fn [point ineq extremes]
+         "e.g. points is [0 1 10], extremes is [+inf +inf +inf], ineq <"
+         (mapv #(if (ineq %1 %2) %1 %2) point extremes))]
+    ; Iterate through each point and update most extreme value of each
+    ; dimension seen so far
+    (loop [points points mins (repeat n-dims Double/POSITIVE_INFINITY)
+                         maxs (repeat n-dims Double/NEGATIVE_INFINITY)]
+      (if (seq points)
+          (recur (next points) (update-extremes (first points) < mins)
+                               (update-extremes (first points) > maxs))
+          (mapv vector mins maxs)))))
 
 (comment
   (require '[relax.geometry :refer :all])

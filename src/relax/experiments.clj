@@ -46,7 +46,7 @@
   [constraint n-samples]
   (let [{vars :vars pred :pred} constraint
         vars (vec vars)
-        sampler (constrain-uniform-divisive vars pred)]
+        sampler (construct vars pred)]
   (p :sampling-time (doall (repeatedly n-samples sampler)))))
 
   (defn map-to-python-dict

@@ -6,50 +6,27 @@
   (:require [clojure.xml :as xml])
   (import [java.io FileInputStream]))
 
-(defn d-attr-to-poly
+(defn parse-xml-coords
+  "String coordinate to vector of doubles"
+  [coords-str]
+  (mapv #(Double/parseDouble %)
+         (clojure.string/split coords-str #",")))
+
+;; X and Y seem to be distance from TOP LEFT. therefore there should be nothing in y greater
+;; than 150
+;; Lower 
+(defn d-attr-to-points
   "Convert the d attribute of a path into a polygon.
-   e.g. M 8.2142857,93.214286 40,85.714286 l -16.071429,-22.5 z
+   Only works with absolute coordinates.
+
+   Note there may be a weird ordering of vertices.  By weird, I think
+   it may be the case that different obstacles can have different orderings
+   i.e. CW and CCW.
    
-   Difficulties: 1) Weird scaling of coordinates
-   2) Inkscape sometimes uses moveTo M (abs coord),
-   sometimes line L (displacement coord)."
+   Also note, Inkscape coordinates are a bit strange."
   [d-str]
   (let [d-parts (clojure.string/split d-str #" ")]
-    (loop [d-parts-loop d-parts poly [] last-cmd nil]
-      (cond
-        (not (seq d-parts-loop)) poly
-
-        ; It could be a command
-        (= (clojure.string/lower-case (first d-parts-loop)) "m")
-        (recur (next d-parts-loop) poly :move)
-
-        (= (clojure.string/lower-case (first d-parts-loop)) "l")
-        (recur (next d-parts-loop) poly :line)
-
-        (= (clojure.string/lower-case (first d-parts-loop)) "z")
-        poly
-
-        ; Or a coordinate where last command was 'move'
-        (= :move last-cmd)
-        (recur 
-          (next d-parts-loop)
-          (conj poly 
-                (mapv #(Double/parseDouble %)
-                       (clojure.string/split (first d-parts-loop) #",")))
-          last-cmd)
-
-        ; Or a coordinate where last command was 'line'
-        (= :line last-cmd)
-        (recur (next d-parts-loop)
-          (conj poly          ; Line command entails displacement,
-                (add-vec      ; Hence do vector addition of last abs point
-                  (last poly)
-                  (mapv #(Double/parseDouble %)
-                         (clojure.string/split (first d-parts-loop) #","))))
-          last-cmd)
-
-        :else
-        (throw (Exception. "Unknown object in d attrs"))))))
+    (mapv parse-xml-coords (-> d-parts pop next))))
 
 (defmulti handle-xml
   "Dispatch on the tag type"
@@ -59,8 +36,21 @@
 ; Extract the d attribute from a path
 (defmethod handle-xml :path
   [node summary]
-  (let [points-str (-> node :attrs :d)]
-    (conj summary (d-attr-to-poly points-str))))
+  (let [{id :id points-str :d} (-> node :attrs)
+        points (d-attr-to-points points-str)]
+    (conj summary {:id id :type :path :data points}))) 
+
+; Extract the d attribute from a path
+(defmethod handle-xml :rect
+  [node summary]
+  (let [{w :width h :height x :x y :y id :id}
+        (-> node :attrs)
+        w (Double/parseDouble w)
+        h (Double/parseDouble h)
+        x (Double/parseDouble x)
+        y (Double/parseDouble y)]
+    (conj summary 
+          {:id id :type :box :data [[x (+ x w)][y (+ y h)]]})))
 
 ; Recurse on :contents of a :g node"
 (defmethod handle-xml :g
@@ -76,10 +66,14 @@
   "Convert an svg"
   [match-xml]
   (let [summary []]
-    (println "xml is " match-xml)
     (pass handle-xml summary (:content match-xml))))
 
 (defn svg-file-to-poly
   [filename]
   (let [svg-xml (xml/parse (FileInputStream. filename))]
     (svg-xml-to-poly svg-xml)))
+
+(comment
+  (def obstacles (svg-file-to-poly "scene5.svg"))
+  (require '[relax.geometry.convex :refer :all])
+  (mapv convex? obstacles))
