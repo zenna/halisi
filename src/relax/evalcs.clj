@@ -419,17 +419,17 @@
 
     ; not empty? then I need to find the cart product
     :else
-    (bucket :remove-inconsistent?        
-      (let [product (apply combo/cartesian-product (vec cart-prod))
-            pvar (println "no-prune n-terms in final product" (count product))
+    (bucket :remove-inconsistent?
+      (let [inconsistent (inconsistent-sets cart-prod conjun-terms)
+            product (cartesian-product-ignore inconsistent (vec cart-prod))
+            pvar (println "n-terms in final product" (count product))
             disjun-terms
             (map (comp eval-conjoin #(concat % conjun-terms))
                  product)]
         (eval-disjoin disjun-terms))
 
-      (let [inconsistent (inconsistent-sets cart-prod conjun-terms)
-            product (cartesian-product-ignore inconsistent (vec cart-prod))
-            pvar (println "n-terms in final product" (count product))
+      (let [product (apply combo/cartesian-product (vec cart-prod))
+            pvar (println "no-prune n-terms in final product" (count product))
             disjun-terms
             (map (comp eval-conjoin #(concat % conjun-terms))
                  product)]

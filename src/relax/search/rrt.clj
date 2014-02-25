@@ -64,10 +64,10 @@
           (println "Reached target in iteration: " (- max-nodes n-nodes-left)))
     (cond
       (= q-dest q-new)
-      new-graph
+      (- max-nodes n-nodes-left)
 
       (zero? n-nodes-left)
-      new-graph ; TODO, interpolate.
+      nil ; TODO, interpolate.
       
       :else
       (recur new-graph (dec n-nodes-left)
@@ -90,15 +90,20 @@
            '[relax.geometry.convex :refer :all]
            '[relax.examples.planning :refer :all])
 
-  (def svg-scene (parse-scene-data "plan_star.svg"))
-  (def obstacles (:obstacles svg-scene))
-  (def obstacles (mapv #(if (clockwise? %) (vec (reverse %)) %) obstacles))
-  (def q-start (doall (:start svg-scene)))
-  (def q-dest (doall (:dest svg-scene)))
-  (def prior (:boundary svg-scene))
+  (defn plan
+    [svg-scene sampler]
+    (let [obstacles (:obstacles svg-scene)
+          obstacles (mapv #(if (clockwise? %) (vec (reverse %)) %) obstacles)
+          q-start (doall (:start svg-scene))
+          q-dest (doall (:dest svg-scene))
+          delta-q 0.5
+          prior (:boundary svg-scene)
+          max-nodes 2000]
+      (make-rdt q-start q-dest max-nodes delta-q
+          sampler euclidean-distance obstacles)))
 
-  (def max-nodes 2000)
-  (def delta-q 0.5)
+  (def svg-scene (parse-scene-data "plan_star4.svg"))
+
   ; Samples a point in 10 x 10 square.
   (defn sampler [] (vec (interval-sample prior)))
 
@@ -108,14 +113,17 @@
   (def smart-sampler (construct (:vars vars-pred) prior (:pred vars-pred)))
   (defn bright-sampler [] (-> (smart-sampler) :sample vec))
   
-  (def graph (make-rdt q-start q-dest max-nodes delta-q
-    sampler euclidean-distance obstacles))
+  (def plans (vec (doall (repeatedly 1000 #(plan svg-scene sampler)))))
+  
+  (def bright-plans
+      (vec (doall (repeatedly 1000 #(plan svg-scene bright-sampler)))))  
+
+
   (clzn/coll-to-file (edges graph) "rrt-roadmap")
   (clzn/coll-to-file (vec (reduce concat (mapv poly-to-edges obstacles))) "hybrid-rrt-obstacles")
   (clzn/coll-to-file (poly-to-edges 
                        (box-to-poly (:dest-region svg-scene)))
-                      "hybrid-rrt-dest")
+                       "hybrid-rrt-dest")
   (clzn/coll-to-file (poly-to-edges 
                        (box-to-poly (:start-region svg-scene)))
-                      "hybrid-rrt-start")
-  )
+                       "hybrid-rrt-start"))

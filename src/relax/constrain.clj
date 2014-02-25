@@ -9,16 +9,12 @@
             [relax.linprog :refer :all]
             [relax.abstraction :refer :all]
             [relax.domains.box :refer :all]
-            [relax.evalcs :refer :all]
-            [clozen.helpers :as clzn :refer :all]
-            [taoensso.timbre.profiling :as profiling :refer (p o profile)]
-            [clojure.math.combinatorics :as combo]))
-
-; The variables have some history
-; Originally I would add on at the end when I found the bounding box using lp
-; Then I changed it so that I included them in the actual code
-; This was problemantic as I got some kind of stack overflow
-; But then I changed to and or model. and now I am not sure what the current status is.
+            [relax.evalcs :refer :all])
+  (:require [clojure.math.combinatorics :as combo])
+  (:require [clozen.helpers :as clzn :refer :all]
+            [clozen.debug :refer [dbg]]
+            [fipp.edn :refer (pprint) :rename {pprint fipp}]
+            [taoensso.timbre.profiling :as profiling :refer (p o profile)]))
 
 (defn satisfiable?
   "Does a solution satisfy the constraint or subc constraint"
@@ -38,7 +34,7 @@
       (define-symbolic! variable the-global-environment)))
 
   (println "the the-global-environment is" the-global-environment "\n")
-  (println "Original Predicate Is" pred  "\n")
+  (println "Original Predicate Is" (fipp pred)  "\n")
   (println "vars is" vars "\n")
 
   (let [x (evalcs pred the-global-environment)]
@@ -179,8 +175,7 @@
   "Constructs a sampler using construct and writes results
    to file"
   [vars prior pred n-samples]
-  (let [;intervals (mapv #(vector `(~'> ~% 0) `(~'< ~% 10)) vars)
-        new-model (construct
+  (let [new-model (construct
                     vars
                     prior
                     pred)
@@ -190,7 +185,5 @@
         n-sampled (sum (extract data :n-sampled))
         n-rejected (sum (extract data :n-rejected))]
         (samples-to-file "op" samples)
-        ; (samples-to-file "srsop" srs-samples)
         (println "N-SAMPLES:" n-sampled " n-rejected: " n-rejected " ratio:" (double (/ n-rejected n-sampled)))
-        ; (println "N-SAMPLES-SRS:" srs-n-sampled " n-rejected: " srs-n-rejected " ratio:" (double (/ srs-n-rejected srs-n-sampled)))
         samples))

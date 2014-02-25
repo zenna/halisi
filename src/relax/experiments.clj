@@ -2,26 +2,25 @@
       :author "Zenna Tavares"}
   relax.experiments
   (:require [relax.constrain :refer :all]
-            [relax.examples :refer :all]
-            [clozen.helpers :refer :all]
+            [relax.examples.planning :refer :all]
+            [relax.common :refer [samples-to-file]])
+  (:require [clozen.helpers :refer :all]
             [clozen.profile.scaling :refer :all]
             [clozen.profile.bucket :refer :all]
-            [clozen.profile.plot :refer :all]
-            [taoensso.timbre.profiling :as profiling :refer (p o profile)]))
+            [clozen.profile.plot :refer :all])
+  (:require [taoensso.timbre.profiling :as profiling :refer (p o profile)]))
 
-; The scientific questions I want to answer are:
-; 1. What is the effect of 
-; . a) doing the reduction, the pruning
-;   b) doing the inconsistency checking
-;   c) doing the joining
-
-; On run-time and rejected samples.
-; For rejected samples I just need a bar chart
-
-; How to interface the prior and the predicate
-; TODO: Need to fix scaling so that it works with n-samples = 1
-; TODO: Disable printing, use loggin
-; TODO: Write tests to see if samplers are actually working
+(defn plan-using-constrain []
+  "A path planning experiment with polygonal obstacles"
+  (let [n-points 3
+        plan-scene (parse-scene-data "plan_star2.svg")
+        {vars :vars pred :pred}
+        (lambda-valid-path-linear n-points (:start plan-scene) (:dest plan-scene) (:obstacles plan-scene) 3.0)
+        prior (vec (reduce concat (repeat n-points (:boundary plan-scene))))]
+    (println "prior" prior "vars" vars)
+    (samples-to-file
+      "samples.xscatter17"
+      (take-samples vars prior pred 2))))
 
 (defn plan-by-rejection
   "Path planning example with rejection sampler"
