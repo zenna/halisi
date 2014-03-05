@@ -64,7 +64,7 @@
                          ([f & args] :seq) {:f f :args args}
                          :else nil))
         (fn [{f :f args :args}]
-          `(~(lookup-compound f) args))
+          `(~(lookup-compound f) ~@args))
         (fn [{f :f}]
           (compound? f))))
 
@@ -73,11 +73,11 @@
   (rule 
   '->
   (->CorePattern (match-fn x
-                   ([(['fn [& args] body] :seq) params] :seq)
+                   ([(['fn [& args] body] :seq) & params] :seq)
                      {:args args :body body :params params}
                    :else nil))
   (fn [{args :args body :body params :params}]
-    `(postwalk-replace (zipmap args params) body))))
+    (postwalk-replace (zipmap args params) body))))
 
 (def variable-sub-rule-nullary
   "Substitute in variables"
@@ -89,9 +89,10 @@
   (fn [{body :body}]
     body)))
 
-(comment
+(defn -main []
+  (do
   (def a-exp '(+ 3 (mean [1 2 3])))
   (def rules [compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule primitive-apply-rule])
   (def transformer (partial eager-transformer rules))
   (rewrite a-exp transformer)
-  (def result (rewrite a-exp transformer)))
+  ))
