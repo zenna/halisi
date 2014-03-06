@@ -3,11 +3,12 @@
   relax.construct
   (:require [veneer.pattern.match :refer :all]
             [veneer.pattern.rewrite :refer :all])
-  (:require [clozen.helpers :as clzn])
+  (:require [clozen.helpers :as clzn]
+            [clozen.iterator :as itr])
   (:require [clojure.walk :refer [postwalk-replace]]))
 
 (def primitives-coll
-  '[+ * - + apply rand reduce count])
+  '[+ * - + / apply rand reduce count])
 
 (def primitives (zipmap primitives-coll (map resolve primitives-coll)))
 
@@ -54,6 +55,7 @@
                          :else nil))
         (fn [{f :f args :args}]
           (apply (primitive f) args))
+        itr/subtree-leaves-first-itr
         (fn [{f :f}]
           (primitive? f))))
 
@@ -65,6 +67,7 @@
                          :else nil))
         (fn [{f :f args :args}]
           `(~(lookup-compound f) ~@args))
+        itr/subtree-itr
         (fn [{f :f}]
           (compound? f))))
 
@@ -77,7 +80,8 @@
                      {:args args :body body :params params}
                    :else nil))
   (fn [{args :args body :body params :params}]
-    (postwalk-replace (zipmap args params) body))))
+    (postwalk-replace (zipmap args params) body))
+  itr/subtree-itr))
 
 (def variable-sub-rule-nullary
   "Substitute in variables"
@@ -87,7 +91,8 @@
                    (['fn [] body] :seq) {:body body}
                    :else nil))
   (fn [{body :body}]
-    body)))
+    body)
+  itr/subtree-itr))
 
 (defn -main []
   (do
