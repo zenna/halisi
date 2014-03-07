@@ -10,18 +10,35 @@ The goals are to
 ## Objectives ##
 
 Objectives:
-- Implement as a standalone interpreter
+Where do I want to be: I want to be at the point where I have a problem.
+I want to be at the point where I have some cool examples.
+This means implementing the itnerpreter as rewrite rules
+Implementing some subet of the standard library
+Implementing the abstractions as rewrite rules
+Implementing the examples
+Implementing the decision making process.
+# 
 
-### Subgoal: Completely evaluate normal clojure with rewrite rules ###
+### Subgoal: Evaluate normal clojure with rewrite rules ###
 Here, a program is _executed_ by applying a series of transformations - it is transformed from the source code to a value.
 There are many ways to interpret a lisp program, but they can all be viewed as transformations to equivalent programs, i.e. tree rewrites.
 Typically an eager interpreter will do a depth first traversal of the tree, applying transformations recursively.
 A lazy interpreter will take a different route
 
-When interpreting approximately, there are many choices made.
+When interpreting approximately, there are## many choices made.
 Unlike a purely functional lisp, these choices will result in different values, i.e. different approximations.
 Hence I deemed it useful to separate the _act_ of interpreting from the _decision making_.
 The model of computation used for these transformations is based on pattern matching and term-rewriting.
+
+__Status:__ There's a bug with the rewrite rules that needs fixing, I need to figure out how to handle if.  That should affect variable binding.  In general
+dbg: (transform p1__265#) = (+ 3 ((fn [coll] (/ (reduce + coll) (count coll))) [1 2 a]))
+dbg: (transform p1__265#) = (+ 3 (/ (reduce + [1 2 a]) (count [1 2 a])))
+dbg: (transform p1__265#) = (+ 3 (/ a (count [1 2 a])))
+dbg: (transform p1__265#) = (+ 3 (/ a 3))
+)
+
+Why is reduce + [1 2 a] getting reduced to a. That should throw an error.
+
 
 TODO rewrite rules:
 - Rewrite rules, figure out the orderings
@@ -29,6 +46,13 @@ TODO rewrite rules:
 - Handle if
 - Handle and
 - Handle loop/recur
+
+With an if we only want to evaluate the consequent before we do anything
+in any of the branches.
+-- How to enforce this
+--- a) in the iterators, e.g. if subtree iterator hits an if
+(+ 3 2 (if (> x 2) 'alpha 'beta))
+--- b) in the condition
 
 TODO examples:
 - Example non-linear planning

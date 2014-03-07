@@ -8,7 +8,7 @@
   (:require [clojure.walk :refer [postwalk-replace]]))
 
 (def primitives-coll
-  '[+ * - + / apply rand reduce count])
+  '[+ * - + / > < >= <= apply rand reduce count])
 
 (def primitives (zipmap primitives-coll (map resolve primitives-coll)))
 
@@ -56,6 +56,7 @@
         (fn [{f :f args :args}]
           (apply (primitive f) args))
         itr/subtree-leaves-first-itr
+        seq?
         (fn [{f :f}]
           (primitive? f))))
 
@@ -68,6 +69,7 @@
         (fn [{f :f args :args}]
           `(~(lookup-compound f) ~@args))
         itr/subtree-itr
+        seq?
         (fn [{f :f}]
           (compound? f))))
 
@@ -81,7 +83,24 @@
                    :else nil))
   (fn [{args :args body :body params :params}]
     (postwalk-replace (zipmap args params) body))
-  itr/subtree-itr))
+  itr/subtree-itr
+  seq?))
+
+(def if-rule
+  "Substitute in variables"
+  (rule 
+  '->
+  (->CorePattern
+    (match-fn x
+      (['if true consequent alternative] :seq)
+      {:branch consequent}
+      (['if false consequent alternative] :seq)
+      {:branch alternative}
+      :else nil))
+  (fn [{branch :branch}]
+    branch)
+  itr/subtree-itr
+  seq?))
 
 (def variable-sub-rule-nullary
   "Substitute in variables"
@@ -92,12 +111,13 @@
                    :else nil))
   (fn [{body :body}]
     body)
-  itr/subtree-itr))
+  itr/subtree-itr
+  seq?))
 
 (defn -main []
   (do
-  (def a-exp '(+ 3 (mean [1 2 3])))
-  (def rules [compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule primitive-apply-rule])
-  (def transformer (partial eager-transformer rules))
-  (rewrite a-exp transformer)
+    (def a-exp '(+ 3 (if (> 4 3) 0 (mean [1 2 3]))))
+    (def rules [compound-f-sub-rule variable-sub-rule-nullary if-rule variable-sub-rule primitive-apply-rule])
+    (def transformer (partial eager-transformer rules))
+    (rewrite a-exp transformer)
   ))
