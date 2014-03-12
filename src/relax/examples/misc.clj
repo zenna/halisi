@@ -3,6 +3,16 @@
   relax.examples
   (:require [clozen.helpers :refer :all]))
 
+(use 'clozen.helpers)
+
+;; How to go from this to a closed form solution? 
+(defn game [player]
+  (let [probabilities {'player1 (/ 1 3) 'player2 0.25}
+        other-player #(if (= 'player1 %) 'player2 'player1)]
+    (if (flip (probabilities player))
+        player
+        (recur (other-player player)))))
+
 
 ;; Random examples
 (def exp 

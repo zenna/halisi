@@ -1,15 +1,16 @@
 # Construct #
 
 Construct is a probabilistic programming language.
-The goals are to
+
 - Allow people to specify probabilistic models using a general programming language
 - Abstract out and/or automate inference algorithms
 
-## Outline ##
+## Basic Idea ##
+The question we address is: how to approximate a distribution, and how to compute with those approximations?
+Typical Bayesian inference methods approximate distributions by sampling points from them.
+As the number of points increases to infinity the approximation tends to converge to the actual distribution.
 
 ## Objectives ##
-
-Objectives:
 Where do I want to be: I want to be at the point where I have a problem.
 I want to be at the point where I have some cool examples.
 This means implementing the itnerpreter as rewrite rules
@@ -36,11 +37,12 @@ dbg: (transform p1__265#) = (+ 3 (/ (reduce + [1 2 a]) (count [1 2 a])))
 dbg: (transform p1__265#) = (+ 3 (/ a (count [1 2 a])))
 dbg: (transform p1__265#) = (+ 3 (/ a 3))
 )
-
+## # 
 Why is reduce + [1 2 a] getting reduced to a. That should throw an error.
 
 
 TODO rewrite rules:
+
 - Rewrite rules, figure out the orderings
 - Handle let
 - Handle if
@@ -55,6 +57,7 @@ in any of the branches.
 --- b) in the condition
 
 TODO examples:
+
 - Example non-linear planning
 - Examples for 2D inverse graphics
 - Mesh generation

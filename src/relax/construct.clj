@@ -2,10 +2,11 @@
       :author "Zenna Tavares"}
   relax.construct
   (:require [veneer.pattern.match :refer :all]
-            [veneer.pattern.rewrite :refer :all])
+            [veneer.pattern.rule :refer :all])
   (:require [clozen.helpers :as clzn]
             [clozen.iterator :as itr])
-  (:require [clojure.walk :refer [postwalk-replace]]))
+  (:require [clojure.walk :refer [postwalk-replace]]
+            [clojure.zip :as zip]))
 
 (def primitives-coll
   '[+ * - + / > < >= <= apply rand reduce count])
@@ -25,6 +26,7 @@
   (clzn/nil-to-false (primitives symb)))
 
 (def fn-codes
+  "Source codes for some standard functions"
   {'repeat
   '(fn [n f]
      (loop [n n res []]
@@ -36,17 +38,36 @@
         (count coll)))})
 
 (defn lookup-compound
+  "Lookup the source of a compound function"
   [f]
   (fn-codes f))
 
 (defn compound?
+  "Is this function a compound"
   [f]
   (if (lookup-compound f)
       true
       false))
 
-;; For primitive function evaluation I need to know that the arguments
-;; are fully evaluated.
+;; FIXME
+(defn defined-symbol?
+  "Is the symbol defined?"
+  [x]
+  (or (primitive? x) (compound? x)))
+
+(defn evaluated?
+  "Is x fully evaluated?
+   X is evaluated if it is not a list.
+   If it is a list then "
+  [x]
+  (if (coll? x)
+      (every? evaluated? (seq x))
+      (or (not (symbol? x))
+          (defined-symbol? x))))
+
+;; Rules
+; For primitive function evaluation I need to know that the arguments
+; are fully evaluated.
 (def primitive-apply-rule
   "This rule applies a primitive function"
   (rule '->
@@ -55,10 +76,12 @@
                          :else nil))
         (fn [{f :f args :args}]
           (apply (primitive f) args))
-        itr/subtree-leaves-first-itr
-        seq?
-        (fn [{f :f}]
-          (primitive? f))))
+        (->ExprContext
+          itr/subtree-leaves-first-itr
+          (fn [{f :f args :args}]
+            (and (primitive? f)
+                 (evaluated? args))))
+        nil))
 
 (def compound-f-sub-rule
   "Substitute in a compound function"
@@ -68,10 +91,11 @@
                          :else nil))
         (fn [{f :f args :args}]
           `(~(lookup-compound f) ~@args))
-        itr/subtree-itr
-        seq?
-        (fn [{f :f}]
-          (compound? f))))
+        (->ExprContext
+          itr/subtree-itr
+          (fn [{f :f}]
+            (compound? f)))
+        nil))
 
 (def variable-sub-rule
   "Substitute in variables"
@@ -83,9 +107,29 @@
                    :else nil))
   (fn [{args :args body :body params :params}]
     (postwalk-replace (zipmap args params) body))
-  itr/subtree-itr
-  seq?))
+  (->ExprContext
+    itr/subtree-itr
+    (fn [_ &]
+      true))
+  nil))
 
+(def variable-sub-rule-nullary
+  "Substitute in variables"
+  (rule 
+  '->
+  (->CorePattern (match-fn x
+                   (['fn [] body] :seq) {:body body}
+                   :else nil))
+  (fn [{body :body}]
+    body)
+  (->ExprContext
+    itr/subtree-itr
+    (fn [_ &]
+      true))
+  nil))
+
+
+;; IF
 (def if-rule
   "Substitute in variables"
   (rule 
@@ -99,25 +143,69 @@
       :else nil))
   (fn [{branch :branch}]
     branch)
-  itr/subtree-itr
-  seq?))
+  (->ExprContext
+    itr/subtree-itr
+    (fn [_ &]
+      true))
+  nil))
 
-(def variable-sub-rule-nullary
-  "Substitute in variables"
-  (rule 
-  '->
-  (->CorePattern (match-fn x
-                   (['fn [] body] :seq) {:body body}
-                   :else nil))
-  (fn [{body :body}]
-    body)
-  itr/subtree-itr
-  seq?))
+(defn zip-loc-pos
+  "What is the position of loc in seq" [zipper]
+  (if-let [lefts (zip/lefts zipper)]
+    (count lefts)
+    0))
+
+(defn base [loc]
+  "For a given loc, return a seq of all the elements on its level"
+  (concat (zip/lefts loc) (list (zip/node loc)) (zip/rights loc)))
+  
+(declare check-if check-parents)
+
+(defn check-parents [zip-tree]
+  "Used in combination with check-parents."
+  (if (nil? (zip/up zip-tree))
+            true
+            (check-if (zip/up zip-tree))))
+
+(defn check-if [zip-tree]
+  "Determine where a loc
+   in a zip is in a confirmed branch"
+  (loop [zip-tree zip-tree]
+    (let [locs-list (base zip-tree)]
+      (if
+        (= 'if (first locs-list)) ;in if branch
+        (cond
+          (= 1 (zip-loc-pos zip-tree)) ; I'm the condition
+          (check-parents zip-tree)
+
+          (= 2 (zip-loc-pos zip-tree)) ; I'm the consequent
+          (if (true? (second locs-list))
+            (check-parents zip-tree)
+            false)
+
+          (= 3 (zip-loc-pos zip-tree)) ; I'm the alternaive
+          (if (false? (second locs-list))
+            (check-parents zip-tree)
+            false)
+
+          :else
+          false)
+        (check-parents zip-tree)))))
 
 (defn -main []
   (do
-    (def a-exp '(+ 3 (if (> 4 3) 0 (mean [1 2 3]))))
-    (def rules [compound-f-sub-rule variable-sub-rule-nullary if-rule variable-sub-rule primitive-apply-rule])
-    (def transformer (partial eager-transformer rules))
+    (def a-exp '(if false (+ 3 (if (> -12 3) 0 (mean [1 2 3]))) 12))
+    (def rules [compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule ])
+    (def named-rules (map #(assoc %1 :name %2) rules
+      '[compound-f-sub-rule variable-sub-rule-nullary if-rule variable-sub-rule primitive-apply-rule]))
+    (def transformer (partial eager-transformer named-rules))
     (rewrite a-exp transformer)
   ))
+
+(comment
+  (def exp '(fn [n f]
+       (loop [n n res [] d [2 1] e {:a 12 :b alpha}]
+        (if (zero? n) res
+            (recur (dec n) (conj res (f)))))))
+
+  (iterate-and-print-fn x #(-> % realise evaluated?)))
