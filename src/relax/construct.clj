@@ -90,63 +90,17 @@
   "Eval primitive functions"
   (-> x (primitive x) :when (primitive-symbol? x)))
 
-; (def
-;  eval-primitives
-;  "Eval primitive functions"
-;  (rule
-;   (quote ->)
-;   (->CorePattern (match-fn x x {x :x} :else nil))
-;   (fn [{x :x}] (primitive x))
-;   (->ExprContext
-;    itr/node-itr
-;    (fn [{x :x}] (do (println "x is" x) (primitive-symbol? x))))
-;   nil))
-
-(def compound-f-sub-rule
+(defrule compound-f-sub-rule
   "Substitute in a compound function"
-  (rule '->
-        (->CorePattern (match-fn x
-                         ([f & args] :seq) {:f f :args args}
-                         :else nil))
-        (fn [{f :f args :args}]
-          `(~(lookup-compound f) ~@args))
-        (->ExprContext
-          itr/subtree-itr
-          (fn [{f :f}]
-            (compound? f)))
-        nil))
+  (-> (?f & args) `(~(lookup-compound ?f) ~@args) :when (compound? ?f)))
 
-(def variable-sub-rule
-  "Substitute in variables"
-  (rule 
-  '->
-  (->CorePattern (match-fn x
-                   ([(['fn [& args] body] :seq) & params] :seq)
-                     {:args args :body body :params params}
-                   :else nil))
-  (fn [{args :args body :body params :params}]
-    (postwalk-replace (zipmap args params) body))
-  (->ExprContext
-    itr/subtree-itr
-    (fn [_ &]
-      true))
-  nil))
+(defrule variable-sub-rule
+  "A variable substitution rule"
+  (-> ((fn [& args] body) & params) (postwalk-replace (zipmap args params) body)))
 
-(def variable-sub-rule-nullary
-  "Substitute in variables"
-  (rule 
-  '->
-  (->CorePattern (match-fn x
-                   (['fn [] body] :seq) {:body body}
-                   :else nil))
-  (fn [{body :body}]
-    body)
-  (->ExprContext
-    itr/subtree-itr
-    (fn [_ &]
-      true))
-  nil))
-
+(defrule variable-sub-rule-nullary
+  "A variable substitution rule"
+  (-> ((fn [] body)) body))
 
 ;; IF
 (def if-rule

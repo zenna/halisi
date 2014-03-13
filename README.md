@@ -1,7 +1,10 @@
 # Relax/Constrain
 
-This project aims to generate samples from a conditional probability distribution.
-The main entry point is the constrain_uniform function, which takes as input a predicate over some real valued uniformly distributed variables, and returns a sampler which generates samples only which adhers to these constraints
+Construct is a probabilistic programming language.
+In it we can specify probabilstic models and perform inference.
+Construct is based on abstract and approximate interpretation, pattern matching, and decision making.
+
+[See overview](overview.md)
 
 ## Setup
 
@@ -17,18 +20,3 @@ http://www.pgrs.net/2011/10/30/using-local-jars-with-leiningen/
 cd project
 mkdir maven_repository
 mvn install:install-file -Dfile=/path/to/lpsolve55j.jar -DartifactId=lpsolve -Dversion=5.5.2.0 -DgroupId=lpsolve -Dpackaging=jar -Dlocalrepository=maven_repository -Dcreatechecksum=true
-
-## Notes
-
-Much faster with latest java.
-
-# TODO:
-RRT - what do i need to do to be able to really compare RRT with RRT/Construct / construct
-
-- Plot obstacles along with graph
-- I need an example which really challenges RRT
-- Check if unions of convex polytopes are acceptable
-- Fix RRT bug
-
-- 2D self intersection test
-- Start more general construct

@@ -1,9 +1,8 @@
 # Construct #
 
 Construct is a probabilistic programming language.
-
-- Allow people to specify probabilistic models using a general programming language
-- Abstract out and/or automate inference algorithms
+In it we can specify probabilstic models and perform inference.
+Construct is based on abstract and approximate interpretation, pattern matching, and decision making.
 
 ## Basic Idea ##
 The question we address is: how to approximate a distribution, and how to compute with those approximations?
@@ -12,15 +11,8 @@ As the number of points increases to infinity the approximation tends to converg
 
 ### Evaluation as pattern matching
 Evaluation of a program is a series of transformations.
-In particular, the kind of transformatios are those where we search for and match and pattern, and then replace that matched object with a corresponding object as defined by a rule.
+In particular, we search for a pattern in a program, if the pattern matches, we may replace that pattern with a transformation.
 
-Current evaluation:
-- Interpreter reads as input a series of files resulting in a sequence of expressions.
-- Evaluation of an expression follows is passed to the transformer
-- 
-- If it is a definition in form (def name docstring? init), it is added to the global namespace: a mapping from symbol -> value
-- If it is a primitive expression we defer to the decision maker
-- 
 
 ## Objectives ##
 Where do I want to be: I want to be at the point where I have a problem.
@@ -30,7 +22,6 @@ Implementing some subet of the standard library
 Implementing the abstractions as rewrite rules
 Implementing the examples
 Implementing the decision making process.
-
 
 
 ### Subgoal: Evaluate normal clojure with rewrite rules ###
@@ -44,17 +35,20 @@ Unlike a purely functional lisp, these choices will result in different values, 
 Hence I deemed it useful to separate the _act_ of interpreting from the _decision making_.
 The model of computation used for these transformations is based on pattern matching and term-rewriting.
 
-__Status:__ There's a bug with the rewrite rules that needs fixing, I need to figure out how to handle if.  That should affect variable binding.  In general
+__Subgoal Status:__
+
+There's a bug with the rewrite rules that needs fixing, I need to figure out how to handle if.  That should affect variable binding.  In general
+```Clojure
 dbg: (transform p1__265#) = (+ 3 ((fn [coll] (/ (reduce + coll) (count coll))) [1 2 a]))
 dbg: (transform p1__265#) = (+ 3 (/ (reduce + [1 2 a]) (count [1 2 a])))
 dbg: (transform p1__265#) = (+ 3 (/ a (count [1 2 a])))
 dbg: (transform p1__265#) = (+ 3 (/ a 3))
 )
-## # 
+```
 Why is reduce + [1 2 a] getting reduced to a. That should throw an error.
 
 
-TODO rewrite rules:
+__TODO rewrite rules:__
 
 - Rewrite rules, figure out the orderings
 - Handle let
@@ -69,13 +63,14 @@ in any of the branches.
 (+ 3 2 (if (> x 2) 'alpha 'beta))
 --- b) in the condition
 
-TODO examples:
+__TODO examples:__
 
 - Example non-linear planning
 - Examples for 2D inverse graphics
 - Mesh generation
 
-TODO thinking:
+__TODO thinking:
+__
 - Figure out the easiest way to test non trivial examples, which call standard library function etc. Obvious options 1) Write a full interpreter, problem with this is that I would have to deal with namespaces and macros etc 2) Some kind of symbolic execution, override all primitives to handle symbolic values
 - Abstractions for discrete data structures
 - Non-uniform distributions
@@ -95,7 +90,7 @@ The main abstract operations I have thus far considered are:
 - Refinement - using analytical or numerical methods to get a better approximation
 - Approximating Implicit Growth
 
-TODO Implement:
+__TODO Implement:__
 - Abstracting a random primitive
 - Consistency checking and elimination
 - Redundancy checking and elimination 
