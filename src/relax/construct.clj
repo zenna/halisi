@@ -4,7 +4,8 @@
   (:require [veneer.pattern.match :refer :all]
             [veneer.pattern.rule :refer :all])
   (:require [clozen.helpers :as clzn]
-            [clozen.iterator :as itr])
+            [clozen.iterator :as itr]
+            [clozen.zip :refer :all])
   (:require [clojure.walk :refer [postwalk-replace]]
             [clojure.zip :as zip]))
 
@@ -61,13 +62,24 @@
    If it is a list then "
   [x]
   (if (coll? x)
-      (every? evaluated? (seq x))
-      (or (not (symbol? x))
-          (defined-symbol? x))))
-
+      (if (= (first x) 'quote)
+          true
+          (every? evaluated? (seq x)))
+      (not (symbol? x))))
+      
 ;; Rules
 ; For primitive function evaluation I need to know that the arguments
 ; are fully evaluated.
+(use 'veneer.pattern.dsl)
+(use 'clozen.debug)
+
+(defn constrained-node-itr
+  [lhs exp]
+  (let [itr (itr/node-itr exp)]
+    (if (coll? lhs)
+        (itr/add-itr-constraint itr #(coll? (itr/realise %)))
+        itr)))
+
 (def primitive-apply-rule
   "This rule applies a primitive function"
   (rule '->
@@ -77,11 +89,17 @@
         (fn [{f :f args :args}]
           (apply (primitive f) args))
         (->ExprContext
-          itr/subtree-leaves-first-itr
+          itr/node-itr
           (fn [{f :f args :args}]
             (and (primitive? f)
                  (evaluated? args))))
         nil))
+
+; (defrule primitive-apply-rule
+;   "Apply primitive functions"
+;   (-> (?f & args) (apply ?f args) :when (and (primitive? (primitive ?f))
+;                                              (evaluated? args))))
+
 
 (def compound-f-sub-rule
   "Substitute in a compound function"
@@ -148,16 +166,6 @@
     (fn [_ &]
       true))
   nil))
-
-(defn zip-loc-pos
-  "What is the position of loc in seq" [zipper]
-  (if-let [lefts (zip/lefts zipper)]
-    (count lefts)
-    0))
-
-(defn base [loc]
-  "For a given loc, return a seq of all the elements on its level"
-  (concat (zip/lefts loc) (list (zip/node loc)) (zip/rights loc)))
   
 (declare check-if check-parents)
 
@@ -194,6 +202,9 @@
 
 (defn -main []
   (do
+    ; (def it (itr/add-itr-constraint itr/node-itr #(coll? (itr/realise %))))
+    ; (itr/iterate-and-print a-exp it)
+    
     (def a-exp '(if false (+ 3 (if (> -12 3) 0 (mean [1 2 3]))) 12))
     (def rules [compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule ])
     (def named-rules (map #(assoc %1 :name %2) rules

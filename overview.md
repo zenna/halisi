@@ -10,6 +10,18 @@ The question we address is: how to approximate a distribution, and how to comput
 Typical Bayesian inference methods approximate distributions by sampling points from them.
 As the number of points increases to infinity the approximation tends to converge to the actual distribution.
 
+### Evaluation as pattern matching
+Evaluation of a program is a series of transformations.
+In particular, the kind of transformatios are those where we search for and match and pattern, and then replace that matched object with a corresponding object as defined by a rule.
+
+Current evaluation:
+- Interpreter reads as input a series of files resulting in a sequence of expressions.
+- Evaluation of an expression follows is passed to the transformer
+- 
+- If it is a definition in form (def name docstring? init), it is added to the global namespace: a mapping from symbol -> value
+- If it is a primitive expression we defer to the decision maker
+- 
+
 ## Objectives ##
 Where do I want to be: I want to be at the point where I have a problem.
 I want to be at the point where I have some cool examples.
@@ -18,7 +30,8 @@ Implementing some subet of the standard library
 Implementing the abstractions as rewrite rules
 Implementing the examples
 Implementing the decision making process.
-# 
+
+
 
 ### Subgoal: Evaluate normal clojure with rewrite rules ###
 Here, a program is _executed_ by applying a series of transformations - it is transformed from the source code to a value.

@@ -13,6 +13,7 @@
         player
         (recur (other-player player)))))
 
+(game 'player1)
 
 ;; Random examples
 (def exp 
