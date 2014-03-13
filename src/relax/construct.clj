@@ -12,19 +12,24 @@
 (def primitives-coll
   '[+ * - + / > < >= <= apply rand reduce count])
 
-(def primitives (zipmap primitives-coll (map resolve primitives-coll)))
+(def primitives (zipmap primitives-coll (map eval primitives-coll)))
 
 (defn primitive
   "Get evaluable function from symbol"
   [symb]
   (if-let [f (primitives symb)]
     f
-    (eval symb)))
+    (throw (Throwable. "Tried to get primitive from non-primitive"))))
 
-(defn primitive?
+(defn primitive-symbol?
   "Is the symbol a primitive?"
   [symb]
-  (clzn/nil-to-false (primitives symb)))
+  (clzn/in? primitives-coll symb))
+
+(defn primitive-fn?
+  "Is the symbol a primitive?"
+  [symb]
+  (clzn/in? (vals primitives) symb))
 
 (def fn-codes
   "Source codes for some standard functions"
@@ -50,26 +55,22 @@
       true
       false))
 
-;; FIXME
-(defn defined-symbol?
-  "Is the symbol defined?"
-  [x]
-  (or (primitive? x) (compound? x)))
-
 (defn evaluated?
   "Is x fully evaluated?
    X is evaluated if it is not a list.
    If it is a list then "
   [x]
   (if (coll? x)
-      (if (= (first x) 'quote)
-          true
-          (every? evaluated? (seq x)))
+      (cond
+        (= (first x) 'quote)
+        true
+        (primitive-fn? (first x))
+        false 
+        :else
+        (every? evaluated? (seq x)))
       (not (symbol? x))))
       
 ;; Rules
-; For primitive function evaluation I need to know that the arguments
-; are fully evaluated.
 (use 'veneer.pattern.dsl)
 (use 'clozen.debug)
 
@@ -80,26 +81,26 @@
         (itr/add-itr-constraint itr #(coll? (itr/realise %)))
         itr)))
 
-(def primitive-apply-rule
-  "This rule applies a primitive function"
-  (rule '->
-        (->CorePattern (match-fn x
-                         ([f & args] :seq) {:f f :args args}
-                         :else nil))
-        (fn [{f :f args :args}]
-          (apply (primitive f) args))
-        (->ExprContext
-          itr/node-itr
-          (fn [{f :f args :args}]
-            (and (primitive? f)
-                 (evaluated? args))))
-        nil))
+(defrule primitive-apply-rule
+  "Apply primitive functions"
+  (-> (?f & args) (apply ?f args) :when (and (primitive-fn? ?f)
+                                             (every? evaluated? args))))
 
-; (defrule primitive-apply-rule
-;   "Apply primitive functions"
-;   (-> (?f & args) (apply ?f args) :when (and (primitive? (primitive ?f))
-;                                              (evaluated? args))))
+(defrule eval-primitives
+  "Eval primitive functions"
+  (-> x (primitive x) :when (primitive-symbol? x)))
 
+; (def
+;  eval-primitives
+;  "Eval primitive functions"
+;  (rule
+;   (quote ->)
+;   (->CorePattern (match-fn x x {x :x} :else nil))
+;   (fn [{x :x}] (primitive x))
+;   (->ExprContext
+;    itr/node-itr
+;    (fn [{x :x}] (do (println "x is" x) (primitive-symbol? x))))
+;   nil))
 
 (def compound-f-sub-rule
   "Substitute in a compound function"
@@ -205,10 +206,10 @@
     ; (def it (itr/add-itr-constraint itr/node-itr #(coll? (itr/realise %))))
     ; (itr/iterate-and-print a-exp it)
     
-    (def a-exp '(if false (+ 3 (if (> -12 3) 0 (mean [1 2 3]))) 12))
-    (def rules [compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule ])
+    (def a-exp '(if true (+ 3 (if (> -12 3) 0 (mean [1 2 3]))) 12))
+    (def rules [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule])
     (def named-rules (map #(assoc %1 :name %2) rules
-      '[compound-f-sub-rule variable-sub-rule-nullary if-rule variable-sub-rule primitive-apply-rule]))
+      '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule]))
     (def transformer (partial eager-transformer named-rules))
     (rewrite a-exp transformer)
   ))
