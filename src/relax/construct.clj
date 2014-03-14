@@ -103,7 +103,6 @@
   "Substitutes arguments into the body of a function"
   ([body bindings] (body-replace body bindings #{}))
   ([body bindings rebound]
-  (println "TYPE" (type body) "Body" body)
   (cond
     (and (symbol? body)
          (bindings body)
@@ -133,7 +132,7 @@
   (rule 
   '->
   (->CorePattern
-    (match-fn x
+    (match-fn
       (['if true consequent alternative] :seq)
       {:branch consequent}
       (['if false consequent alternative] :seq)
@@ -156,7 +155,7 @@
 
 (defrule associativity-rule
   "Associativity"
-  (-> (?f (?g y z) x) `(~?f x y z) :when (and (dbg (= ?f ?g)) 
+  (-> (?f (?g y z) x) (list ?f x y z) :when (and (dbg (= ?f ?g)) 
                                               (associative-fn? ?f))))
 
 (declare check-if check-parents)
