@@ -94,9 +94,34 @@
   "Substitute in a compound function"
   (-> (?f & args) `(~(lookup-compound ?f) ~@args) :when (compound? ?f)))
 
+(defn mapx [f coll]
+  (if (vector? coll)
+      (mapv f coll)
+      (map f coll)))
+
+(defn body-replace
+  "Substitutes arguments into the body of a function"
+  ([body bindings] (body-replace body bindings #{}))
+  ([body bindings rebound]
+  (println "TYPE" (type body) "Body" body)
+  (cond
+    (and (symbol? body)
+         (bindings body)
+         (not (rebound body)))
+    (bindings body)
+
+    (and (coll? body) (= (first body) 'fn))
+    (mapx #(body-replace % bindings 
+                          (clzn/merge-sets [rebound (second body)])) body)
+
+    (coll? body)
+    (mapx #(body-replace % bindings rebound) body)
+
+    :else body)))
+
 (defrule variable-sub-rule
   "A variable substitution rule"
-  (-> ((fn [& args] body) & params) (postwalk-replace (zipmap args params) body)))
+  (-> ((fn [& args] body) & params) (body-replace body (zipmap args params))))
 
 (defrule variable-sub-rule-nullary
   "A variable substitution rule"
@@ -121,7 +146,19 @@
     (fn [_ &]
       true))
   nil))
-  
+
+;; TODO - hacked associativity
+(defn associative-fn?
+  "Is this operation associative"
+  [f]
+  (or (= f '+)
+      (= f (primitives '+))))
+
+(defrule associativity-rule
+  "Associativity"
+  (-> (?f (?g y z) x) `(~?f x y z) :when (and (dbg (= ?f ?g)) 
+                                              (associative-fn? ?f))))
+
 (declare check-if check-parents)
 
 (defn check-parents [zip-tree]
@@ -155,23 +192,36 @@
           false)
         (check-parents zip-tree)))))
 
-(defn -main []
-  (do
-    ; (def it (itr/add-itr-constraint itr/node-itr #(coll? (itr/realise %))))
-    ; (itr/iterate-and-print a-exp it)
-    
-    (def a-exp '(if true (+ 3 (if (> -12 3) 0 (mean [1 2 3]))) 12))
-    (def rules [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule])
-    (def named-rules (map #(assoc %1 :name %2) rules
-      '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule]))
-    (def transformer (partial eager-transformer named-rules))
-    (rewrite a-exp transformer)
-  ))
-
-(comment
+(defn -main[]
+  ;; Define some expressions
+  (def exp '(if true (+ 3 (if (> -12 3) 0 (mean [1 2 3]))) 12))
   (def exp '(fn [n f]
        (loop [n n res [] d [2 1] e {:a 12 :b alpha}]
         (if (zero? n) res
             (recur (dec n) (conj res (f)))))))
+  (def exp
+    '(fn [y]
+       ((fn [x]
+          ((fn [x]
+            (+ x y))
+          (+ x 12)))
+        (+ 10 y))))
 
-  (iterate-and-print-fn x #(-> % realise evaluated?)))
+  ;; Define some Rules
+  (def rules 
+    [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule])
+  (def named-rules (map #(assoc %1 :name %2) rules
+    '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule]))
+  
+  ;; Evaluate then
+  (def transformer (partial eager-transformer named-rules))
+  (rewrite exp transformer)
+
+; dbg: (transform p1__5426#) =
+; nil
+; (fn [y] (+ (+ (+ 10 y) 12) y))
+
+; (fn [y] (+ (+ (+ 10 y) 12) y))
+
+
+  )
