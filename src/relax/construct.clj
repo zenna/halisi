@@ -141,16 +141,30 @@
 ;             `(~'let ~rest-binds bound-fn)))
 ;       :when (even? (count args))))))
 
+; (fipp
+;   (macroexpand
+;     '(defrule let-to-fn-rule
+;   "Convert let to lambda"
+;   (-> ('let [& args] body) 
+;       (let [bindings (partition 2 args)
+;             [var-name var-bind] (take-last 2 bindings)
+;             rest-binds (vec (take (- (count bindings) 2) bindings))
+;             bound-fn `((~'fn [~var-name] ~body) ~var-bind)]
+;         (if (empty? rest-binds)
+;             bound-fn
+;             `(~'let ~rest-binds ~bound-fn)))
+;       :when (even? (count args))))))
+
 (defrule let-to-fn-rule
   "Convert let to lambda"
   (-> ('let [& args] body) 
       (let [bindings (partition 2 args)
-            [var-name var-bind] (take-last 2 bindings)
-            rest-binds (vec (take (- (count bindings) 2) bindings))
+            [var-name var-bind] (last bindings)
+            rest-binds (vec (take (- (count args) 2) args))
             bound-fn `((~'fn [~var-name] ~body) ~var-bind)]
         (if (empty? rest-binds)
             bound-fn
-            `(~'let ~rest-binds bound-fn)))
+            `(~'let ~rest-binds ~bound-fn)))
       :when (even? (count args))))
 
 ;; IF
@@ -182,7 +196,7 @@
 
 (defrule associativity-rule
   "Associativity"
-  (-> (?f (?g y z) x) `(~?f x y z) :when (and (= ?f ?g)
+  (-> (?f (?g y z) x) (list ?f x y z) :when (and (= ?f ?g)
                                               (associative-fn? ?f))))
 
 (declare check-if check-parents)
@@ -234,9 +248,14 @@
         (+ 10 y))))
 
   (def exp-demo-let-to-fn
-    '(let [a 10 b 20]
-       ((fn [c]
-         (+ a b c) 30))))
+    '(fn [x]
+      (let [a x b 20 c 30]
+       (+ a b c))))
+
+  (def closure-demo
+    '(let [x 10]
+      (fn []
+        (+ x x))))
 
   ;; Define some Rules
   (def rules 
@@ -246,7 +265,7 @@
   
   ;; Evaluate then
   (def transformer (partial eager-transformer named-rules))
-  (rewrite exp-demo-let-to-fn transformer)
+  (rewrite closure-demo transformer)
 
 ; dbg: (transform p1__5426#) =
 ; nil
