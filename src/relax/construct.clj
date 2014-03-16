@@ -103,7 +103,6 @@
   "Substitutes arguments into the body of a function"
   ([body bindings] (body-replace body bindings #{}))
   ([body bindings rebound]
-  (println "TYPE" (type body) "Body" body)
   (cond
     (and (symbol? body)
          (bindings body)
@@ -126,6 +125,33 @@
 (defrule variable-sub-rule-nullary
   "A variable substitution rule"
   (-> ((fn [] body)) body))
+
+(use '[fipp.edn :refer (pprint) :rename {pprint fipp}])
+
+; (fipp (macroexpand
+;   '(defrule let-to-fn-rule
+;   "Convert let to lambda"
+;   (-> ('let [& args] body) 
+;       (let [bindings (partition 2 args)
+;             [var-name var-bind] (take-last 2 bindings)
+;             rest-binds (vec (take (- (count bindings) 2) bindings))
+;             bound-fn `((~'fn [~var-name] ~body) ~var-bind)]
+;         (if (empty? rest-binds)
+;             bound-fn
+;             `(~'let ~rest-binds bound-fn)))
+;       :when (even? (count args))))))
+
+(defrule let-to-fn-rule
+  "Convert let to lambda"
+  (-> ('let [& args] body) 
+      (let [bindings (partition 2 args)
+            [var-name var-bind] (take-last 2 bindings)
+            rest-binds (vec (take (- (count bindings) 2) bindings))
+            bound-fn `((~'fn [~var-name] ~body) ~var-bind)]
+        (if (empty? rest-binds)
+            bound-fn
+            `(~'let ~rest-binds bound-fn)))
+      :when (even? (count args))))
 
 ;; IF
 (def if-rule
@@ -156,7 +182,7 @@
 
 (defrule associativity-rule
   "Associativity"
-  (-> (?f (?g y z) x) `(~?f x y z) :when (and (dbg (= ?f ?g)) 
+  (-> (?f (?g y z) x) `(~?f x y z) :when (and (= ?f ?g)
                                               (associative-fn? ?f))))
 
 (declare check-if check-parents)
@@ -207,15 +233,20 @@
           (+ x 12)))
         (+ 10 y))))
 
+  (def exp-demo-let-to-fn
+    '(let [a 10 b 20]
+       ((fn [c]
+         (+ a b c) 30))))
+
   ;; Define some Rules
   (def rules 
-    [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule])
+    [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule])
   (def named-rules (map #(assoc %1 :name %2) rules
-    '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule]))
+    '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule]))
   
   ;; Evaluate then
   (def transformer (partial eager-transformer named-rules))
-  (rewrite exp transformer)
+  (rewrite exp-demo-let-to-fn transformer)
 
 ; dbg: (transform p1__5426#) =
 ; nil
