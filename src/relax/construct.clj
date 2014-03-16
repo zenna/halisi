@@ -159,7 +159,7 @@
   (rule 
   '->
   (->CorePattern
-    (match-fn x
+    (match-fn
       (['if true consequent alternative] :seq)
       {:branch consequent}
       (['if false consequent alternative] :seq)
