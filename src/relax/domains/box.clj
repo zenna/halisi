@@ -13,6 +13,12 @@
 ; -This means that more time is being spent in each call to expand as the number of boxes is increasing
 
 ; The number of calls to expand grows exponentially then linearly with the number of boxes in the output
+(defn box
+  "Box Constructor"
+  [intervals]
+  (make-abstraction intervals 'no-formula))
+
+(box?
 
 (defn lower-bound [interval]
   (first interval))

@@ -31,22 +31,23 @@
   [symb]
   (clzn/in? (vals primitives) symb))
 
-(def fn-codes
+(def global-env
   "Source codes for some standard functions"
-  {'repeat
-  '(fn [n f]
-     (loop [n n res []]
-      (if (zero? n) res
-          (recur (dec n) (conj res (f))))))
-  'mean
-  '(fn [coll]
-     (/ (reduce + coll)
-        (count coll)))})
+  (atom
+    {'repeat
+    '(fn [n f]
+       (loop [n n res []]
+        (if (zero? n) res
+            (recur (dec n) (conj res (f))))))
+    'mean
+    '(fn [coll]
+       (/ (reduce + coll)
+          (count coll)))}))
 
 (defn lookup-compound
   "Lookup the source of a compound function"
   [f]
-  (fn-codes f))
+  (@global-env f))
 
 (defn compound?
   "Is this function a compound"
@@ -126,35 +127,6 @@
   "A variable substitution rule"
   (-> ((fn [] body)) body))
 
-(use '[fipp.edn :refer (pprint) :rename {pprint fipp}])
-
-; (fipp (macroexpand
-;   '(defrule let-to-fn-rule
-;   "Convert let to lambda"
-;   (-> ('let [& args] body) 
-;       (let [bindings (partition 2 args)
-;             [var-name var-bind] (take-last 2 bindings)
-;             rest-binds (vec (take (- (count bindings) 2) bindings))
-;             bound-fn `((~'fn [~var-name] ~body) ~var-bind)]
-;         (if (empty? rest-binds)
-;             bound-fn
-;             `(~'let ~rest-binds bound-fn)))
-;       :when (even? (count args))))))
-
-; (fipp
-;   (macroexpand
-;     '(defrule let-to-fn-rule
-;   "Convert let to lambda"
-;   (-> ('let [& args] body) 
-;       (let [bindings (partition 2 args)
-;             [var-name var-bind] (take-last 2 bindings)
-;             rest-binds (vec (take (- (count bindings) 2) bindings))
-;             bound-fn `((~'fn [~var-name] ~body) ~var-bind)]
-;         (if (empty? rest-binds)
-;             bound-fn
-;             `(~'let ~rest-binds ~bound-fn)))
-;       :when (even? (count args))))))
-
 (defrule let-to-fn-rule
   "Convert let to lambda"
   (-> ('let [& args] body) 
@@ -199,40 +171,54 @@
   (-> (?f (?g y z) x) (list ?f x y z) :when (and (= ?f ?g)
                                               (associative-fn? ?f))))
 
-(declare check-if check-parents)
+(defn update-ns
+  [name value]
+  (println "Updating variable" name "to" value)
+  (swap! global-env assoc name value))
 
-(defn check-parents [zip-tree]
-  "Used in combination with check-parents."
-  (if (nil? (zip/up zip-tree))
-            true
-            (check-if (zip/up zip-tree))))
+(defrule define-rule!
+  "Define Rule"
+  (-> ('def name value) (do (update-ns name value) nil)))
 
-(defn check-if [zip-tree]
-  "Determine where a loc
-   in a zip is in a confirmed branch"
-  (loop [zip-tree zip-tree]
-    (let [locs-list (base zip-tree)]
-      (if
-        (= 'if (first locs-list)) ;in if branch
-        (cond
-          (= 1 (zip-loc-pos zip-tree)) ; I'm the condition
-          (check-parents zip-tree)
+; (defrule defn-rule
+;   "Equivalent to defn macro"
+;   (-> (defn name docstring args body) `(def (fn args) body)))
 
-          (= 2 (zip-loc-pos zip-tree)) ; I'm the consequent
-          (if (true? (second locs-list))
-            (check-parents zip-tree)
-            false)
+; (declare check-if check-parents)
 
-          (= 3 (zip-loc-pos zip-tree)) ; I'm the alternaive
-          (if (false? (second locs-list))
-            (check-parents zip-tree)
-            false)
+; (defn check-parents [zip-tree]
+;   "Used in combination with check-parents."
+;   (if (nil? (zip/up zip-tree))
+;             true
+;             (check-if (zip/up zip-tree))))
 
-          :else
-          false)
-        (check-parents zip-tree)))))
+; (defn check-if [zip-tree]
+;   "Determine where a loc
+;    in a zip is in a confirmed branch"
+;   (loop [zip-tree zip-tree]
+;     (let [locs-list (base zip-tree)]
+;       (if
+;         (= 'if (first locs-list)) ;in if branch
+;         (cond
+;           (= 1 (zip-loc-pos zip-tree)) ; I'm the condition
+;           (check-parents zip-tree)
+
+;           (= 2 (zip-loc-pos zip-tree)) ; I'm the consequent
+;           (if (true? (second locs-list))
+;             (check-parents zip-tree)
+;             false)
+
+;           (= 3 (zip-loc-pos zip-tree)) ; I'm the alternaive
+;           (if (false? (second locs-list))
+;             (check-parents zip-tree)
+;             false)
+
+;           :else
+;           false)
+;         (check-parents zip-tree)))))
 
 (defn -main[]
+  (use '[fipp.edn :refer (pprint) :rename {pprint fipp}])
   ;; Define some expressions
   (def exp '(if true (+ 3 (if (> -12 3) 0 (mean [1 2 3]))) 12))
   (def exp '(fn [n f]
@@ -253,15 +239,15 @@
        (+ a b c))))
 
   (def closure-demo
-    '(let [x 10]
+    '(def get-twenty (let [x 10]
       (fn []
-        (+ x x))))
+        (+ x x)))))
 
   ;; Define some Rules
   (def rules 
-    [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule])
+    [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule!])
   (def named-rules (map #(assoc %1 :name %2) rules
-    '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule]))
+    '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule!]))
   
   ;; Evaluate then
   (def transformer (partial eager-transformer named-rules))

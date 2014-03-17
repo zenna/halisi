@@ -6,41 +6,15 @@
             [veneer.pattern.match :refer :all])
   (:require [clozen.iterator]))
 
-(defrule primitive-apply-rule
-  "Apply primitive functions"
-  (-> (?f & args) (apply ?f args) :when (and (primitive? f)
-                                             (evaluated? args))))
-
-(defrule compound-f-sub-rule
-  "Substitute in a compound function"
-  (-> (f & args) `(~(lookup-compound f) ~@args) :when (compound? f)))
-
-(defrule sub-vars-rule
-  "A variable substitution rule"
-  (-> ((fn [& args] body) & params) (rewrite )
-
-(defrule if-rule
-  "Evaluated if rule"
-  (-> (| (if true branch alternative)
-         (if false consequent branch)) branch))
-
-(defrule defn-rule
-  "Equivalent to defn macro"
-  (-> (defn name docstring args body) `(def (fn args) body)))
-
-(defrule define-rule!
-  "Define something"
-  (-> (def name docstring init-value) (update-ns name init-value)))
-
 ;; Abstract Operators
 ; Random Primitives
 (defrule
   "Interval abstraction of uniform real"
-  (⊑ (rand) (interval-abo 0 1)))
+  (⊑ (rand) (box [[0 1]])))
 
 (defrule
   "Interval abstraction of uniform real"
-  (⊑ (rand-int x y) (interval-abo 0 1)))
+  (⊑ (rand-int low up) (interval-abo low up)))
 
 (defrule
   "Symbolic abstraction of gaussian"
