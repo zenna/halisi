@@ -1,40 +1,60 @@
-# Construct #
+# Progress
 
-Construct is a probabilistic programming language.
-In it we can specify probabilstic models and perform inference.
-Construct is based on abstract and approximate interpretation, pattern matching, and decision making.
+Open questions are roughly divided between conceptual/formalism, and technical.
+Techncial Questions are:
+## Technical Questions ##
 
-## Basic Idea ##
-There are a number of key ideas in construct
+__What is required to have a universal, albeit likely slow, language__
+- Define abstract domains for all random primitives
+It's likely everything can be derived using flip, or rand.  For convenience let's try to cover at least the following three random primitives.
+rand::[] -> Real
+flip::[] -> Bool
+rand-int::[] -> Integer
 
-- Evaluation of the program is abstract - instead of computing with we compute with approximations of values. Consider the Clojure code:
-```Clojure
-(defn make-a-2d-path [n]
-  (repeatedly n #(vector (rand)(rand))))
-```
-What does (make-a-2d-path 5) evaluate to? In Clojure it would evaluate to some _concrete_ path, a nested list such as
-```
-([0.652 0.815] [0.545 0.416] [0.852 0.263] [0.562 0.734])
-```
+Sigma programs are functions and special forms.
+Primitive functions: +, -, *, /, =, >, <
+Logical functions: and, or, not, if
+numerical conversion: ceil, floor, double
+list operations: head, tail
 
-- Approximate interpretation involves making decisions.  The act of interpretation is separated from the decision making involved.
-Consider a complex distribution
+We need to lift the functions to a higher domain.
 
-- This separation is facilitated by formulating interpretation as pattern-matching and transformation.
+- Lift primitive functions
+- Ensure that all functions are lifted for range of lifted function
 
-### Evaluation as pattern matching
-Evaluation of a program is a series of transformations.
-In particular, we search for a pattern in a program, if the pattern matches, we may replace that pattern with a transformation.
+__Should Sigma rely on Clojure, or be fully self hosted.__
+Clojure implements Sigma rules, and are also callable from them.
+The first of these is necessary, any new language must initially be implemented in another. The latter, perhaps not.
 
-## Objectives ##
-Where do I want to be: I want to be at the point where I have a problem.
-I want to be at the point where I have some cool examples.
-This means implementing the itnerpreter as rewrite rules
-Implementing some subet of the standard library
-Implementing the abstractions as rewrite rules
-Implementing the examples
-Implementing the decision making process.
+__How to abstract non-uniform distributions?__
 
+__Cousot says Markov chains can be described in this framework, does this mean Church can?__
+
+## Conceptual Questions
+- What are the semantics of values in a Sigma program
+- Should I delineate between the pattern matching and the purely functional language?
+- What does soundness really mean in this context?
+- What precisely is the relationship between the pattern matching and the probabilistic interpretation
+
+__What is a Sigma program in general.__
+The measure theoretic definition I gave in the UAI paper claims a Sigma program is a random variable, i.e. a function from some sample space to a value.
+Why is a sigma program a random variable - Well its purely functional it just maps some input to some output.  That's what a sigma function does.  But is that what a sigma program.  Just thinking of a Sigma function for hte moment.  Is that a random vaiable?  
+
+The idea is that say you have S[(+ 3 4)] = 7. The real integer 7.  Perhaps ironically the formal definition of  an integer is in terms of syntax.]
+What are the probabilistic semantics of S_p[(+ 3 9)].
+You might argue that given that the entire sample space maps onto 4.
+i.e. if my sample space is a coin heads -> 4, tails -> 4.
+So in this sense a program, is a random variable defined on some probability space.
+That makes sense I suppose.
+This is a very accurate desciription of what something like (+ 1 (rand)) is.
+But what of a program that is just a definition.
+e.g. (defn [a] b)
+
+## Primary Objectives ##
+
+- 
+- Implementing the decision making process.
+- Demonstrate with physical reasoning problem
 
 ### Subgoal: Evaluate normal clojure with rewrite rules ###
 Here, a program is _executed_ by applying a series of transformations - it is transformed from the source code to a value.

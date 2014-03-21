@@ -15,3 +15,7 @@ pom.xml.asc
 *.a
 *.aux
 *.log
+*.png
+*sublime*
+*.nrepl-port
+*.eps
