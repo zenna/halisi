@@ -180,44 +180,21 @@
   "Define Rule"
   (-> ('def name value) (do (update-ns name value) nil)))
 
-; (defrule defn-rule
-;   "Equivalent to defn macro"
-;   (-> (defn name docstring args body) `(def (fn args) body)))
+(defrule defn-rule
+  "Defn to defn"
+  (-> ('defn name docs args body) `(def ~name (~'fn ~args ~body))))
 
-; (declare check-if check-parents)
+(def std-rules 
+  [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule! defn-rule])
+(def std-named-rules (map #(assoc %1 :name %2) std-rules
+  '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule! defn-rule]))
 
-; (defn check-parents [zip-tree]
-;   "Used in combination with check-parents."
-;   (if (nil? (zip/up zip-tree))
-;             true
-;             (check-if (zip/up zip-tree))))
+;; Evaluate then
+(def transformer (partial eager-transformer std-named-rules))
 
-; (defn check-if [zip-tree]
-;   "Determine where a loc
-;    in a zip is in a confirmed branch"
-;   (loop [zip-tree zip-tree]
-;     (let [locs-list (base zip-tree)]
-;       (if
-;         (= 'if (first locs-list)) ;in if branch
-;         (cond
-;           (= 1 (zip-loc-pos zip-tree)) ; I'm the condition
-;           (check-parents zip-tree)
+(def sigma-rewrite rewrite)
 
-;           (= 2 (zip-loc-pos zip-tree)) ; I'm the consequent
-;           (if (true? (second locs-list))
-;             (check-parents zip-tree)
-;             false)
-
-;           (= 3 (zip-loc-pos zip-tree)) ; I'm the alternaive
-;           (if (false? (second locs-list))
-;             (check-parents zip-tree)
-;             false)
-
-;           :else
-;           false)
-;         (check-parents zip-tree)))))
-
-(defn -main[]
+(comment
   (use '[fipp.edn :refer (pprint) :rename {pprint fipp}])
   ;; Define some expressions
   (def exp '(if true (+ 3 (if (> -12 3) 0 (mean [1 2 3]))) 12))
@@ -243,21 +220,5 @@
       (fn []
         (+ x x)))))
 
-  ;; Define some Rules
-  (def rules 
-    [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule!])
-  (def named-rules (map #(assoc %1 :name %2) rules
-    '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule!]))
-  
-  ;; Evaluate then
-  (def transformer (partial eager-transformer named-rules))
   (rewrite closure-demo transformer)
-
-; dbg: (transform p1__5426#) =
-; nil
-; (fn [y] (+ (+ (+ 10 y) 12) y))
-
-; (fn [y] (+ (+ (+ 10 y) 12) y))
-
-
-  )
+)
