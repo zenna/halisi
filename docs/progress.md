@@ -2,8 +2,8 @@
 
 Open questions are roughly divided between conceptual/formalism, and technical.
 Techncial Questions are:
-## Technical Questions ##
 
+## Technical Questions ##
 __What is required to have a universal, albeit likely slow, language__
 - Define abstract domains for all random primitives
 It's likely everything can be derived using flip, or rand.  For convenience let's try to cover at least the following three random primitives.
@@ -22,13 +22,17 @@ We need to lift the functions to a higher domain.
 - Lift primitive functions
 - Ensure that all functions are lifted for range of lifted function
 
-__Should Sigma rely on Clojure, or be fully self hosted.__
-Clojure implements Sigma rules, and are also callable from them.
-The first of these is necessary, any new language must initially be implemented in another. The latter, perhaps not.
+__What is a valid abstraction, and what is meant by valid?__
+If our end goal is to draw exact samples, then what is a valid abstraction.
+If the case where the prior distribution was a 
 
 __How to abstract non-uniform distributions?__
 
 __Cousot says Markov chains can be described in this framework, does this mean Church can?__
+
+__Should Sigma rely on Clojure, or be fully self hosted.__
+Clojure implements Sigma rules, and are also callable from them.
+The first of these is necessary, any new language must initially be implemented in another. The latter, perhaps not.
 
 ## Conceptual Questions
 - What are the semantics of values in a Sigma program

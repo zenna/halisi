@@ -21,6 +21,11 @@
     f
     (throw (Throwable. "Tried to get primitive from non-primitive"))))
 
+(defn prim-arithmetic?
+  "FIXME:SLOW"
+  [symb]
+  (or (clzn/in? (map primitives '[+ * - + /]) symb)))
+
 (defn primitive-symbol?
   "Is the symbol a primitive?"
   [symb]
@@ -186,11 +191,9 @@
 
 (def std-rules 
   [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule! defn-rule])
-(def std-named-rules (map #(assoc %1 :name %2) std-rules
-  '[eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule! defn-rule]))
 
 ;; Evaluate then
-(def transformer (partial eager-transformer std-named-rules))
+(def transformer (partial eager-transformer std-rules))
 
 (def sigma-rewrite rewrite)
 
