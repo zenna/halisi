@@ -4,8 +4,8 @@ Open questions are roughly divided between conceptual/formalism, and technical.
 Techncial Questions are:
 
 ## Technical Questions ##
-__What is allowed in pred? of condition__
-Condition is done with a predicate **pred?**.  The role of pred? is to restrict the random variable, values which the random variable takes should pass predicate.  More precisely, pred? describes a subset of the domain of the random variable, and we restrict the probability measure to be within that range.
+__What is allowed in pred? of condition?__
+Condition is done with a predicate `pred?`.  The role of `pred?` is to restrict the random variable to values which pass it.  More precisely, `pred?` describes a subset of the domain of the random variable, and we restrict the probability measure to be within that range.
 ```Clojure
 (condition dist pred) 
 ```
@@ -26,7 +26,7 @@ Then, the independent value of a variable within pred could be just the input to
 Advantages of this method are that I don't need to do  any explicit tracking, or anything fancy with variable names (as in the next example).  Problem is that it is verbose, it's not clear how one would select which independent variable one wants without keeping track of an ordering.
 
 - Option 3: Allow access to dependent vars but only through bound variable names.
-```
+```Clojure
 (let [x (uniform -1 1)
       y (+ x 3)]
   (condition y #(or (> 2 %) (neg? x))))
@@ -67,10 +67,20 @@ Clojure implements Sigma rules, and are also callable from them.
 The first of these is necessary, any new language must initially be implemented in another. The latter, perhaps not.
 
 ## Conceptual Questions
-__What are the semantics of values in a Sigma program__
+__What are the semantics of values in a Sigma program?__
+No coherent thoughts yet.
+
+***What are the semantics of condition on a predicate with noise?***
+No coherent thoughts yet.
+
 __Should I delineate between the pattern matching and the purely functional language?__
+No coherent thoughts yet.
+
 __What does soundness really mean in this context?__
+No coherent thoughts yet.
+
 __What precisely is the relationship between the pattern matching and the probabilistic interpretation?__
+No coherent thoughts yet.
 
 __What is a Sigma program in general.__
 The measure theoretic definition I gave in the UAI paper claims a Sigma program is a random variable, i.e. a function from some sample space to a value.

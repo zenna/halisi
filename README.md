@@ -4,8 +4,8 @@ Construct is a probabilistic programming language.
 In it we can specify probabilstic models and perform inference.
 Construct is based on abstract and approximate interpretation, pattern matching, and decision making.
 
-[See overview](overview.md)
-[See progress](progress.md)
+[See overview](docs/overview.md)
+[See progress](docs/progress.md)
 
 ## Setup
 
