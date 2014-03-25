@@ -80,7 +80,6 @@
   [f int-abo]
   (conj int-abo (mapv f (indep-var int-abo))))
 
-
 (defn binary-f-abo
   [f abo-a abo-b]
   (lines-to-int-abo

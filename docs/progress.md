@@ -4,6 +4,36 @@ Open questions are roughly divided between conceptual/formalism, and technical.
 Techncial Questions are:
 
 ## Technical Questions ##
+__What is allowed in pred? of condition__
+Condition is done with a predicate **pred?**.  The role of pred? is to restrict the random variable, values which the random variable takes should pass predicate.  More precisely, pred? describes a subset of the domain of the random variable, and we restrict the probability measure to be within that range.
+```Clojure
+(condition dist pred) 
+```
+
+But how, in terms of code, should we allow access to elements of the random variable.
+
+- Option 1: Only allow access to the independent variable.
+e.g.
+```Clojure
+(condition a-dist #(pos? %))
+```
+Then, the independent value of a variable within pred could be just the input to it as a function.  This would be useful for interop with existing code.
+
+- Option 2: Specifically reference which variable of the rv one wishes to refer to.
+```Clojure
+(condition a-dist #(and (pos? (indep-var %) (neg? (first (dep-var %))))))
+```
+Advantages of this method are that I don't need to do  any explicit tracking, or anything fancy with variable names (as in the next example).  Problem is that it is verbose, it's not clear how one would select which independent variable one wants without keeping track of an ordering.
+
+- Option 3: Allow access to dependent vars but only through bound variable names.
+```
+(let [x (uniform -1 1)
+      y (+ x 3)]
+  (condition y #(or (> 2 %) (neg? x))))
+```
+These seems most natural, and closer to normal semantics.
+But it also seems a little bit confused.
+
 __What is required to have a universal, albeit likely slow, language__
 - Define abstract domains for all random primitives
 It's likely everything can be derived using flip, or rand.  For convenience let's try to cover at least the following three random primitives.
@@ -27,18 +57,20 @@ If our end goal is to draw exact samples, then what is a valid abstraction.
 If the case where the prior distribution was a 
 
 __How to abstract non-uniform distributions?__
+No thoughts yet
 
 __Cousot says Markov chains can be described in this framework, does this mean Church can?__
+No thoughts yet
 
 __Should Sigma rely on Clojure, or be fully self hosted.__
 Clojure implements Sigma rules, and are also callable from them.
 The first of these is necessary, any new language must initially be implemented in another. The latter, perhaps not.
 
 ## Conceptual Questions
-- What are the semantics of values in a Sigma program
-- Should I delineate between the pattern matching and the purely functional language?
-- What does soundness really mean in this context?
-- What precisely is the relationship between the pattern matching and the probabilistic interpretation
+__What are the semantics of values in a Sigma program__
+__Should I delineate between the pattern matching and the purely functional language?__
+__What does soundness really mean in this context?__
+__What precisely is the relationship between the pattern matching and the probabilistic interpretation?__
 
 __What is a Sigma program in general.__
 The measure theoretic definition I gave in the UAI paper claims a Sigma program is a random variable, i.e. a function from some sample space to a value.
@@ -54,25 +86,19 @@ This is a very accurate desciription of what something like (+ 1 (rand)) is.
 But what of a program that is just a definition.
 e.g. (defn [a] b)
 
-## Primary Objectives ##
+__How to parameterise choices, and separate real choices from any old rule__
+I have put the abstract interpretation choices on the same level as the normal evaluation choices.  If I frame the interpretation as a decision process where a rule is applied as an action to yield a new program, I will surely have a larger than necessary action space.  Is there a way to avoid making decision about irrelevant options, and focus only on the ones that matter (i.e. the approximations)
 
-- 
+
+## Primary Objectives ##
+- Complete implementation of Sigma
 - Implementing the decision making process.
 - Demonstrate with physical reasoning problem
 
 ### Subgoal: Evaluate normal clojure with rewrite rules ###
 Here, a program is _executed_ by applying a series of transformations - it is transformed from the source code to a value.
-There are many ways to interpret a lisp program, but they can all be viewed as transformations to equivalent programs, i.e. tree rewrites.
-Typically an eager interpreter will do a depth first traversal of the tree, applying transformations recursively.
-A lazy interpreter will take a different route
-
-When interpreting approximately, there are## many choices made.
-Unlike a purely functional lisp, these choices will result in different values, i.e. different approximations.
-Hence I deemed it useful to separate the _act_ of interpreting from the _decision making_.
-The model of computation used for these transformations is based on pattern matching and term-rewriting.
 
 __Subgoal Status:__
-
 There's a bug with the rewrite rules that needs fixing, I need to figure out how to handle if.  That should affect variable binding.  In general
 ```Clojure
 dbg: (transform p1__265#) = (+ 3 ((fn [coll] (/ (reduce + coll) (count coll))) [1 2 a]))
@@ -85,34 +111,9 @@ Why is reduce + [1 2 a] getting reduced to a. That should throw an error.
 
 
 __TODO rewrite rules:__
-
-- Rewrite rules, figure out the orderings
-- Handle let
-- Handle if
+- Make all rewrite rules order-independent
 - Handle and
 - Handle loop/recur
-
-With an if we only want to evaluate the consequent before we do anything
-in any of the branches.
--- How to enforce this
---- a) in the iterators, e.g. if subtree iterator hits an if
-(+ 3 2 (if (> x 2) 'alpha 'beta))
---- b) in the condition
-
-__TODO examples:__
-
-- Example non-linear planning
-- Examples for 2D inverse graphics
-- Mesh generation
-
-__TODO thinking:
-__
-- Figure out the easiest way to test non trivial examples, which call standard library function etc. Obvious options 1) Write a full interpreter, problem with this is that I would have to deal with namespaces and macros etc 2) Some kind of symbolic execution, override all primitives to handle symbolic values
-- Abstractions for discrete data structures
-- Non-uniform distributions
-
-Questions:
-- I have put the abstract interpretation choices on the same level as the normal evaluation choices.  If I frame the interpretation as a decision process where a rule is applied as an action to yield a new program, I will surely have a larger than necessary action space.  Is there a way to avoid making decision about irrelevant options, and focus only on the ones that matter (i.e. the approximations)
 
 ### Subgoal: Implement abstract operations as rewrite rules ###
 As stated above the goal is to phrase the abstract operations as rewrite rules.
@@ -125,6 +126,13 @@ The main abstract operations I have thus far considered are:
 - Domain conversion, e.g. set-of-boxes -> convex-hull(set-of-boxes)
 - Refinement - using analytical or numerical methods to get a better approximation
 - Approximating Implicit Growth
+
+__Subgoal Status__:
+I have begun an implementation of discrete domains on the integers.
+I need to decide what the main operations I shall support for all random variables should be: 
+
+
+
 
 __TODO Implement:__
 - Abstracting a random primitive

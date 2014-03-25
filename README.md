@@ -5,6 +5,7 @@ In it we can specify probabilstic models and perform inference.
 Construct is based on abstract and approximate interpretation, pattern matching, and decision making.
 
 [See overview](overview.md)
+[See progress](progress.md)
 
 ## Setup
 
