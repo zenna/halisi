@@ -34,6 +34,41 @@ Advantages of this method are that I don't need to do  any explicit tracking, or
 These seems most natural, and closer to normal semantics.
 But it also seems a little bit confused.
 
+__How to correctly apply functions to (in)dependent and conditionally dependent variables?__
+Consider the following examples:
+```Clojure
+(let [x (rand)
+      y (+ x x)]
+  y)
+```
+
+```Clojure
+(let [x0 (rand)
+      x1 (rand)
+      y (+ x0 x1)]
+  y)
+```
+
+If this was a normal Clojure program, `y` would be sampling from different distributions in these two cases.  In the first case `y` would be sampled from a uniform on `[0 1]`, whereas in the second `y` is being sampled from the addition of two uniform distribution, which is a *triangular distribution*.
+
+It seems like we need some more informationn in the semantics of Sigma to account for the difference here.  Something to capture the notion of two distributions being the same or not.  Otherwise both of these cases are identical. If we think of (rand) as purely evaluating to a value, then they are identical.  Suppose instead (rand) evaluated to the integer 7, there would be no difference.
+
+Consider another example:
+```Clojure
+(let [x (rand)]
+  (+ x (condtion x (fn [_] true))))
+```
+Here we've applied a ineffective condition on a random variable, and added it to the original random variable.
+Should the result here be a triangular distribution or a uniform distribution?
+Thinking in sampling terms may help but it doesn't quite fit: if condition took as input a sampler a produced a sampler, e.g.
+
+```Clojure
+(let [x rand] ; Note: unevaluated
+  (+ (x) ((condtion x (fn [_] true)))))
+```
+We would have a triangular distribution, as we are sampling twice.
+
+
 __What is required to have a universal, albeit likely slow, language__
 - Define abstract domains for all random primitives
 It's likely everything can be derived using flip, or rand.  For convenience let's try to cover at least the following three random primitives.
@@ -70,7 +105,7 @@ The first of these is necessary, any new language must initially be implemented 
 __What are the semantics of values in a Sigma program?__
 No coherent thoughts yet.
 
-***What are the semantics of condition on a predicate with noise?***
+*What are the semantics of condition on a predicate with noise?*
 No coherent thoughts yet.
 
 __Should I delineate between the pattern matching and the purely functional language?__

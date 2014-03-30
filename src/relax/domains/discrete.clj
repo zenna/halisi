@@ -9,28 +9,21 @@
 
 ;; Constructors and Type testers ==============================================
 (defn discrete
-  "Create a discrete distribution supported on th
+  "Factory
+   A discrete distribution is supported on the integers.
+   Has (randomly) named variables
+   Values for these variables and associated probabilities. 
    [[0.25 0.25 0.25 0.25][1 2 3 4]]"
   [n probs]
   {:pre [(clzn/tolerant= (clzn/sum probs) 1.0)
          (clzn/count= n probs)]}
-  [(vec probs) (vec n)])
-
-(defn normalise
-  "Normalise a discrete distribution"
-  [[probs & rand-vars :as int-abo]]
-  (assoc int-abo 0 (map #(/ % (clzn/sum rand-vars)) probs)))
-
-(defn normalised?
-  [[probs & rand-vars]]
-  (clzn/tolerant= (clzn/sum probs) 1.0))
+  ['discrete (gensym 'rv) (vec probs) (vec n)])
 
 (defn discrete?
-  "Is this object a discrete distribution
-   FIXME: THIS IS WRONG, QUICK HACK"
-  [x]
-  (and (vector? x)
-       (normalised? x)))
+  "Is this object a discrete distribution"
+  [obj]
+  (and (vector? obj)
+       (= 'discrete (first (obj)))))
 
 (defn uniform-discrete
   "Construct a uniform discrete distribution"
@@ -38,29 +31,34 @@
   (discrete (range n) (vec (repeat n (/ 1 n)))))
 
 ;; Abstractions ===============================================================
-(defn rows
-  [int-abo]
-  (clzn/transposev int-abo))
+(defn rv-vals-probs
+  "Get only dependent and independent values and associated probabilities as matrix"
+  [abo]
+  (subvec abo 2))
 
-(comment
-  (rows (uniform-discrete 4)))
+(defn rows
+  "Get value data as a set of lines"
+  [abo]
+  (clzn/transposev (rv-vals-probs abo)))
 
 (defn prob
+  "What's the probability of a set of values of different variables?"
   [line]
   (first line))
 
 (defn indep-val
+  "What's the independent variable of a line"
   [line]
   (last line))
 
-(defn r-vals
+(defn rv-vals
+  "What are just the values, and not the probabilities"
   [line]
   (subvec line 1))
 
 (defn line
   "construct a line"
   [p r-values]
-  ; (println  "r" r-values)
   (concat [p] r-values))
 
 (defn lines-to-int-abo
@@ -72,9 +70,20 @@
   [int-abo]
   (last int-abo))
 
+;; Little Helpers =============================================================
+(defn normalise
+  "Normalise a discrete distribution"
+  [[probs & rand-vars :as int-abo]]
+  (assoc int-abo 0 (map #(/ % (clzn/sum rand-vars)) probs)))
+
+(defn normalised?
+  [abo]
+  (clzn/tolerant= (clzn/sum (probs abo)) 1.0))
+
 (comment
   (normalised? (uniform-discrete 10)))
 
+;; Rule Machinery =============================================================
 (defn apply-f
   "Apply an arithmetic function of a scalar and an abstract object"
   [f int-abo]
@@ -86,8 +95,12 @@
     (for [line-a (rows abo-a)
           line-b (rows abo-b)
           :let [p (* (prob line-a) (prob line-b))]]
-      (line p (vec (concat (r-vals line-a) (r-vals line-b)
+      (line p (vec (concat (rv-vals line-a) (rv-vals line-b)
                            [(f (indep-val line-a) (indep-val line-b))]))))))
+
+(defn condition-discrete
+  [abo pred?]
+
 
 ;; Rules ==================================================================
 (defrule uniform-rule
@@ -109,6 +122,12 @@
       :when (and (prim-arithmetic? ?f)
                  (discrete? abo-b)
                  (discrete? abo-a))))
+
+(defrule condition-rule
+  "Condition a random variable"
+  (-> ('conditon rv pred?) (condition-discrete rv pred?)
+      :when (and (discrete? rv)
+                 (fn? pred?))))
 
 (comment
   (binary-f-abo + (uniform-discrete 2) (uniform-discrete 3)))
