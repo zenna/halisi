@@ -34,7 +34,63 @@ Advantages of this method are that I don't need to do  any explicit tracking, or
 These seems most natural, and closer to normal semantics.
 But it also seems a little bit confused.
 
-__How to correctly apply functions to (in)dependent and conditionally dependent variables?__
+__What are the semantics of evaluating a random primitive, and functions on these values?__
+One thing Sigma must be able to do is apply functions to values which may be dependent.
+Fortunately, dependencies in a functional language are explicit, and need not be inferred; a value has the potential to be dependent on another value if it is a function of that value.
+I use the term 'possibly' because some dependencies may be meaningless,
+For instance: `(def x ((fn [_] x) y))` suggests `x` is a function of `y`, but in reality it is not - i.e. even though there exists a syntactic functional relationship, semantically there is none.
+
+When applying a function to discrete distributions with dependencies I noticed the following: it seems like we needed some way to give identities to distributions.
+Consider the program
+```Clojure
+(let [x (uniform 0 1)
+      y (uniform 0 1)
+      a (+ x y)
+      b (* x y)]
+  (- a b))
+```
+
+| x |  p  |
+|---|-----|
+| 0 | 0.5 |
+| 1 | 0.5 |
+
+`y` has an identical table to `x`, whereas `a` and `b` are dependent on `x` and `y`:
+
+| `x` | `y` | `a` |  P   |
+|-----|-----|-----|------|
+|   0 |   0 |   0 | 0.25 |
+|   0 |   1 |   1 | 0.25 |
+|   1 |   0 |   1 | 0.25 |
+|   1 |   1 |   2 | 0.25 |
+
+| `x` | `y` | `b` |  P   |
+|-----|-----|-----|------|
+|   0 |   0 |   0 | 0.25 |
+|   0 |   1 |   0 | 0.25 |
+|   1 |   0 |   0 | 0.25 |
+|   1 |   1 |   1 | 0.25 |
+
+The output of this function `(- a b)` is of course dependent on `a` and `b`, which are in turn dependent on `x` and `y`:
+
+| `x` | `y` | `b` | `a` | `(- a b)` |  P   |
+|-----|-----|-----|-----|-----------|------|
+|   0 |   0 |   0 |   0 |         0 | 0.25 |
+|   0 |   1 |   0 |   1 |         1 | 0.25 |
+|   1 |   0 |   0 |   1 |         1 | 0.25 |
+|   1 |   1 |   1 |   2 |         1 | 0.25 |
+
+Note the difference between when I evaluated `(+ x y)` and `(* x y)` compared to `(- a b)`.  In the former case the number of rows in the table doubled, whereas in the latter case no rows were added.
+Intuitively it is because both inputs to the function `a` and `b` share the same dependent variables, which c.
+But formally, why is this? How do I know they share the same dependent variables? Why is this the correct thing to do? What if they only share some of the same variables?
+
+An analogy in mathematical notation might be something like
+let $X = \mathcal{U}(0, 1)$ and $Y= \mathcal{U}(0,1)$ be two standard uniform distributions, the sum $X+Y$ is ...
+evaluating a random primitive e.g. `(uniform 0 1)`, seemed to require that we give it a unique identifier,
+
+What does `(uniform-int)` mean?  Previously I defined the semantics of the evaluation of a random primitive as a random variable.
+But this conspicuously leaves the meaning of an unevaluated random primitive undefined, and brings about the following conceptual problems: 
+
 Consider the following examples:
 ```Clojure
 (let [x (rand)
@@ -51,7 +107,7 @@ Consider the following examples:
 
 If this was a normal Clojure program, `y` would be sampling from different distributions in these two cases.  In the first case `y` would be sampled from a uniform on `[0 1]`, whereas in the second `y` is being sampled from the addition of two uniform distribution, which is a *triangular distribution*.
 
-It seems like we need some more informationn in the semantics of Sigma to account for the difference here.  Something to capture the notion of two distributions being the same or not.  Otherwise both of these cases are identical. If we think of (rand) as purely evaluating to a value, then they are identical.  Suppose instead (rand) evaluated to the integer 7, there would be no difference.
+It seems like we need some more information in the semantics of Sigma to account for the difference here.  Something to capture the notion of two distributions being the same or not.  Otherwise both of these cases are identical. If we think of (rand) as purely evaluating to a value, then they are identical.  Suppose instead (rand) evaluated to the integer 7, there would be no difference.
 
 Consider another example:
 ```Clojure
@@ -68,6 +124,23 @@ Thinking in sampling terms may help but it doesn't quite fit: if condition took 
 ```
 We would have a triangular distribution, as we are sampling twice.
 
+I think part of the confusion stems from having this mis-mash of a purely functional language and pattern matching.
+If `rand` is a function it should take some argument.
+Actually for clarity I should stop using the notation `rand`, it is poor naming because 1) it does not define the distribution 2) it appeals to the idea of randomness, none of which exists in its semantics.
+So instead we lets say `uniform-int`, and in a purely functional setting we might say `(uniform omega)`.
+Looking back at the previous two examples:
+```Clojure
+(let [x (uniform omega)
+      y (+ x x)]
+  y)
+```
+
+```Clojure
+(let [x0 (uniform omega)
+      x1 (uniform omega)
+      y (+ x0 x1)]
+  y)
+```
 
 __What is required to have a universal, albeit likely slow, language__
 - Define abstract domains for all random primitives
