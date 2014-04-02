@@ -20,7 +20,7 @@ For example:
 ```
 In this case we contruct a new abo with `f` applied to its independent variable.  E.g.
 x = 
-| `x`   | `P`   |   | x | dd |
-| ----- | ----- |   | - |    |
-| 0     | 0.5   |   |   |    |
-| 1     | 0.5   |   |   |    |
+| `x`   | `P`   |
+| ----- | ----- |
+| 0     | 0.5   |
+| 1     | 0.5   |
