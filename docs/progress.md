@@ -81,7 +81,7 @@ The output of this function `(- a b)` is of course dependent on `a` and `b`, whi
 |   1 |   1 |   1 |   2 |         1 | 0.25 |
 
 Note the difference between when I evaluated `(+ x y)` and `(* x y)` compared to `(- a b)`.  In the former case the number of rows in the table doubled, whereas in the latter case no rows were added.
-Intuitively it is because both inputs to the function `a` and `b` share the same dependent variables, which c.
+Intuitively in the former case I need to add more rows to account for all the possible ways `x` could interact with `y`, whereas in the latter case, all these possible interactions are already accounted for.
 But formally, why is this? How do I know they share the same dependent variables? Why is this the correct thing to do? What if they only share some of the same variables?
 
 An analogy in mathematical notation might be something like
