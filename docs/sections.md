@@ -19,9 +19,13 @@ For example:
   (inc x))
 ```
 In this case we contruct a new abo with `f` applied to its independent variable.  E.g.
-x = 
 
-| `x`   | `P`   |   | x | dd |
-| ----- | ----- |   | - | 3  |
-| 0     | 0.5   |   |   |    |
-| 1     | 0.5   |   |   |    |
+| x |  p  |
+|---|-----|
+| 0 | 0.5 |
+| 1 | 0.5 |
+
+| x | (inc x) |  P  |
+|---|---------|-----|
+| 0 |       1 | 0.5 |
+| 1 |       2 | 0.5 |
