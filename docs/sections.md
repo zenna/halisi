@@ -10,6 +10,7 @@ When we apply a function to some values `(f x1 x2 .. xn)` there are a number of 
 
 1. __All the arguments are concrete.__  In this case the function acts normally
 2. __There is a single abstract argument, i.e. `(f x)`__
+3. __all n arguments are the same random variable__
 3. __There are n independent rvs__:
 
 ### There is a single abstract argument, i.e. `(f x)`
@@ -25,7 +26,55 @@ In this case we contruct a new abo with `f` applied to its independent variable.
 | 0 | 0.5 |
 | 1 | 0.5 |
 
-| x | (inc x) |  P  |
-|---|---------|-----|
-| 0 |       1 | 0.5 |
-| 1 |       2 | 0.5 |
+The value of `(inc x)` is:
+
+| `x` | `(inc x)` |  P  |
+|-----|-----------|-----|
+|   0 |         1 | 0.5 |
+|   1 |         2 | 0.5 |
+
+### All n arguments are the same random variable
+For example:
+```Clojure
+(let [x (uniform 0 1)]
+  (+ x x))
+```
+
+| `x` | `(+ x x)` |  P  |
+|-----|-----------|-----|
+|   0 |         0 | 0.5 |
+|   1 |         2 | 0.5 |
+
+```Clojure
+(let [x (uniform 0 1)]
+  (+ (inc x) (inc x)))
+```
+
+| `x` | `(inc x)` | `(inc x)` | v |  P  |
+|-----|-----------|-----------|---|-----|
+|   0 |         1 |         1 | 2 | 0.5 |
+|   1 |         2 |         2 | 4 | 0.5 |
+
+Here we have observed that they both share the same dependent variable, and hence the addition is just applied to the indepndent variable.
+
+```Clojure
+(defn flip [p]
+  (> (uniform 0 1) p))
+
+(flip .7)
+```
+
+| `(uni..)` | `(> ..)` | `(inc x)` | v |  P  |
+|-----------------|-----------|-----------|---|-----|
+|               0 |         1 |         1 | 2 | 0.5 |
+|               1 |         2 |         2 | 4 | 0.5 |
+
+
+### There are n independent rvs
+For example:
+```Clojure
+(let [x (uniform 0 1)
+      y (unifomrm 0 1)
+      z (uniform 0 1)]
+  (inc x))
+```
