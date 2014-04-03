@@ -58,17 +58,36 @@ For example:
 Here we have observed that they both share the same dependent variable, and hence the addition is just applied to the indepndent variable.
 
 ```Clojure
-(defn flip [p]
-  (> (uniform 0 1) p))
+(defn even-discrete [l u]
+  (* 2 (uniform l (/ u 2))))
 
-(flip .7)
+(even-discrete 0 4)
 ```
 
-| `(uni..)` | `(> ..)` | `(inc x)` | v |  P  |
-|-----------------|-----------|-----------|---|-----|
-|               0 |         1 |         1 | 2 | 0.5 |
-|               1 |         2 |         2 | 4 | 0.5 |
+| `(uni..)` | `(* 2 (..))` |  P  |
+|-----------|--------------|-----|
+|         0 |            0 | 1/3 |
+|         1 |            2 | 1/3 |
+|         2 |            4 | 1/3 |
 
+```Clojure
+(defn triangular [l u]
+  (+ (uniform l (/ u 2)) (uniform l (/ u 2))))
+
+(triangular 0 4)
+```
+
+| `(uni..)` | `(uni..)` | `(/ (..) (..))` | P |
+|-----------|-----------|-----------------|---|
+|         0 |         0 |               0 |   |
+|         1 |         0 |               1 |   |
+|         2 |         0 |               2 |   |
+|         0 |         1 |               1 |   |
+|         1 |         1 |               2 |   |
+|         2 |         1 |               3 |   |
+|         0 |         2 |               2 |   |
+|         1 |         2 |               3 |   |
+|         2 |         2 |               4 |   |
 
 ### There are n independent rvs
 For example:
