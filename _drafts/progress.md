@@ -1,3 +1,10 @@
+---
+layout: post
+title:  "Progress"
+date:   2014-03-31 20:30:18
+categories: progress
+---
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 # Progress
 
 Open questions are roughly divided between conceptual/formalism, and technical.
@@ -87,7 +94,7 @@ But here's the problem, if `x`
 But formally, why is this? How do I know they share the same dependent variables? Why is this the correct thing to do? What if they only share some of the same variables?
 
 An analogy in mathematical notation might be something like
-let $X = \mathcal{U}(0, 1)$ and $Y= \mathcal{U}(0,1)$ be two standard uniform distributions, the sum $X+Y$ is ...
+let $$X = \mathcal{U}(0, 1)$$ and $$Y= \mathcal{U}(0,1)$$ be two standard uniform distributions, the sum $X+Y$ is ...
 evaluating a random primitive e.g. `(uniform 0 1)`, seemed to require that we give it a unique identifier,
 
 What does `(uniform-int)` mean?  Previously I defined the semantics of the evaluation of a random primitive as a random variable.
@@ -146,21 +153,7 @@ Looking back at the previous two examples:
 
 __What is required to have a universal, albeit likely slow, language__
 - Define abstract domains for all random primitives
-It's likely everything can be derived using flip, or rand.  For convenience let's try to cover at least the following three random primitives.
-rand::[] -> Real
-flip::[] -> Bool
-rand-int::[] -> Integer
 
-Sigma programs are functions and special forms.
-Primitive functions: +, -, *, /, =, >, <
-Logical functions: and, or, not, if
-numerical conversion: ceil, floor, double
-list operations: head, tail
-
-We need to lift the functions to a higher domain.
-
-- Lift primitive functions
-- Ensure that all functions are lifted for range of lifted function
 
 __What is a valid abstraction, and what is meant by valid?__
 If our end goal is to draw exact samples, then what is a valid abstraction.
@@ -196,15 +189,15 @@ __What is a Sigma program in general.__
 The measure theoretic definition I gave in the UAI paper claims a Sigma program is a random variable, i.e. a function from some sample space to a value.
 Why is a sigma program a random variable - Well its purely functional it just maps some input to some output.  That's what a sigma function does.  But is that what a sigma program.  Just thinking of a Sigma function for hte moment.  Is that a random vaiable?  
 
-The idea is that say you have S[(+ 3 4)] = 7. The real integer 7.  Perhaps ironically the formal definition of  an integer is in terms of syntax.]
-What are the probabilistic semantics of S_p[(+ 3 9)].
+The idea is that say you have `$$S[(+ 3 4)] = 7$$.` The real integer $7$.  Perhaps ironically the formal definition of  an integer is in terms of syntax.]
+<!-- What are the probabilistic semantics of S_p[(+ 3 9)]. -->
 You might argue that given that the entire sample space maps onto 4.
 i.e. if my sample space is a coin heads -> 4, tails -> 4.
 So in this sense a program, is a random variable defined on some probability space.
 That makes sense I suppose.
 This is a very accurate desciription of what something like (+ 1 (rand)) is.
 But what of a program that is just a definition.
-e.g. (defn [a] b)
+e.g. `(defn [a] b)`
 
 __How to parameterise choices, and separate real choices from any old rule__
 I have put the abstract interpretation choices on the same level as the normal evaluation choices.  If I frame the interpretation as a decision process where a rule is applied as an action to yield a new program, I will surely have a larger than necessary action space.  Is there a way to avoid making decision about irrelevant options, and focus only on the ones that matter (i.e. the approximations)
@@ -227,7 +220,7 @@ dbg: (transform p1__265#) = (+ 3 (/ a (count [1 2 a])))
 dbg: (transform p1__265#) = (+ 3 (/ a 3))
 )
 ```
-Why is reduce + [1 2 a] getting reduced to a. That should throw an error.
+Why is reduce + `[1 2 a]` getting reduced to a. That should throw an error.
 
 
 __TODO rewrite rules:__
@@ -240,7 +233,7 @@ As stated above the goal is to phrase the abstract operations as rewrite rules.
 I may discover when I get here, that my language for rewriting is not expressive enough, which is fine, I will extend it.
 
 The main abstract operations I have thus far considered are:
-- Abstracting a random primitive, e.g. (rand 0 10) -> [0 10]
+- Abstracting a random primitive, e.g. `(rand 0 10)` -> `[0 10]`
 - Consistency checking: (and a b c d), if we know any one of these are false we can save time.
 - Redundancy checking
 - Domain conversion, e.g. set-of-boxes -> convex-hull(set-of-boxes)
