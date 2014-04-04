@@ -1,23 +1,25 @@
-(ns ^{:doc "Discrete Domain"
+(ns ^{:doc "Finite Discrete Abstract Domain"
       :author "Zenna Tavares"}
   relax.domains.discrete
   (:require [relax.construct :refer :all])
   (:require [veneer.pattern.rule :refer :all]
             [veneer.pattern.match :refer :all]
             [veneer.pattern.dsl :refer [defrule]])
-  (:require [clozen.helpers :as clzn]))
+  (:require [clozen.helpers :as clzn])
+  (:require [clojure.math.combinatorics :as combo]))
 
 ;; Constructors and Type testers ==============================================
 (defn discrete
-  "Factory
+  "Factory for a finite discrete abstract object (fd-ao).
+   These are represented as conditional probabbility tables (cpt)
    A discrete distribution is supported on the integers.
    Has (randomly) named variables
    Values for these variables and associated probabilities. 
-   [[0.25 0.25 0.25 0.25][1 2 3 4]]"
+   ['discrete 'rv-x [0.25 0.25 0.25 0.25] [1 2 3 4]]"
   [n probs]
   {:pre [(clzn/tolerant= (clzn/sum probs) 1.0)
          (clzn/count= n probs)]}
-  ['discrete (gensym 'rv) (vec probs) (vec n)])
+  ['discrete [(gensym 'rv)] (vec probs) (vec n)])
 
 (defn discrete?
   "Is this object a discrete distribution"
@@ -25,78 +27,113 @@
   (and (vector? obj)
        (= 'discrete (first (obj)))))
 
-(defn uniform-discrete
+(defn discrete-uniform
   "Construct a uniform discrete distribution"
   [n]
   (discrete (range n) (vec (repeat n (/ 1 n)))))
 
 ;; Abstractions ===============================================================
 (defn rv-vals-probs
-  "Get only dependent and independent values and associated probabilities as matrix"
+  "Get only dependent and independent values and probabilities as matrix"
   [abo]
   (subvec abo 2))
 
 (defn rows
-  "Get value data as a set of lines"
+  "Get value data as a set of rows"
   [abo]
   (clzn/transposev (rv-vals-probs abo)))
 
 (defn prob
   "What's the probability of a set of values of different variables?"
-  [line]
-  (first line))
+  [row]
+  (first row))
+
+(defn probs
+  "What are all probabilities of cpt"
+  [cpt]
+  (cpt 2))
 
 (defn indep-val
-  "What's the independent variable of a line"
-  [line]
-  (last line))
+  "What's the independent variable of a row"
+  [row]
+  (last row))
 
 (defn rv-vals
   "What are just the values, and not the probabilities"
-  [line]
-  (subvec line 1))
+  [row]
+  (subvec row 3))
 
-(defn line
-  "construct a line"
+(defn row
+  "construct a row"
   [p r-values]
   (concat [p] r-values))
 
-(defn lines-to-int-abo
-  [lines]
-  (vec (clzn/transposev lines)))
+(defn rows-to-cpt
+  "Convert a collection of rows to a cpt."
+  [rows]
+  (vec (clzn/transposev rows)))
 
 (defn indep-var
-  "Get the independent variable from a mofo"
-  [int-abo]
-  (last int-abo))
+  "Get the independent variable from a cpt"
+  [cpt]
+  (last cpt))
+
+(defn names "variable names" [cpt]
+  (second cpt))
+
+(defn name-to-column
+  "Return values of a random variable, given its name"
+  [cpt name]
+  ((rv-vals cpt) (clzn/asrt #(>= % 0) (.indexOf (names cpt) name))))
 
 ;; Little Helpers =============================================================
 (defn normalise
   "Normalise a discrete distribution"
-  [[probs & rand-vars :as int-abo]]
-  (assoc int-abo 0 (map #(/ % (clzn/sum rand-vars)) probs)))
+  [[probs & rand-vars :as cpt]]
+  (assoc cpt 0 (map #(/ % (clzn/sum rand-vars)) probs)))
 
 (defn normalised?
-  [abo]
-  (clzn/tolerant= (clzn/sum (probs abo)) 1.0))
+  "Is this cpt normalised?"
+  [cpt]
+  (clzn/tolerant= (clzn/sum (probs cpt)) 1.0))
 
 (comment
-  (normalised? (uniform-discrete 10)))
+  (normalised? (discrete-uniform 10)))
 
 ;; Rule Machinery =============================================================
-(defn apply-f
-  "Apply an arithmetic function of a scalar and an abstract object"
-  [f int-abo]
-  (conj int-abo (mapv f (indep-var int-abo))))
+(defn apply-unary-f
+  "Apply a unary function to a cpt"
+  [f cpt]
+  (conj cpt (mapv f (indep-var cpt))))
 
-(defn binary-f-abo
-  [f abo-a abo-b]
-  (lines-to-int-abo
-    (for [line-a (rows abo-a)
-          line-b (rows abo-b)
-          :let [p (* (prob line-a) (prob line-b))]]
-      (line p (vec (concat (rv-vals line-a) (rv-vals line-b)
-                           [(f (indep-val line-a) (indep-val line-b))]))))))
+(defn unique-rvs
+  "Find joint distribution.
+   - For all combinations of values of variables
+   - Find Joint Probability"
+  [cpts]
+  (letfn [(clunk [cpt msg]
+            (let [unseen-vars (remove #(clzn/in? (map first msg) %)
+                                      (names cpt))]
+              (concat msg
+                      (mapv #(vector % (name-to-column cpt %)) unseen-vars))))]
+    (clzn/pass clunk [] cpts)))
+
+(defn joint
+  "Find joint distribution.
+   - For all combinations of values of variables
+   - Find Joint Probability"
+  [cpts]
+  (let [rvs (unique-rvs cpts)]
+    (apply combo/cartesian-product (map second rvs))))
+
+(defn apply-binary-f
+  [f cpt-a cpt-b]
+  (rows-to-cpt
+    (for [row-a (rows cpt-a)
+          row-b (rows cpt-b)
+          :let [p (* (prob row-a) (prob row-b))]]
+      (row p (vec (concat (rv-vals row-a) (rv-vals row-b)
+                           [(f (indep-val row-a) (indep-val row-b))]))))))
 
 (defn condition-discrete
   [abo pred?]
@@ -105,12 +142,12 @@
 ;; Rules ==================================================================
 (defrule uniform-rule
   "Evaluates uniform to a discrete abo"
-  (-> ('uniform n) (uniform-discrete n)))
+  (-> ('uniform n) (discrete-uniform n)))
 
 (defrule arith-f-discrete-rule
   "Apply primitive arithmetic function to scalar value and abstraction of
    integer distribution"
-  (-> (?f scalar abo) (apply-f (partial ?f scalar) abo)
+  (-> (?f scalar abo) (apply-unary-f (partial ?f scalar) abo)
       :when (and (prim-arithmetic? ?f)
                  (number? scalar)
                  (discrete? abo))))
@@ -118,7 +155,7 @@
 (defrule arith-f-binary-abo-rule
   "Apply primitive arithmetic function to two abstractions of
    integer distributions"
-  (-> (?f abo-a abo-b) (binary-f-abo ?f abo-a abo-b)
+  (-> (?f abo-a abo-b) (apply-binary-f ?f abo-a abo-b)
       :when (and (prim-arithmetic? ?f)
                  (discrete? abo-b)
                  (discrete? abo-a))))
@@ -130,7 +167,7 @@
                  (fn? pred?))))
 
 (comment
-  (binary-f-abo + (uniform-discrete 2) (uniform-discrete 3)))
+  (apply-binary-f + (discrete-uniform 2) (discrete-uniform 3)))
 
 (defn -main []
   (require '[relax.interpret :refer :all])
