@@ -8,7 +8,6 @@ categories: progress
 # Progress
 
 Open questions are roughly divided between conceptual/formalism, and technical.
-Techncial Questions are:
 
 ## Technical Questions ##
 __What is allowed in pred? of condition?__
@@ -150,6 +149,18 @@ Looking back at the previous two examples:
       y (+ x0 x1)]
   y)
 ```
+
+__How to abstract finite discrete domains and apply function them?__
+Suppose we represent a finite discrete domain by a *set of conditional probabiltiy tables (cpt)*.
+
+A cpt is a matrix, which:
+- has 1 column for independent variable
+- has n columns for dependent variables, where n >= 0
+- has 1 column for the probability
+- each row assigns values to each variable (both independent and all dependent)
+- The probability of the row is the joint probability of all the values.
+
+
 
 __What is required to have a universal, albeit likely slow, language__
 - Define abstract domains for all random primitives
