@@ -3,7 +3,7 @@
 Sigma is a probabilistic programming language.
 In it we can specify probabilstic models and perform inference.
 
-[Main Page](zenna.github.io/sigma/)
+[Main Page](http://zenna.github.io/sigma/)
 
 ## Setup
 Not currently in a distribution ready form.  But for the risk-takers, it requires [clozen](https://github.com/zenna/clozen) a general utility library, and [veneer](https://github.com/zenna/veneer).
