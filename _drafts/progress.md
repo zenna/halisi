@@ -160,7 +160,8 @@ A cpt is a matrix, which:
 - each row assigns values to each variable (both independent and all dependent)
 - The probability of the row is the joint probability of all the values.
 
-
+Applying a function to cpt arguments involves the following
+- For each argument find set of dependent variabes.  If a cpt has no dependent variables find independent variable.
 
 __What is required to have a universal, albeit likely slow, language__
 - Define abstract domains for all random primitives
