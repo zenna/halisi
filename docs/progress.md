@@ -176,7 +176,65 @@ __Should Sigma rely on Clojure, or be fully self hosted.__
 Clojure implements Sigma rules, and are also callable from them.
 The first of these is necessary, any new language must initially be implemented in another. The latter, perhaps not.
 
+__How can we collapose code defining a geometric distribution to finite representations of its pmf?__
+Consider two versions of a geometric distribution
+```
+(defn geometric
+  [p]
+  (if (flip p)
+      0
+      (+ 1 (geometric p))))
+
+(defn geometric
+  [n p]
+  (if (flip p)
+      n
+      (geometric (+ 1 n) p)))
+```
+
+Considering the second version first.
+Under the precondition that $$n$$ is an integer, this program will return n with probability p.
+
+precondition is that n is a non-negative integer.
+
 ## Conceptual Questions
+__Is Church Memoisation a necessary construct in Church and in Sigma?__
+Memoisation seems like a bad thing, because are adding a stateful construct into a purely functional language.
+Looking at the following program
+```
+(define eye-color
+  (mem (lambda (person) (uniform-draw '(blue green brown)))))
+
+(list
+ (eye-color 'bob)
+ (eye-color 'alice)
+ (eye-color 'bob) )
+```
+
+We could of course replaceit with
+```
+(def eye-color [person]
+  (let [bob-eye-color (uniform-draw '(blue green brown))
+        alice-eye-color (uniform-draw '(blue green brown))]
+  (fn [person]
+    (cond
+      (= person 'bob)
+      bob-eye-color
+
+      (= person 'alice)
+      alice-eye-color
+
+      :else
+      fail))))
+```
+
+`eye-color` in both cases assign the eye colors for alice and bob to values drawn from the same distribution.
+The main difference is that eye-color2 is undefined for new values.
+If the domain of eye-color is finite then we could just enumerate this for all inputs, and therefore memoisation is no more than an optimisaiton technique; we can write semantically equivalent programs without it.
+
+
+
+
 __What are the semantics of values in a Sigma program?__
 No coherent thoughts yet.
 

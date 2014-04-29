@@ -1,9 +1,9 @@
-(ns relax.evalcs-test
+(ns sigma.evalcs-test
   (:use clojure.test
-        relax.evalcs
-        relax.env
-        relax.symbolic
-        relax.constrain
+        sigma.evalcs
+        sigma.env
+        sigma.symbolic
+        sigma.constrain
         clozen.helpers))
 
 (deftest evalcs-test

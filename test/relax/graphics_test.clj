@@ -1,6 +1,6 @@
-(ns relax.graphics-test
+(ns sigma.graphics-test
   (:use clojure.test
-        relax.graphics
+        sigma.graphics
         clozen.helpers))
 
 (def conv-poly

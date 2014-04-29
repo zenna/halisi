@@ -3029,10 +3029,10 @@ net.brehaut.ClojureTools = (function (SH) {
   };
 })(SyntaxHighlighter);
 </script><title>(quote leiningen.core.eval) -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">(quote leiningen.core.eval)</h1><h2 class="project-version"></h2><br />
-</div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#relax.abstraction">relax.abstraction</a></li><li><a href="#"></a></li><li><a href="#relax.common">relax.common</a></li><li><a href="#relax.conditionalvalue">relax.conditionalvalue</a></li><li><a href="#relax.constrain">relax.constrain</a></li><li><a href="#relax.core">relax.core</a></li><li><a href="#relax.domains.box">relax.domains.box</a></li><li><a href="#relax.env">relax.env</a></li><li><a href="#relax.evalcs">relax.evalcs</a></li><li><a href="#relax.examples">relax.examples</a></li><li><a href="#relax.experiments">relax.experiments</a></li><li><a href="#relax.geometry">relax.geometry</a></li><li><a href="#relax.graph">relax.graph</a></li><li><a href="#relax.graphics">relax.graphics</a></li><li><a href="#relax.join">relax.join</a></li><li><a href="#relax.linprog">relax.linprog</a></li><li><a href="#relax.multivalue">relax.multivalue</a></li><li><a href="#"></a></li><li><a href="#relax.query">relax.query</a></li><li><a href="#relax.render">relax.render</a></li><li><a href="#relax.run.constrain">relax.run.constrain</a></li><li><a href="#relax.run.experiments">relax.run.experiments</a></li><li><a href="#relax.run.reject">relax.run.reject</a></li><li><a href="#relax.samplers">relax.samplers</a></li><li><a href="#relax.search.a-star">relax.search.a-star</a></li><li><a href="#relax.search.heuristics">relax.search.heuristics</a></li><li><a href="#relax.search.rrt">relax.search.rrt</a></li><li><a href="#relax.symbolic">relax.symbolic</a></li><li><a href="#"></a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.abstraction" name="relax.abstraction"><h1 class="project-name">relax.abstraction</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Common to all abstractions</p>
+</div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#sigma.abstraction">sigma.abstraction</a></li><li><a href="#"></a></li><li><a href="#sigma.common">sigma.common</a></li><li><a href="#sigma.conditionalvalue">sigma.conditionalvalue</a></li><li><a href="#sigma.constrain">sigma.constrain</a></li><li><a href="#sigma.core">sigma.core</a></li><li><a href="#sigma.domains.box">sigma.domains.box</a></li><li><a href="#sigma.env">sigma.env</a></li><li><a href="#sigma.evalcs">sigma.evalcs</a></li><li><a href="#sigma.examples">sigma.examples</a></li><li><a href="#sigma.experiments">sigma.experiments</a></li><li><a href="#sigma.geometry">sigma.geometry</a></li><li><a href="#sigma.graph">sigma.graph</a></li><li><a href="#sigma.graphics">sigma.graphics</a></li><li><a href="#sigma.join">sigma.join</a></li><li><a href="#sigma.linprog">sigma.linprog</a></li><li><a href="#sigma.multivalue">sigma.multivalue</a></li><li><a href="#"></a></li><li><a href="#sigma.query">sigma.query</a></li><li><a href="#sigma.render">sigma.render</a></li><li><a href="#sigma.run.constrain">sigma.run.constrain</a></li><li><a href="#sigma.run.experiments">sigma.run.experiments</a></li><li><a href="#sigma.run.reject">sigma.run.reject</a></li><li><a href="#sigma.samplers">sigma.samplers</a></li><li><a href="#sigma.search.a-star">sigma.search.a-star</a></li><li><a href="#sigma.search.heuristics">sigma.search.heuristics</a></li><li><a href="#sigma.search.rrt">sigma.search.rrt</a></li><li><a href="#sigma.symbolic">sigma.symbolic</a></li><li><a href="#"></a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.abstraction" name="sigma.abstraction"><h1 class="project-name">sigma.abstraction</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Common to all abstractions</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.abstraction
+  sigma.abstraction
   (:use clozen.helpers)
   (:require [clojure.math.combinatorics :as combo]))</pre></td></tr><tr><td class="docs"><p>An abstraction has a formula, which is purely conjunctive,
   and can be evaluated using satisfiable?.
@@ -3053,10 +3053,10 @@ net.brehaut.ClojureTools = (function (SH) {
 </td><td class="codes"><pre class="brush: clojure">(defn has-volume?
   [abstraction]
   &quot;Does the box have volume? Box may not have volume infeasible&quot;
-  (not= abstraction 'empty-abstraction))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#" name=""><h1 class="project-name"></h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.common" name="relax.common"><h1 class="project-name">relax.common</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Common</p>
+  (not= abstraction 'empty-abstraction))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#" name=""><h1 class="project-name"></h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.common" name="sigma.common"><h1 class="project-name">sigma.common</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Common</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.common
+  sigma.common
   (:use clojure.java.io))</pre></td></tr><tr><td class="docs"><p>An environment is a vector list of hashes [{}{}]
 Error</p>
 </td><td class="codes"><pre class="brush: clojure">(defn error
@@ -3114,12 +3114,12 @@ Error</p>
     (doall
       (for [dim re-samples]
         (with-open [wrtr (writer fname :append true)]
-          (.write wrtr (str (clojure.string/join &quot; &quot; dim) &quot;\n&quot;)))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.conditionalvalue" name="relax.conditionalvalue"><h1 class="project-name">relax.conditionalvalue</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Conditional Value</p>
+          (.write wrtr (str (clojure.string/join &quot; &quot; dim) &quot;\n&quot;)))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.conditionalvalue" name="sigma.conditionalvalue"><h1 class="project-name">sigma.conditionalvalue</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Conditional Value</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.conditionalvalue
-  (:use relax.common)
-  (:use relax.multivalue)
+  sigma.conditionalvalue
+  (:use sigma.common)
+  (:use sigma.multivalue)
   (:use clozen.helpers)
   (:require [clojure.math.combinatorics :as combo]))</pre></td></tr><tr><td class="docs"><p>A conditioned value has the form ('conditional multivalue)
    where each element of multivalue (possible-value) has the form
@@ -3198,20 +3198,20 @@ Error</p>
               (map #(vector (conditional-value %)
                       (merge-conditions (value-conditions %) path-conditions))
                     (multivalues (all-possible-values fx))))
-            [fx path-conditions]))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.constrain" name="relax.constrain"><h1 class="project-name">relax.constrain</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Constrain a generative model</p>
+            [fx path-conditions]))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.constrain" name="sigma.constrain"><h1 class="project-name">sigma.constrain</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Constrain a generative model</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.constrain
-  (:require [relax.common :refer :all]
-            [relax.env :refer :all]
-            [relax.symbolic :refer :all]
-            [relax.conditionalvalue :refer :all]
-            [relax.multivalue :refer :all]
-            [relax.examples :refer :all]
-            [relax.linprog :refer :all]
-            [relax.abstraction :refer :all]
-            [relax.domains.box :refer :all]
-            [relax.evalcs :refer :all]
+  sigma.constrain
+  (:require [sigma.common :refer :all]
+            [sigma.env :refer :all]
+            [sigma.symbolic :refer :all]
+            [sigma.conditionalvalue :refer :all]
+            [sigma.multivalue :refer :all]
+            [sigma.examples :refer :all]
+            [sigma.linprog :refer :all]
+            [sigma.abstraction :refer :all]
+            [sigma.domains.box :refer :all]
+            [sigma.evalcs :refer :all]
             [clozen.helpers :refer :all]
             [taoensso.timbre.profiling :as profiling :refer (p o profile)]
             [clojure.math.combinatorics :as combo]))</pre></td></tr><tr><td class="docs"><p>Does a solution satisfy the constraint or subc constraint</p>
@@ -3355,20 +3355,20 @@ Error</p>
         ; (samples-to-file &quot;srsop&quot; srs-samples)
         (println &quot;N-SAMPLES:&quot; n-sampled &quot; n-rejected: &quot; n-rejected &quot; ratio:&quot; (double (/ n-rejected n-sampled)))
         ; (println &quot;N-SAMPLES-SRS:&quot; srs-n-sampled &quot; n-rejected: &quot; srs-n-rejected &quot; ratio:&quot; (double (/ srs-n-rejected srs-n-sampled)))
-        samples))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.core" name="relax.core"><h1 class="project-name">relax.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(ns relax.core
-  (:require [relax.render :as render])
-  (:require [relax.query :as query])
+        samples))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.core" name="sigma.core"><h1 class="project-name">sigma.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns sigma.core
+  (:require [sigma.render :as render])
+  (:require [sigma.query :as query])
   (:gen-class))</pre></td></tr><tr><td class="docs"><p>main entry point.</p>
 
 <h1></h1>
 </td><td class="codes"><pre class="brush: clojure">(defn -main
   [&amp; args]
-  (query/main))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.domains.box" name="relax.domains.box"><h1 class="project-name">relax.domains.box</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Axis Aligned Box (Orthorope) abstractions</p>
+  (query/main))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.domains.box" name="sigma.domains.box"><h1 class="project-name">sigma.domains.box</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Axis Aligned Box (Orthorope) abstractions</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
                 :author &quot;Zenna Tavares&quot;}
-  relax.domains.box
-  (:require [relax.abstraction :refer :all]
+  sigma.domains.box
+  (:require [sigma.abstraction :refer :all]
             [clozen.profile :refer :all]
             [clozen.helpers :refer :all]
             [clojure.math.combinatorics :as combo]
@@ -3728,11 +3728,11 @@ Error</p>
   (defn ok []
    (scaling #(apply union-volume %) gen-random-boxes
             (make-input 200 (positive-numbers 1) (repeat 10))
-            2)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.env" name="relax.env"><h1 class="project-name">relax.env</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Evaluation Environment</p>
+            2)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.env" name="sigma.env"><h1 class="project-name">sigma.env</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Evaluation Environment</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.env
-  (:use relax.common))</pre></td></tr><tr><td class="docs"><p>Return the nth frame</p>
+  sigma.env
+  (:use sigma.common))</pre></td></tr><tr><td class="docs"><p>Return the nth frame</p>
 </td><td class="codes"><pre class="brush: clojure">(defn enclosing-env [env] (rest env))
 (defn first-frame [env] (first env))
 (def the-empty-environment (atom []))
@@ -3783,7 +3783,7 @@ Error</p>
       (nil? ((nth-frame frame-pos env) var))
       (recur (inc frame-pos))
       :else
-      (add-binding-to-frame! var val frame-pos env))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.evalcs" name="relax.evalcs"><h1 class="project-name">relax.evalcs</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>A concrete and symbolic metacircular evaluator.</p>
+      (add-binding-to-frame! var val frame-pos env))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.evalcs" name="sigma.evalcs"><h1 class="project-name">sigma.evalcs</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>A concrete and symbolic metacircular evaluator.</p>
 
 <pre><code>        This is a evaluator of lisp expressions as in SICP.
         Primary difference is that expressions are evaluated
@@ -3796,13 +3796,13 @@ Error</p>
 </code></pre>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.evalcs
-  (:use relax.env)
-  (:use relax.symbolic)
-  (:use relax.join)
-  (:use relax.common)
-  (:use relax.conditionalvalue)
-  (:use relax.multivalue)
+  sigma.evalcs
+  (:use sigma.env)
+  (:use sigma.symbolic)
+  (:use sigma.join)
+  (:use sigma.common)
+  (:use sigma.conditionalvalue)
+  (:use sigma.multivalue)
   (:use clozen.helpers)
   (:use clojure.set)
   (:require [clozen.profile.bucket :refer :all]
@@ -4266,10 +4266,10 @@ Error</p>
     (define-variable! 'false false initial-env)
     initial-env))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(def the-global-environment (setup-environment))
-(def the-pure-environment (setup-environment))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.examples" name="relax.examples"><h1 class="project-name">relax.examples</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Example generative models and constraints</p>
+(def the-pure-environment (setup-environment))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.examples" name="sigma.examples"><h1 class="project-name">sigma.examples</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Example generative models and constraints</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
 	    :author &quot;Zenna Tavares&quot;}
-  relax.examples
+  sigma.examples
   (:use clozen.helpers))</pre></td></tr><tr><td class="docs"><p>Generate a graph in edge list form:[[n1 n2],..,[n1 n2]]</p>
 
 <p>Graphs</p>
@@ -4692,12 +4692,12 @@ Error</p>
                (~'&gt; (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
                      (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2)))
                (~'&gt; (~'+ (~'* ~(dec (rand 2)) ~'x1) (~'* ~(dec (rand 2)) ~'x2)
-                     (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.experiments" name="relax.experiments"><h1 class="project-name">relax.experiments</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Experiments.</p>
+                     (~'* ~(dec (rand 2)) ~'x3) (~'* ~(dec (rand 2)) ~'x4)) ~(dec (rand 2))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.experiments" name="sigma.experiments"><h1 class="project-name">sigma.experiments</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Experiments.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.experiments
-  (:require [relax.constrain :refer :all]
-            [relax.examples :refer :all]
+  sigma.experiments
+  (:require [sigma.constrain :refer :all]
+            [sigma.examples :refer :all]
             [clozen.helpers :refer :all]
             [clozen.profile.scaling :refer :all]
             [clozen.profile.bucket :refer :all]
@@ -4825,10 +4825,10 @@ Error</p>
 </td><td class="codes"><pre class="brush: clojure">(defn run-all-experiments
   []
   (do
-    (n-samples-vs-runtime)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.geometry" name="relax.geometry"><h1 class="project-name">relax.geometry</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Geometry</p>
+    (n-samples-vs-runtime)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.geometry" name="sigma.geometry"><h1 class="project-name">sigma.geometry</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Geometry</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
 	    :author &quot;Zenna Tavares&quot;}
-  relax.geometry
+  sigma.geometry
   (:use clozen.helpers))</pre></td></tr><tr><td class="docs"><p>Is a point inside a box?</p>
 
 <p>Non-linear planning constraint</p>
@@ -4860,15 +4860,15 @@ Error</p>
     (/ (- (* v2 w1) (* v1 w2))
        (- (* v1 u2) (* v2 u1)))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(comment
-  (require '[relax.geometry :refer :all])
+  (require '[sigma.geometry :refer :all])
   (def vec-a [[1 1] [5 5]])  ;; segment on y = x 
   (def vec-b [[0 4.9] [10 4.9]]) ;; segment on y = 4.5
   (intersection-point vec-a vec-b) ;; =&gt; 0.5
   (= (intersection vec-a vec-b) (intersection vec-b vec-a)) ; =&gt; false - not symmetric
-  (parametric-to-point (first vec-a) (second vec-a)  (intersection-point vec-a vec-b)) ; =&gt; 4.9)</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.graph" name="relax.graph"><h1 class="project-name">relax.graph</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Graph Data Structures</p>
+  (parametric-to-point (first vec-a) (second vec-a)  (intersection-point vec-a vec-b)) ; =&gt; 4.9)</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.graph" name="sigma.graph"><h1 class="project-name">sigma.graph</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Graph Data Structures</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.graph)</pre></td></tr><tr><td class="docs"><p>An immutable graph data structure
+  sigma.graph)</pre></td></tr><tr><td class="docs"><p>An immutable graph data structure
    A node can be any (hashable I suppose) object
    An edge is a map of the form [a b weight]</p>
 </td><td class="codes"><pre class="brush: clojure">(defn make-graph
@@ -4905,11 +4905,11 @@ Error</p>
       #(add-edge-wo-nodes % edge))
     graph))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(comment
-  (require '[relax.graph :refer :all])
+  (require '[sigma.graph :refer :all])
   (-&gt; (make-graph) (add-node 'a) (add-node 'c) (add-edge ['d 'a 10]))
   ;; =&gt; {:nodes #{a c d}, :edges [[d a 10]]}
-  )</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.graphics" name="relax.graphics"><h1 class="project-name">relax.graphics</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(ns relax.graphics
+  )</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.graphics" name="sigma.graphics"><h1 class="project-name">sigma.graphics</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns sigma.graphics
   (:use clozen.helpers))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn non-neg?
   [n]
@@ -5121,14 +5121,14 @@ Error</p>
     convex-poly))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn gen-half-screen-poly
   [max-width max-height]
-  [[(half max-width) 0] [(half max-width) max-height] [max-width max-height] [max-width 0]])</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.join" name="relax.join"><h1 class="project-name">relax.join</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Join</p>
+  [[(half max-width) 0] [(half max-width) max-height] [max-width max-height] [max-width 0]])</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.join" name="sigma.join"><h1 class="project-name">sigma.join</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Join</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:author &quot;Zenna Tavares&quot;
       :doc }
   ; &quot;Join (abstract interpretation)
   ;  Joining takes two abstract objects in some domain and returns
   ;  another abstract object within the same domain.&quot;
-  relax.join
-  (:require [relax.common :refer :all]
+  sigma.join
+  (:require [sigma.common :refer :all]
             [clojure.walk :refer :all]))</pre></td></tr><tr><td class="docs"><p>1</p>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Complexiy in terms of reduction in dnf can be easily computed
 Consider comparing joining (join x y z) with (join d e f)
@@ -5150,10 +5150,10 @@ if i do (join x y z) i know i'll get entities (join x y z)</p>
           (zipmap join-set
                   (repeat (count join-set) `(~'join ~@join-set))))
         joins))
-    program))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.linprog" name="relax.linprog"><h1 class="project-name">relax.linprog</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Linear programming wrapper around lpsolve</p>
+    program))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.linprog" name="sigma.linprog"><h1 class="project-name">sigma.linprog</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Linear programming wrapper around lpsolve</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
 	    :author &quot;Zenna Tavares&quot;}
-	relax.linprog
+	sigma.linprog
   (:import (lpsolve AbortListener BbListener LogListener MsgListener
             LpSolveException LpSolve)))</pre></td></tr><tr><td class="docs"><p>Convert inequality symbol to form used by java-wrapper of lpsolve</p>
 </td><td class="codes"><pre class="brush: clojure">(defn conv-ineq
@@ -5268,11 +5268,11 @@ if i do (join x y z) i know i'll get entities (join x y z)</p>
                             (nth results i))
                           nil)))))]
       (.deleteLp lp)
-      bounds)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.multivalue" name="relax.multivalue"><h1 class="project-name">relax.multivalue</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Multivalues</p>
+      bounds)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.multivalue" name="sigma.multivalue"><h1 class="project-name">sigma.multivalue</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Multivalues</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.multivalue
-  (:use relax.common)
+  sigma.multivalue
+  (:use sigma.common)
   (:use clozen.helpers)
   (:require [clojure.math.combinatorics :as combo]))</pre></td></tr><tr><td class="docs"><p>Mutlivalue abstractions</p>
 </td><td class="codes"><pre class="brush: clojure">(defn make-multivalue
@@ -5338,7 +5338,7 @@ if i do (join x y z) i know i'll get entities (join x y z)</p>
 </td><td class="codes"><pre class="brush: clojure">(defn render-poly)</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn noisy-compare
   []
-  (nelder-mead img-cost-f))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.query" name="relax.query"><h1 class="project-name">relax.query</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><ol>
+  (nelder-mead img-cost-f))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.query" name="sigma.query"><h1 class="project-name">sigma.query</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><ol>
 <li>Make soft measure of convexity
 -- Two reason 1. We want
 -- We might imagine a function
@@ -5350,9 +5350,9 @@ a</li>
 3 Noisify program, (automatically?)
 1 Go to an optimisation method which allows search through arbitrary spaces.</p>
 </td><td class="codes"></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(ns relax.query
-  (:use relax.render)
-  (:use relax.graphics)
+</td><td class="codes"><pre class="brush: clojure">(ns sigma.query
+  (:use sigma.render)
+  (:use sigma.graphics)
   (:use clozen.helpers)
   (:use clozen.neldermead)
   (:require [incanter.distributions :as dist]))</pre></td></tr><tr><td class="docs"><p>Add Gaussian blur to image</p>
@@ -5455,12 +5455,12 @@ a</li>
     (inv-poly test-data) 
     (print &quot;;\n&quot;)
     (close-display)
-    nil)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.render" name="relax.render"><h1 class="project-name">relax.render</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(ns relax.render
+    nil)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.render" name="sigma.render"><h1 class="project-name">sigma.render</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns sigma.render
   (:import (org.lwjgl.opengl Display DisplayMode GL11 GL30 GLContext)
            (org.lwjgl.util.glu GLU)
            (org.lwjgl BufferUtils)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(use 'relax.graphics)</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(use 'sigma.graphics)</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(set! *warn-on-reflection* true)</pre></td></tr><tr><td class="docs"><h1></h1>
 
 <p>spinning triangle in OpenGL 1.1</p>
@@ -5519,34 +5519,34 @@ a</li>
   (buffer-to-vec buffer width height bpp)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn close-display
   []
-  (Display/destroy))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.run.constrain" name="relax.run.constrain"><h1 class="project-name">relax.run.constrain</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Constrain a generative model</p>
+  (Display/destroy))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.run.constrain" name="sigma.run.constrain"><h1 class="project-name">sigma.run.constrain</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Constrain a generative model</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.run.constrain
-  (:require [relax.constrain :refer :all]
-            [relax.examples :refer :all]
-            [relax.domains.box :refer :all]
-            [relax.common :refer :all]
+  sigma.run.constrain
+  (:require [sigma.constrain :refer :all]
+            [sigma.examples :refer :all]
+            [sigma.domains.box :refer :all]
+            [sigma.common :refer :all]
             [taoensso.timbre.profiling :as profiling :refer (p o profile)]
             [clozen.profile.bucket :refer :all]))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(def four-tiled-obstacles (mapv :internals (tile-boxes 2 4)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn -main[]
   (let [{vars :vars pred :pred}
         (point-avoid-orthotope-obs 1 four-tiled-obstacles)]
-    (construct-box-domain vars pred)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.run.experiments" name="relax.run.experiments"><h1 class="project-name">relax.run.experiments</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Run experiments</p>
+    (construct-box-domain vars pred)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.run.experiments" name="sigma.run.experiments"><h1 class="project-name">sigma.run.experiments</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Run experiments</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.run.experiments
-  (:require [relax.experiments :refer :all])
+  sigma.run.experiments
+  (:require [sigma.experiments :refer :all])
   (:require [taoensso.timbre :as timbre
                       :refer (trace debug info warn error fatal spy with-log-level)]))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn -main[]
-  (run-all-experiments))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.run.reject" name="relax.run.reject"><h1 class="project-name">relax.run.reject</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Run Rejection Sampler</p>
+  (run-all-experiments))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.run.reject" name="sigma.run.reject"><h1 class="project-name">sigma.run.reject</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Run Rejection Sampler</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.run.reject
-  (:require [relax.reject :refer :all]
-            [relax.examples :refer :all]
+  sigma.run.reject
+  (:require [sigma.reject :refer :all]
+            [sigma.examples :refer :all]
             [taoensso.timbre.profiling :as profiling :refer (p o profile)]
             [clozen.profile.bucket :refer :all]))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn -main[]
@@ -5559,10 +5559,10 @@ a</li>
                             10)
         vars (vec vars)]
   (bucket-test [:remove-inconsistent?]
-    (profile :info :whatevs (p :FYLL (take-samples pred vars 100))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.samplers" name="relax.samplers"><h1 class="project-name">relax.samplers</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+    (profile :info :whatevs (p :FYLL (take-samples pred vars 100))))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.samplers" name="sigma.samplers"><h1 class="project-name">sigma.samplers</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:docs &quot;Different Samplers&quot;
       :authoer &quot;Zenna Tavares&quot;}
-  relax.samplers)</pre></td></tr><tr><td class="docs">
+  sigma.samplers)</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn overlapping-sampler [n-samples]
   (let [box1 {:name 'box1 :internals [[0 20][0 20]]}
         box2 {:name 'box2 :internals [[18 22][18 22]]}
@@ -5632,10 +5632,10 @@ a</li>
   (println &quot;N-SAMPLES:&quot; n-sampled &quot; n-rejected: &quot; n-rejected &quot; ratio:&quot; (double (/ n-rejected n-sampled)))
   (samples-to-file &quot;opx&quot; samples)
   samples))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">()</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.search.a-star" name="relax.search.a-star"><h1 class="project-name">relax.search.a-star</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Experiments.</p>
+</td><td class="codes"><pre class="brush: clojure">()</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.search.a-star" name="sigma.search.a-star"><h1 class="project-name">sigma.search.a-star</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Experiments.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;http://clj-me.cgrand.net/2010/09/04/a-in-clojure/&quot;}
-  relax.search.a-star
+  sigma.search.a-star
   (:require [clojure.data.priority-map :refer :all]))</pre></td></tr><tr><td class="docs"><p>Finds a path between start and goal inside the graph described by edges
   (a map of edge to distance); estimate is an heuristic for the actual
   distance. Accepts a named option: :monotonic (default to true).
@@ -5663,15 +5663,15 @@ a</li>
               (into shortest bn)
               (if mono (conj done x) done))))))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(comment
-  (require '[relax.search.a-star :refer [A*]]
-           '[relax.search.heuristics :refer :all])
+  (require '[sigma.search.a-star :refer [A*]]
+           '[sigma.search.heuristics :refer :all])
   ;; Simple example of shortest path in three node graph
   (def g {'[a b] 1.0 '[b c] 0.5 '[a c] 10.0})
-  (A* g zero-heursitic 'a 'c))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.search.heuristics" name="relax.search.heuristics"><h1 class="project-name">relax.search.heuristics</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Heuristics for use with search algorithms .</p>
+  (A* g zero-heursitic 'a 'c))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.search.heuristics" name="sigma.search.heuristics"><h1 class="project-name">sigma.search.heuristics</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Heuristics for use with search algorithms .</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.search.heuristics
-  (:require [relax.search.a-star :refer [A*]]))</pre></td></tr><tr><td class="docs">
+  sigma.search.heuristics
+  (:require [sigma.search.a-star :refer [A*]]))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn euclidean-distance [a b] ; multidimensional
   (Math/sqrt (reduce + (map #(let [c (- %1 %2)] (* c c)) a b))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn zero-heuristic [a b]
@@ -5690,13 +5690,13 @@ a</li>
        [[x0 y1] [x0 y0]] 1})))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(comment 
   (def g (apply dissoc (grid 0 0 4 4) (keys (grid 1 1 2 2))))
-  (A* g euclidian-distance [0 3] [4 2]))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.search.rrt" name="relax.search.rrt"><h1 class="project-name">relax.search.rrt</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Rapidly Exploring Random Trees.</p>
+  (A* g euclidian-distance [0 3] [4 2]))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.search.rrt" name="sigma.search.rrt"><h1 class="project-name">sigma.search.rrt</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>Rapidly Exploring Random Trees.</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.search.rrt
+  sigma.search.rrt
   (:require [clozen.helpers :as clzn :refer [flip]])
-  (:require [relax.graph :refer :all]
-            [relax.geometry :refer :all])
+  (:require [sigma.graph :refer :all]
+            [sigma.geometry :refer :all])
   (:require [clojure.data.priority-map :refer :all]))</pre></td></tr><tr><td class="docs"><p>Find the nearest node of graph g to point in configuration space.
    Linear search.</p>
 
@@ -5753,9 +5753,9 @@ a</li>
         (add-edge graph [q-near q-new 1.0]) ; TODO, interpolate.
         (recur (add-edge graph [q-near q-new 1.0]) (dec n-nodes-left))))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(comment
-  (require '[relax.search.rrt :refer :all]
-           '[relax.box :refer [interval-sample]]
-           '[relax.search.heuristics :refer [euclidean-distance]])
+  (require '[sigma.search.rrt :refer :all]
+           '[sigma.box :refer [interval-sample]]
+           '[sigma.search.heuristics :refer [euclidean-distance]])
   (def q-start [1.0 1.0])
   (def obstacles [[[3.1 4.1][3.0 7.0]]
                   [[3.0 7.0][6.1 7.05]]
@@ -5764,13 +5764,13 @@ a</li>
   (def max-nodes 50)
   (def delta-q 1.0)
   (defn sampler [] (vec (interval-sample [[0 10] [0 10]]))) ; Samples a point in 10 x 10 square.
-  (def graph (make-rdt q-start q-dest max-nodes delta-q sampler euclidean-distance obstacles)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#relax.symbolic" name="relax.symbolic"><h1 class="project-name">relax.symbolic</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>A concrete and symbolic metacircular evaluator</p>
+  (def graph (make-rdt q-start q-dest max-nodes delta-q sampler euclidean-distance obstacles)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#sigma.symbolic" name="sigma.symbolic"><h1 class="project-name">sigma.symbolic</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs"><p>A concrete and symbolic metacircular evaluator</p>
 </td><td class="codes"><pre class="brush: clojure">(ns ^{:doc 
       :author &quot;Zenna Tavares&quot;}
-  relax.symbolic
-  (:use relax.env)
-  (:use relax.common)
-  (:use relax.linprog)
+  sigma.symbolic
+  (:use sigma.env)
+  (:use sigma.common)
+  (:use sigma.linprog)
   (:use clozen.helpers)
   (:require [clojure.math.combinatorics :as combo]))</pre></td></tr><tr><td class="docs"><p>Symbolic value abstractions</p>
 </td><td class="codes"><pre class="brush: clojure">(defn symbolic? [val]

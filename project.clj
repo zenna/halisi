@@ -14,8 +14,8 @@
   (let [os (leiningen.core.eval/get-os)]
     (get LWJGL-CLASSIFIER os)))
 
-(defproject relax "0.1.0-SNAPSHOT"
-  :description "Self relaxing programs"
+(defproject sigma "0.1.0-SNAPSHOT"
+  :description "Self sigmaing programs"
   :url "https://github.com/rogerallen/hello_lwjgl"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
@@ -35,6 +35,6 @@
                  [fipp "0.4.1"]
                  [org.clojure/core.match "0.2.1"]
                  [org.clojure/tools.cli "0.3.1"]]
-  :main relax.core
+  :main sigma.core
   :jvm-opts [~(str "-Djava.library.path=/usr/local/lib:native/:"
                      (System/getProperty "java.library.path"))])
