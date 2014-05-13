@@ -7,7 +7,7 @@
             [clojure.math.combinatorics :as combo]
             [taoensso.timbre.profiling :as profiling :refer (p o profile)]))
 
-; ;; 
+; ;;
 ; The profiling tells us,
 ; The run time grows exponentially with the number of calls to expand
 ; -This means that more time is being spent in each call to expand as the number of boxes is increasing
@@ -17,8 +17,6 @@
   "Box Constructor"
   [intervals]
   (make-abstraction intervals 'no-formula))
-
-(box?
 
 (defn lower-bound [interval]
   (first interval))
@@ -223,15 +221,15 @@
     (cond
       (empty? sides)
       exp-box
-      
+
       :else
       (let [dim (first sides)
             ; pvar (println "dim"  dim)
             interval (nth-dim-interval box dim)
             ; We only care about a subset of boxes:
             ; Ignore dim in intersection? because even though exp-box may not
-            ;  intersect in dim with a box-a in boxes, may be possible for 
-            ;  exp-box to expand into box-a through other boxes. 
+            ;  intersect in dim with a box-a in boxes, may be possible for
+            ;  exp-box to expand into box-a through other boxes.
             ; Complexity: n*d
             good-boxes (p :filter-good
             (filter #(intersect? (remove-dim exp-box dim)
@@ -253,7 +251,7 @@
             ; in the worse case we have to check every box
 
             ; Find greatest extension which a) does not intersect with cover
-            ; b) is fully contained within the union 
+            ; b) is fully contained within the union
             upper (p :upper
             (max-pred #(and (not (p :collides (collides? (edit-upper-bound exp-box dim %) cover)))
                             (valid-ext exp-box
@@ -352,7 +350,7 @@
               [[side components :as ext] popd-exts] (rand-vec-remove exts)
               ; pvar (println "comp counts" (count components))
               [component popd-components] (rand-vec-remove components)
-              order (concat [(side-dim side)] 
+              order (concat [(side-dim side)]
                            (shuffle (remove #(= (side-dim side) %)
                                             (range n-dims))))
               order [(side-dim side)] ;TEST
@@ -364,7 +362,7 @@
               ;   (box-extensions box boxes)))
               ; pvar (println "HAS VOLUME" (not (tolerant= 0.0 (volume box))))
               ]
-          (if (not (tolerant= 0.0 (volume box))) 
+          (if (not (tolerant= 0.0 (volume box)))
               (recur (vec (concat exts (p :extend (box-extensions box boxes))))
                      (conj cover box))
               (recur exts cover)))))))
@@ -412,7 +410,7 @@
           'no-formula))
       (apply combo/cartesian-product (repeat n-dims (range n-per-side))))))
 
-(comment 
+(comment
   ;; Some test boxes
   (def b1 {:internals (vec (repeat 2 [0 5]))})
   (def b2 {:internals (vec (repeat 2 [3 10]))})

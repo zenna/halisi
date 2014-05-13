@@ -128,6 +128,10 @@
   "A variable substitution rule"
   (-> ((fn [& args] body) & params) (body-replace body (zipmap args params))))
 
+(macroexpand '(defrule variable-sub-rule
+  "A variable substitution rule"
+  (-> ((fn [& args] body) & params) (body-replace body (zipmap args params)))))
+
 (defrule variable-sub-rule-nullary
   "A variable substitution rule"
   (-> ((fn [] body)) body))

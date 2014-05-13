@@ -34,7 +34,9 @@
                  [org.clojure/tools.trace "0.7.5"]
                  [fipp "0.4.1"]
                  [org.clojure/core.match "0.2.1"]
-                 [org.clojure/tools.cli "0.3.1"]]
+                 [org.clojure/tools.cli "0.3.1"]
+                 [clozen "0.1.0-SNAPSHOT"]
+                 [veneer "0.1.0-SNAPSHOT"]]
   :main sigma.core
   :jvm-opts [~(str "-Djava.library.path=/usr/local/lib:native/:"
                      (System/getProperty "java.library.path"))])

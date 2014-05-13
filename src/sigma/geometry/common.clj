@@ -92,6 +92,23 @@
         nil ; No gradient
         (/ y-delta x-delta))))
 
+(defn num-dims
+  "Number of dimensions of a point"
+  [p]
+  (count p))
+
+(defn euclidean-dist-sqr
+  "Euclidean distance on two n-dimensional points"
+  [p1 p2]
+  {:pre [(= (num-dims p1) (num-dims p2))]}
+  (reduce + (map (comp sqr -) p1 p2)))
+
+(defn euclidean-dist
+  "Euclidean distance on two n-dimensional points"
+  [p1 p2]
+  {:pre [(= (num-dims p1) (num-dims p2))]}
+  (Math/sqrt (euclidean-dist-sqr p1 p2)))
+
 ;; Polygons (i.e. 2D)
 (defn winding-num
   "Return winding number of polygon
