@@ -3,10 +3,16 @@
 
 ;; What's wrong with this
 ;; Inconsistent naming for vectors, some times use v1 v2, v w, p q
+; Use p q
 ;; Pre conditions arent compile time
 ;; Some functions take two points as input others take two vectors, not clear
+
 ;; Inconsistent naming for 2 dimension dot2 , perp-2d
+;* Sol: Convetion use x2, e.g. dot2 vec2
+
 ;; Destructuring not supported by sigma
+;* Write rules to support it
+
 ;; Avoidable general recursion
 ;; Shorthand for anon function unsupported by sigma
 
@@ -26,11 +32,21 @@
     (every? #(tolerant= 0.0 %) (map (fn [vi wi] (- (* w1 vi) (* wi v1)))
                                     (rest v) (rest w)))))
 
-(defn perp-2d
+(defn perp2
   "2D perp operator"
-  [[x y :as vect]]
-  {:pre [(= 2 (count vect))]}
+  [[x y :as vec2]]
+  {:pre [(= 2 (num-dims vec2))]}
   [(- y) x])
+
+;; The second is more verbose because I have extra code for
+;; ->vec2
+
+
+(defn perp2
+  "2D perp operator"
+  [vec2]
+  {:pre [(= 2 (num-dims vec2))]}
+  (->vec2 (- (:y vec2)) (:x vec2)))
 
 (defn points-to-vec
   "convert pair of points to vector"
@@ -95,7 +111,7 @@
 
 (defn path-is-ray?
   "Path is a ray with respect to set of obstacles if"
-  [path]
+  [path obstacles]
   (every-conseq-n? 3 (partial reflects? obstacles) path))
 
 ;; Sanity tests
@@ -108,14 +124,13 @@
 ;; Queries
 (comment
   (def ray (condition (uniform 0 10 0 10 5) (partial path-is-ray? obstacles)))
-  (def path-outside-rect? [path rect]
+  (def path-outside-rect? [path rect])
 
   (def ray-outside-container (probability ray outside-container?)))
 
 ;; Ray-tracing example 2 - dadada============================================
-(defn [x-min x-max y-min y-max n-points obstacles]
+(defn ok [x-min x-max y-min y-max n-points obstacles]
   "Uniformly sample start point"
   (let [p0 [(uniform x-min x-max) (uniform y-min uniform y-max)]
-        p0.5 [(uniform x-min x-max) (uniform y-min uniform y-max)]
-        ])
-    ()
+        p05 [(uniform x-min x-max) (uniform y-min uniform y-max)]
+        ]))
