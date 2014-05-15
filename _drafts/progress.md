@@ -13,7 +13,7 @@ Open questions are roughly divided between conceptual/formalism, and technical.
 __What is allowed in pred? of condition?__
 Condition is done with a predicate `pred?`.  The role of `pred?` is to restrict the random variable to values which pass it.  More precisely, `pred?` describes a subset of the domain of the random variable, and we restrict the probability measure to be within that range.
 ```Clojure
-(condition dist pred) 
+(condition dist pred)
 ```
 
 But how, in terms of code, should we allow access to elements of the random variable.
@@ -97,7 +97,7 @@ let $$X = \mathcal{U}(0, 1)$$ and $$Y= \mathcal{U}(0,1)$$ be two standard unifor
 evaluating a random primitive e.g. `(uniform 0 1)`, seemed to require that we give it a unique identifier,
 
 What does `(uniform-int)` mean?  Previously I defined the semantics of the evaluation of a random primitive as a random variable.
-But this conspicuously leaves the meaning of an unevaluated random primitive undefined, and brings about the following conceptual problems: 
+But this conspicuously leaves the meaning of an unevaluated random primitive undefined, and brings about the following conceptual problems:
 
 Consider the following examples:
 ```Clojure
@@ -169,7 +169,7 @@ __What is required to have a universal, albeit likely slow, language__
 
 __What is a valid abstraction, and what is meant by valid?__
 If our end goal is to draw exact samples, then what is a valid abstraction.
-If the case where the prior distribution was a 
+If the case where the prior distribution was a
 
 __How to abstract non-uniform distributions?__
 No thoughts yet
@@ -199,7 +199,7 @@ No coherent thoughts yet.
 
 __What is a Sigma program in general.__
 The measure theoretic definition I gave in the UAI paper claims a Sigma program is a random variable, i.e. a function from some sample space to a value.
-Why is a sigma program a random variable - Well its purely functional it just maps some input to some output.  That's what a sigma function does.  But is that what a sigma program.  Just thinking of a Sigma function for hte moment.  Is that a random vaiable?  
+Why is a sigma program a random variable - Well its purely functional it just maps some input to some output.  That's what a sigma function does.  But is that what a sigma program.  Just thinking of a Sigma function for hte moment.  Is that a random vaiable?
 
 The idea is that say you have `$$S[(+ 3 4)] = 7$$.` The real integer $7$.  Perhaps ironically the formal definition of  an integer is in terms of syntax.]
 <!-- What are the probabilistic semantics of S_p[(+ 3 9)]. -->
@@ -213,7 +213,6 @@ e.g. `(defn [a] b)`
 
 __How to parameterise choices, and separate real choices from any old rule__
 I have put the abstract interpretation choices on the same level as the normal evaluation choices.  If I frame the interpretation as a decision process where a rule is applied as an action to yield a new program, I will surely have a larger than necessary action space.  Is there a way to avoid making decision about irrelevant options, and focus only on the ones that matter (i.e. the approximations)
-
 
 ## Primary Objectives ##
 - Complete implementation of Sigma
@@ -254,18 +253,98 @@ The main abstract operations I have thus far considered are:
 
 __Subgoal Status__:
 I have begun an implementation of discrete domains on the integers.
-I need to decide what the main operations I shall support for all random variables should be: 
-
-
-
+I need to decide what the main operations I shall support for all random variables should be:
 
 __TODO Implement:__
 - Abstracting a random primitive
 - Consistency checking and elimination
-- Redundancy checking and elimination 
+- Redundancy checking and elimination
 - Domain conversion, interval <-> convex polyhedra
 - Refinement
 
 ### Subgoal: Implement Simple Decision Making Interpreter ###
 One motivation for separating the act of interpreting from the decision making was so that we could learn good decisions.
 This problem could be framed in a number of different ways
+
+## Sandbox
+__How to describe physical reasoning inference questions in Sigma?__
+
+Suppose we have some physical reasoning simulation described by some transition function `(update-state state)`. Reasoning questions we might like to ask are 1) Is it possible for some event to occur over the simulation, 2) What's the distribution over some final states 3) What geometry would cause these observations.  For instance, is it possible for a ball contained within an unsealable container to escape.  How can we phrase these in a probabilstic program?  The first question is the matter of time; we may interpret the previous question as
+
+- Within some time limit, e.g. 10 seconds, is it possible for the ball to escape
+
+However this may be inadequate since we have introduced extra information not in the original question.  We might instead ask
+
+- Within an infinite amount of simulation, will the ball leave the container?
+
+The question then becomes one of how to represent this infinity.  There seem to be at least two plausible candidates
+
+- THe maximum time is a uniform non-determinisitc value from 0 to infinity
+- The maximum time is a probabilstic value with infinte range
+- The function itself takes no maximum-time, it is a non-terminating function.
+
+Sigma does not support nondeterminism, so the first is out.  The second adds extraneous probabilistic information. The last could be problematic because non-terminating functions are traditionally undefined, or considered errors.
+
+Let's first consider the specific version of the problem as described above.
+
+{% highlight clojure %}
+(let [max-time 10
+      dt 0.01]
+  (pos? (probability (run-simulation init-state max-time dt) #(ball-escaped? %))))
+{% endhighlight %}
+
+
+Here `run-simulation` is a recursive function looking something like:
+
+{% highlight clojure %}
+(defn run-simulation [init-state t max-time dt]
+  (if (> t max-time)
+      state
+      (run-simulation (update-state state) (+ t dt) max-time dt)))
+{% endhighlight %}
+
+
+The simplest way Sigma could answer this question is to compute with the distrubtion and restrict the result distribution to that which satisfied the predicate.  And return the ratio of the mass.
+
+So let's create a simpler non-linear example: a ray bouncing around some environment.
+
+The first operations that need to be handled will be seen when we find the vector between two points.
+
+{% highlight clojure %}
+(defn points-to-vec
+  "convert pair of points to vector"
+  [[x1 y1] [x2 y2]]
+  [(- x2 x1) (- y2 y1)])
+{% endhighlight %}
+
+__*Requirement 1: Here all the arguments wil be uniform distributions, and so must support subtraction on these.*__
+
+{% highlight clojure %}
+(defn intersection-point
+  "Find the intersection point of two 2D vectors.
+   Each vector is defined as a pair of points, [a b].
+   returns t parameter on line [a0 a1].
+   fraction of distane from a0 to a1."
+  [[a0 a1 :as v] [b0 b1 :as q]]
+  {:pre [(not (parallel? v q))]}
+  (let [[u1 u2] (points-to-vec a0 a1)
+        [v1 v2] (points-to-vec b0 b1)
+        [w1 w2] (points-to-vec b0 a0)
+        denom (- (* v1 u2) (* v2 u1))]
+    [(/ (- (* v2 w1) (* v1 w2)) denom)
+     (/ (- (* u1 w2) (* u2 w1)) (- denom))]))
+{% endhighlight %}
+
+Then `u1 u2 v1 v2 w1 w2` will all be bound to values of this form (subtraction of uniform distributions).  These distributions are not independent.
+
+Each of these will create a uniform difference distribution
+
+__*Requirement 3: Computing the denominator `(- (* v1 u2) (* v2 u1))` requires the multiplication of these uniform difference distributions.*__
+
+__*Requirement 4: Whatever the resulting distribution of Computing the denominator `(- (* v1 u2) (* v2 u1))` requires the multiplication of these uniform difference distributions, and then subtraction*__
+
+__*Requirement 5: The denominator is subject to negation `(- denom)`__
+
+__*Requirement 6: These distributions are divided by one another*__
+
+Generally we have all the arithmetic operations `+ - / *` on distributiosn which are functions of uniform distributions.  They are not independent.
