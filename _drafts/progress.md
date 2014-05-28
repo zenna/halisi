@@ -164,37 +164,109 @@ Applying a function to cpt arguments involves the following
 - For each argument find set of dependent variabes.  If a cpt has no dependent variables find independent variable.
 
 __What is required to have a universal, albeit likely slow, language__
+
+Sigma computes with random variables.
+They key question is how to represent them.
+
+A random variable is a function $$f : \Omega \to E$$ where $$E$$ is some arbitray set, typically $$\mathbb{R}$$.
+Random variables are said to be *defined on* some probability space $$(\Omega, \mathcal{F}, \mathbb{P})$$ and $$\mathbb{P}$$ is a probability measure.
+Here $$\mathcal{F} \subseteq \mathcal{P}(\Omega)$$ is a $$\sigma$$ algebra.
+
+This means, given a predicate on values which $$X$$ takes (more formally, values from its domain): $$\phi : E \to Bool$$, we want to compute the probability of the predicate on a random variable itself.
+For concreteness we migt define $$\Phi : (\Omega \to E) \to \mathcal{P}(E)$$, where $$\Phi(X) = {e \in range(X) \vert \phi(e)}$$.
+
+$$Pr : (\Omega \to E) \to Space \to (E \to Bool) \to Real$$
+
+Notationally, typically the sample space is implicit.  The probability function is defined as follows:
+
+$$Pr(X, S, \phi) = \mathbb{P} (X^{-1}(\phi(X)))$$
+
+When it comes to question of how to represent a distribution, Sigma's philosophy is that there exists no single universally optimal solution.
+
+
+If $$\Omega$$ (and by construction $$\mathcal{F}$$), and $$X$$ are discrete we could represent this an explicit mapping from all values of $$F$$ to $$[0,1]$$.
+Of course, this would not be very efficient.
+We could take advantange of the axiom of countable additivity - for events events $$E_1, E_2,$$
+$$P(E_1 \cup E_2 \cup \cdots) = \sum_{i=1}^\infty P(E_i).$$ - we need only store the disjoint subsets, and can compute.  This is a probability mass function.
+
+But this fails in the continuous case.
+
+The second consideration is dependence.
+
+We'll represent a random variable $$X$$ geometrically as subset of $$P \times X_I \times X_D^1 \times \dot \times X_D^n$$.
+Here $$X_I$$ represents the independent variable, $$X_D^1 \times \dot \times X_D^n$$
+
+__Abstract Domains__
+We'll represent a distribution as a union of orthotopes.
+
+We must define a set of abstract domains, lifted functions and tranformations such that we get a certain form of closure.
+
+When random variables are regarded as free variables which sare sampled from distribution, arithmetic with random variables is no different from deterministic arithmetic.  Measure-theoretic probability uses the same notation, but regards it as implicit pointwise lifting (as in vector arithmetic). For example,
+
+if A, B, C : Ω → R are random variables, C := A + B means C ω := (A ω) + (B ω), and
+B := 4 + A means B ω := 4 + (A ω) defined on the same probability space.
+
+We must lift functions to correspond with this definition.
+
+Supose we have a function $$f(X_1, X_2,...,X_n)$$
+
+- Since an explicit representation of a single random variable represents all its points, we first find the joint product space.
+- For every point in this space we compute the joint probability
+- For every point in this spac we compute the f
 - Define abstract domains for all random primitives
+
+Consider the program:
+
+{% highlight clojure %}
+(let [x (uniform 0 1)
+      y (uniform 0 1)
+      z (+ x y)]
+  (probability (> z 0.4))
+{% endhighlight %}
+
+`Probability` represents probability queries: i.e. the probability that a predicate is true.
+Probability :: RV Bool -> Real
+come come come
+
+- Start with the condition predicate.  We have to evaluate this to get a constraint on the sample space
+- The result will be that relation in some representation
+- So it seems we should evaluate the predicate before we evaluate the condition
+- We then look to the random variable and see how far we can propagate that constraint backwards.
+- But first we should decide if its even relevant.
+
 
 
 __What is a valid abstraction, and what is meant by valid?__
 If our end goal is to draw exact samples, then what is a valid abstraction.
 If the case where the prior distribution was a
 
-__How to abstract non-uniform distributions?__
-No thoughts yet
-
 __Cousot says Markov chains can be described in this framework, does this mean Church can?__
 No thoughts yet
 
 __Should Sigma rely on Clojure, or be fully self hosted.__
+
 Clojure implements Sigma rules, and are also callable from them.
 The first of these is necessary, any new language must initially be implemented in another. The latter, perhaps not.
 
 ## Conceptual Questions
 __What are the semantics of values in a Sigma program?__
+
 No coherent thoughts yet.
 
 *What are the semantics of condition on a predicate with noise?*
+
 No coherent thoughts yet.
 
 __Should I delineate between the pattern matching and the purely functional language?__
+
 No coherent thoughts yet.
 
 __What does soundness really mean in this context?__
+
 No coherent thoughts yet.
 
 __What precisely is the relationship between the pattern matching and the probabilistic interpretation?__
+
 No coherent thoughts yet.
 
 __What is a Sigma program in general.__
