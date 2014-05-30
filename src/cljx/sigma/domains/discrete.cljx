@@ -1,20 +1,20 @@
 (ns ^{:doc "Finite Discrete Abstract Domain"
       :author "Zenna Tavares"}
   sigma.domains.discrete
-  (:require [sigma.construct :refer :all])
-  (:require [veneer.pattern.rule :refer :all]
+  (:require [sigma.construct :refer :all]
+            [veneer.pattern.rule :refer :all]
             [veneer.pattern.match :refer :all]
-            [veneer.pattern.dsl :refer [defrule]])
-  (:require [clozen.helpers :as clzn])
-  (:require [clojure.math.combinatorics :as combo]))
+            [veneer.pattern.dsl :refer [defrule]]
+            [clozen.helpers :as clzn])
+            [clojure.math.combinatorics :as combo])
 
 ;; Constructors and Type testers ==============================================
 (defn discrete
   "Factory for a finite discrete abstract object (fd-ao).
-   These are represented as conditional probabbility tables (cpt)
+   These are represented as conditional probability tables (cpt)
    A discrete distribution is supported on the integers.
    Has (randomly) named variables
-   Values for these variables and associated probabilities. 
+   Values for these variables and associated probabilities.
    ['discrete 'rv-x [0.25 0.25 0.25 0.25] [1 2 3 4]]"
   [n probs]
   {:pre [(clzn/tolerant= (clzn/sum probs) 1.0)
