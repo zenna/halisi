@@ -25,7 +25,7 @@
     (not= abstraction 'empty-abstraction)))
     ; (some #(satisfiable? % (formula abstraction) vars) (abstraction-vertices abstraction))))
 
-(defn has-volume?
-  [abstraction]
-  "Does the box have volume? Box may not have volume infeasible"
-  (not= abstraction 'empty-abstraction))
+;; (defn has-volume?
+;;   [abstraction]
+;;   "Does the box have volume? Box may not have volume infeasible"
+;;   (not= abstraction 'empty-abstraction))

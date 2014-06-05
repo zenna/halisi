@@ -8,6 +8,7 @@
             [sigma.multivalue :refer :all]
             [sigma.linprog :refer :all]
             [sigma.abstraction :refer :all]
+            [clozen.geometry.box :refer :all]
             [sigma.domains.box :refer :all]
             [sigma.evalcs :refer :all])
   (:require [clojure.math.combinatorics :as combo])
@@ -45,9 +46,9 @@
   [clause vars prior]
   ; (println "clause" clause "vars" vars)
   (let [interval-constraints (map #(evalcs % the-global-environment)
-                                   (vec 
+                                   (vec
                                     (reduce concat
-                                      (map 
+                                      (map
                                       (fn [a-var [l u]]
                                         (vector `(~'> ~a-var ~l) `(~'< ~a-var ~u))) vars prior)))) ;HACK
         ; pvar (println "interval constraints" interval-constraints)

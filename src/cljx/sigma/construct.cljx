@@ -2,13 +2,16 @@
       :author "Zenna Tavares"}
   sigma.construct
   (:require [veneer.pattern.match :refer :all]
-            [veneer.pattern.rule :refer :all])
-  (:require [clozen.helpers :as clzn]
+            [veneer.pattern.rule :refer :all]
+            [veneer.pattern.dsl-macros :refer [defrule]]
+            [veneer.pattern.match-macros :refer [match-fn]]
+            [clozen.helpers :as clzn]
             [clozen.iterator :as itr]
-            [clozen.zip :refer :all])
-  (:require [clojure.walk :refer [postwalk-replace]]
+            [clozen.zip :refer :all]
+            [clojure.walk :refer [postwalk-replace]]
             [clojure.zip :as zip]))
 
+;; Deterministic semantics - rewrite rules for non-probabilstic sigma-rewrite
 (def primitives-coll
   '[+ * - + / > < >= <= apply rand reduce count])
 
@@ -49,6 +52,12 @@
        (/ (reduce + coll)
           (count coll)))}))
 
+(defn update-ns
+  "Add a value to the namespace"
+  [name value]
+  (println "Updating variable" name "to" value)
+  (swap! global-env assoc name value))
+
 (defn lookup-compound
   "Lookup the source of a compound function"
   [f]
@@ -71,15 +80,12 @@
         (= (first x) 'quote)
         true
         (primitive-fn? (first x))
-        false 
+        false
         :else
         (every? evaluated? (seq x)))
       (not (symbol? x))))
-      
-;; Rules
-(use 'veneer.pattern.dsl)
-(use 'clozen.debug)
 
+;; Rules ======================================================================
 (defn constrained-node-itr
   [lhs exp]
   (let [itr (itr/node-itr exp)]
@@ -116,7 +122,7 @@
     (bindings body)
 
     (and (coll? body) (= (first body) 'fn))
-    (mapx #(body-replace % bindings 
+    (mapx #(body-replace % bindings
                           (clzn/merge-sets [rebound (second body)])) body)
 
     (coll? body)
@@ -128,17 +134,13 @@
   "A variable substitution rule"
   (-> ((fn [& args] body) & params) (body-replace body (zipmap args params))))
 
-(macroexpand '(defrule variable-sub-rule
-  "A variable substitution rule"
-  (-> ((fn [& args] body) & params) (body-replace body (zipmap args params)))))
-
 (defrule variable-sub-rule-nullary
   "A variable substitution rule"
   (-> ((fn [] body)) body))
 
 (defrule let-to-fn-rule
   "Convert let to lambda"
-  (-> ('let [& args] body) 
+  (-> ('let [& args] body)
       (let [bindings (partition 2 args)
             [var-name var-bind] (last bindings)
             rest-binds (vec (take (- (count args) 2) args))
@@ -148,10 +150,9 @@
             `(~'let ~rest-binds ~bound-fn)))
       :when (even? (count args))))
 
-;; IF
 (def if-rule
   "Substitute in variables"
-  (rule 
+  (rule
   '->
   (->CorePattern
     (match-fn
@@ -180,11 +181,6 @@
   (-> (?f (?g y z) x) (list ?f x y z) :when (and (= ?f ?g)
                                               (associative-fn? ?f))))
 
-(defn update-ns
-  [name value]
-  (println "Updating variable" name "to" value)
-  (swap! global-env assoc name value))
-
 (defrule define-rule!
   "Define Rule"
   (-> ('def name value) (do (update-ns name value) nil)))
@@ -193,13 +189,8 @@
   "Defn to defn"
   (-> ('defn name docs args body) `(def ~name (~'fn ~args ~body))))
 
-(def std-rules 
+(def std-rules
   [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule! defn-rule])
-
-;; Evaluate then
-(def transformer (partial eager-transformer std-rules))
-
-(def sigma-rewrite rewrite)
 
 (comment
   (use '[fipp.edn :refer (pprint) :rename {pprint fipp}])

@@ -1,11 +1,15 @@
 (ns ^{:doc "The actual interpreter"
       :author "Zenna Tavares"}
   sigma.interpret
-  (:require [sigma.construct :refer :all])
-  (:require [clozen.helpers :as clzn])
-  (:require [clojure.core.match :refer [match]])
-  (:require [fipp.edn :refer (pprint) :rename {pprint fipp}])
+  (:require [sigma.construct :refer :all]
+            [clozen.helpers :as clzn]
+            [veneer.pattern.transformer :as transformer]
+            [clojure.core.match :refer [match]]
+            [fipp.edn :refer (pprint) :rename {pprint fipp}])
   (import [java.io PushbackReader FileReader]))
+
+(def eager-transformer (partial transformer/eager-transformer sigma.construct/std-rules))
+(def sigma-rewrite veneer.pattern.transformer/rewrite)
 
 (defn parse-clj [fname]
   (with-open [reader (PushbackReader. (FileReader. fname))]
@@ -17,7 +21,7 @@
 (defn eval-expr-seq
   "Load a clj file and interpret line by line using rules"
   [exprs]
-  (clzn/loop-until-fn #(sigma-rewrite % transformer) exprs))
+  (clzn/loop-until-fn #(sigma-rewrite % eager-transformer) exprs))
 
 (defn interpret-file
   "Load a file and interpret files in sequence"
@@ -27,7 +31,7 @@
 (defmulti get-command :cmd)
 
 (defmethod get-command 'load
-  [{fname :fname}] 
+  [{fname :fname}]
   (do
     (println "Trying to load" fname)
     (interpret-file fname)
@@ -43,14 +47,14 @@
 
 ; Evaluate the command
 (defmethod get-command :default
-  [exp] (sigma-rewrite exp transformer))
+  [exp] (sigma-rewrite exp eager-transformer))
 
 (defn sigma-repl
   "Very Simple Repl"
   []
   (println "===== Welcome σ REPL, type exit to exit ========")
   (loop [ip (read)]
-    (let 
+    (let
       [x (match ip
          (['load fname] :seq) {:cmd 'load :fname fname}
          'env {:cmd 'print-env}
