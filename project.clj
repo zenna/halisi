@@ -23,7 +23,7 @@
             [com.keminglabs/cljx "0.3.2"]
             [lein-cljsbuild "1.0.2"]]
   :dependencies [[org.clojure/clojurescript "0.0-2030"]
-                 [org.clojure/clojure "1.5.1"]
+                 [org.clojure/clojure "1.6.0"]
                  [lpsolve "5.5.2.0"]
                  [incanter "1.4.1"]
                  [criterium "0.4.1"]
@@ -38,6 +38,7 @@
                  [fipp "0.4.1"]
                  [org.clojure/core.match "0.2.1"]
                  [org.clojure/tools.cli "0.3.1"]
+                 [net.mikera/vectorz-clj "0.22.0"]
                  [clozen "0.1.0-SNAPSHOT"]
                  [veneer "0.1.0-SNAPSHOT"]]
   :source-paths ["src/clj" "target/classes"]
@@ -54,7 +55,7 @@
                      :compiler {:output-to "target/main.js"
                                 :optimizations :whitespace
                                 :pretty-print true}}}}
-;;   :hooks [cljx.hooks]
+  :hooks [cljx.hooks]
   :main sigma.core
   :jvm-opts [~(str "-Djava.library.path=/usr/local/lib:native/:"
                      (System/getProperty "java.library.path"))])
