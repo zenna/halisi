@@ -5,40 +5,60 @@ date:   2014-03-31 20:30:18
 categories: progress
 ---
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-# Progress
+###What is the motivation for the semantic domain G?
 
-Open questions are roughly divided between conceptual/formalism, and technical.
+The semantic domain G maps terms onto objects onto elements of $$(X, \nu)$$
 
-## Technical Questions ##
+$$G : \mathcal{R}_{\sigma} \to $$
+
+It:
+
+- Does not represent $$\Omega$$ explicitly, instead it represents the set dual of the distribution function of a random variable $$P_X$$.
+- With $$S$$ the independence of two random variables is a propety determined only by checking whether all subsets of their events are indepedent.
+- Here we encode independence constraints from the program into the values themselves
+- Maps onto the notion of a density 
+
+The purpose in defining it is:
+- Avoid representations of $$\Omega$$
+
+### If X = f(X_1, X_2, .., X_n) is a function of multiple random variables, what can we say about X?
+
+### What are the primitive operations of Sigma
+
+### How to go backwards from the condition
+
+### How to sample
+
+## Approximation
+
+### What is the relationship between the approximating semantics and the probabilistic semantics
+
+
+## Pattern matching
+
+__Should Sigma rely on Clojure, or be fully self hosted.__
+
+Clojure implements Sigma rules, and are also callable from them.
+The first of these is necessary, any new language must initially be implemented in another. The latter, perhaps not.
+
+
 __What is allowed in pred? of condition?__
-Condition is done with a predicate `pred?`.  The role of `pred?` is to restrict the random variable to values which pass it.  More precisely, `pred?` describes a subset of the domain of the random variable, and we restrict the probability measure to be within that range.
-```Clojure
-(condition dist pred)
-```
 
-But how, in terms of code, should we allow access to elements of the random variable.
+Bool or RV Bool
 
-- Option 1: Only allow access to the independent variable.
-e.g.
-```Clojure
-(condition a-dist #(pos? %))
-```
-Then, the independent value of a variable within pred could be just the input to it as a function.  This would be useful for interop with existing code.
 
-- Option 2: Specifically reference which variable of the rv one wishes to refer to.
-```Clojure
-(condition a-dist #(and (pos? (indep-var %) (neg? (first (dep-var %))))))
-```
-Advantages of this method are that I don't need to do  any explicit tracking, or anything fancy with variable names (as in the next example).  Problem is that it is verbose, it's not clear how one would select which independent variable one wants without keeping track of an ordering.
+__Should I delineate between the pattern matching and the purely functional language?__
 
-- Option 3: Allow access to dependent vars but only through bound variable names.
-```Clojure
-(let [x (uniform -1 1)
-      y (+ x 3)]
-  (condition y #(or (> 2 %) (neg? x))))
-```
-These seems most natural, and closer to normal semantics.
-But it also seems a little bit confused.
+No coherent thoughts yet.
+
+__What does soundness really mean in this context?__
+
+No coherent thoughts yet.
+
+__What precisely is the relationship between the pattern matching and the probabilistic interpretation?__
+
+No coherent thoughts yet.
+
 
 __What are the semantics of evaluating a random primitive, and functions on these values?__
 One thing Sigma must be able to do is apply functions to values which may be dependent.
@@ -150,273 +170,212 @@ Looking back at the previous two examples:
   y)
 ```
 
-__How to abstract finite discrete domains and apply function them?__
-Suppose we represent a finite discrete domain by a *set of conditional probabiltiy tables (cpt)*.
-
-A cpt is a matrix, which:
-- has 1 column for independent variable
-- has n columns for dependent variables, where n >= 0
-- has 1 column for the probability
-- each row assigns values to each variable (both independent and all dependent)
-- The probability of the row is the joint probability of all the values.
-
-Applying a function to cpt arguments involves the following
-- For each argument find set of dependent variabes.  If a cpt has no dependent variables find independent variable.
-
-__What is required to have a universal, albeit likely slow, language__
-
-Sigma computes with random variables.
-They key question is how to represent them.
-
-A random variable is a function $$f : \Omega \to E$$ where $$E$$ is some arbitray set, typically $$\mathbb{R}$$.
-Random variables are said to be *defined on* some probability space $$(\Omega, \mathcal{F}, \mathbb{P})$$ and $$\mathbb{P}$$ is a probability measure.
-Here $$\mathcal{F} \subseteq \mathcal{P}(\Omega)$$ is a $$\sigma$$ algebra.
-
-This means, given a predicate on values which $$X$$ takes (more formally, values from its domain): $$\phi : E \to Bool$$, we want to compute the probability of the predicate on a random variable itself.
-For concreteness we migt define $$\Phi : (\Omega \to E) \to \mathcal{P}(E)$$, where $$\Phi(X) = {e \in range(X) \vert \phi(e)}$$.
-
-$$Pr : (\Omega \to E) \to Space \to (E \to Bool) \to Real$$
-
-Notationally, typically the sample space is implicit.  The probability function is defined as follows:
-
-$$Pr(X, S, \phi) = \mathbb{P} (X^{-1}(\phi(X)))$$
-
-When it comes to question of how to represent a distribution, Sigma's philosophy is that there exists no single universally optimal solution.
-
-
-If $$\Omega$$ (and by construction $$\mathcal{F}$$), and $$X$$ are discrete we could represent this an explicit mapping from all values of $$F$$ to $$[0,1]$$.
-Of course, this would not be very efficient.
-We could take advantange of the axiom of countable additivity - for events events $$E_1, E_2,$$
-$$P(E_1 \cup E_2 \cup \cdots) = \sum_{i=1}^\infty P(E_i).$$ - we need only store the disjoint subsets, and can compute.  This is a probability mass function.
-
-But this fails in the continuous case.
-
-The second consideration is dependence.
-
-We'll represent a random variable $$X$$ geometrically as subset of $$P \times X_I \times X_D^1 \times \dot \times X_D^n$$.
-Here $$X_I$$ represents the independent variable, $$X_D^1 \times \dot \times X_D^n$$
-
-__Abstract Domains__
-We'll represent a distribution as a union of orthotopes.
-
-We must define a set of abstract domains, lifted functions and tranformations such that we get a certain form of closure.
-
-When random variables are regarded as free variables which sare sampled from distribution, arithmetic with random variables is no different from deterministic arithmetic.  Measure-theoretic probability uses the same notation, but regards it as implicit pointwise lifting (as in vector arithmetic). For example,
-
-if A, B, C : Ω → R are random variables, C := A + B means C ω := (A ω) + (B ω), and
-B := 4 + A means B ω := 4 + (A ω) defined on the same probability space.
-
-We must lift functions to correspond with this definition.
-
-Supose we have a function $$f(X_1, X_2,...,X_n)$$
-
-- Since an explicit representation of a single random variable represents all its points, we first find the joint product space.
-- For every point in this space we compute the joint probability
-- For every point in this spac we compute the f
-- Define abstract domains for all random primitives
-
-Consider the program:
-
-{% highlight clojure %}
-(let [x (uniform 0 1)
-      y (uniform 0 1)
-      z (+ x y)]
-  (probability (> z 0.4))
-{% endhighlight %}
-
-`Probability` represents probability queries: i.e. the probability that a predicate is true.
-Probability :: RV Bool -> Real
-come come come
-
-- Start with the condition predicate.  We have to evaluate this to get a constraint on the sample space
-- The result will be that relation in some representation
-- So it seems we should evaluate the predicate before we evaluate the condition
-- We then look to the random variable and see how far we can propagate that constraint backwards.
-- But first we should decide if its even relevant.
-
-
-
-__What is a valid abstraction, and what is meant by valid?__
-If our end goal is to draw exact samples, then what is a valid abstraction.
-If the case where the prior distribution was a
-
-__Cousot says Markov chains can be described in this framework, does this mean Church can?__
-No thoughts yet
-
-__Should Sigma rely on Clojure, or be fully self hosted.__
-
-Clojure implements Sigma rules, and are also callable from them.
-The first of these is necessary, any new language must initially be implemented in another. The latter, perhaps not.
-
-## Conceptual Questions
-__What are the semantics of values in a Sigma program?__
+__*What are the semantics of condition on a predicate with noise?*__
 
 No coherent thoughts yet.
-
-*What are the semantics of condition on a predicate with noise?*
-
-No coherent thoughts yet.
-
-__Should I delineate between the pattern matching and the purely functional language?__
-
-No coherent thoughts yet.
-
-__What does soundness really mean in this context?__
-
-No coherent thoughts yet.
-
-__What precisely is the relationship between the pattern matching and the probabilistic interpretation?__
-
-No coherent thoughts yet.
-
-__What is a Sigma program in general.__
-The measure theoretic definition I gave in the UAI paper claims a Sigma program is a random variable, i.e. a function from some sample space to a value.
-Why is a sigma program a random variable - Well its purely functional it just maps some input to some output.  That's what a sigma function does.  But is that what a sigma program.  Just thinking of a Sigma function for hte moment.  Is that a random vaiable?
-
-The idea is that say you have `$$S[(+ 3 4)] = 7$$.` The real integer $7$.  Perhaps ironically the formal definition of  an integer is in terms of syntax.]
-<!-- What are the probabilistic semantics of S_p[(+ 3 9)]. -->
-You might argue that given that the entire sample space maps onto 4.
-i.e. if my sample space is a coin heads -> 4, tails -> 4.
-So in this sense a program, is a random variable defined on some probability space.
-That makes sense I suppose.
-This is a very accurate desciription of what something like (+ 1 (rand)) is.
-But what of a program that is just a definition.
-e.g. `(defn [a] b)`
 
 __How to parameterise choices, and separate real choices from any old rule__
 I have put the abstract interpretation choices on the same level as the normal evaluation choices.  If I frame the interpretation as a decision process where a rule is applied as an action to yield a new program, I will surely have a larger than necessary action space.  Is there a way to avoid making decision about irrelevant options, and focus only on the ones that matter (i.e. the approximations)
 
-## Primary Objectives ##
-- Complete implementation of Sigma
-- Implementing the decision making process.
-- Demonstrate with physical reasoning problem
-
-### Subgoal: Evaluate normal clojure with rewrite rules ###
-Here, a program is _executed_ by applying a series of transformations - it is transformed from the source code to a value.
-
-__Subgoal Status:__
-There's a bug with the rewrite rules that needs fixing, I need to figure out how to handle if.  That should affect variable binding.  In general
-```Clojure
-dbg: (transform p1__265#) = (+ 3 ((fn [coll] (/ (reduce + coll) (count coll))) [1 2 a]))
-dbg: (transform p1__265#) = (+ 3 (/ (reduce + [1 2 a]) (count [1 2 a])))
-dbg: (transform p1__265#) = (+ 3 (/ a (count [1 2 a])))
-dbg: (transform p1__265#) = (+ 3 (/ a 3))
-)
-```
-Why is reduce + `[1 2 a]` getting reduced to a. That should throw an error.
-
-
-__TODO rewrite rules:__
-- Make all rewrite rules order-independent
-- Handle and
-- Handle loop/recur
-
-### Subgoal: Implement abstract operations as rewrite rules ###
-As stated above the goal is to phrase the abstract operations as rewrite rules.
-I may discover when I get here, that my language for rewriting is not expressive enough, which is fine, I will extend it.
-
-The main abstract operations I have thus far considered are:
-- Abstracting a random primitive, e.g. `(rand 0 10)` -> `[0 10]`
-- Consistency checking: (and a b c d), if we know any one of these are false we can save time.
-- Redundancy checking
-- Domain conversion, e.g. set-of-boxes -> convex-hull(set-of-boxes)
-- Refinement - using analytical or numerical methods to get a better approximation
-- Approximating Implicit Growth
-
-__Subgoal Status__:
-I have begun an implementation of discrete domains on the integers.
-I need to decide what the main operations I shall support for all random variables should be:
-
-__TODO Implement:__
-- Abstracting a random primitive
-- Consistency checking and elimination
-- Redundancy checking and elimination
-- Domain conversion, interval <-> convex polyhedra
-- Refinement
-
-### Subgoal: Implement Simple Decision Making Interpreter ###
-One motivation for separating the act of interpreting from the decision making was so that we could learn good decisions.
-This problem could be framed in a number of different ways
-
-## Sandbox
-__How to describe physical reasoning inference questions in Sigma?__
-
-Suppose we have some physical reasoning simulation described by some transition function `(update-state state)`. Reasoning questions we might like to ask are 1) Is it possible for some event to occur over the simulation, 2) What's the distribution over some final states 3) What geometry would cause these observations.  For instance, is it possible for a ball contained within an unsealable container to escape.  How can we phrase these in a probabilstic program?  The first question is the matter of time; we may interpret the previous question as
-
-- Within some time limit, e.g. 10 seconds, is it possible for the ball to escape
-
-However this may be inadequate since we have introduced extra information not in the original question.  We might instead ask
-
-- Within an infinite amount of simulation, will the ball leave the container?
-
-The question then becomes one of how to represent this infinity.  There seem to be at least two plausible candidates
-
-- THe maximum time is a uniform non-determinisitc value from 0 to infinity
-- The maximum time is a probabilstic value with infinte range
-- The function itself takes no maximum-time, it is a non-terminating function.
-
-Sigma does not support nondeterminism, so the first is out.  The second adds extraneous probabilistic information. The last could be problematic because non-terminating functions are traditionally undefined, or considered errors.
-
-Let's first consider the specific version of the problem as described above.
+__Discrete Example__
 
 {% highlight clojure %}
-(let [max-time 10
-      dt 0.01]
-  (pos? (probability (run-simulation init-state max-time dt) #(ball-escaped? %))))
+(def A (flip))
+(def B (flip))
+(def B (flip))
+(def C (+ A B))
+(def D (- B A))
+(def E (+ D (flip)))
 {% endhighlight %}
 
+  *A*
 
-Here `run-simulation` is a recursive function looking something like:
+  | A |  P  |
+  |===|=====|
+  | 0 | 0.5 |
+  | 1 | 0.5 |
+
+  - Demonstrates: a single random variable with no dependents
+
+  *B*
+
+  | B |  P  |
+  |===|=====|
+  | 0 | 0.5 |
+  | 1 | 0.5 |
+
+  - Demonstrates: a single random variable with no dependents
+
+  *C*
+
+  | A | B | C |  P   |
+  |===|===|===|======|
+  | 0 | 0 | 0 | 0.25 |
+  | 0 | 1 | 1 | 0.25 |
+  | 1 | 0 | 1 | 0.25 |
+  | 1 | 1 | 2 | 0.25 |
+
+  - Demonstrates: a function of two independent random variables
+  - Found joint by doing cross product of A and B and
+  - multiplying probabilities
 
 {% highlight clojure %}
-(defn run-simulation [init-state t max-time dt]
-  (if (> t max-time)
-      state
-      (run-simulation (update-state state) (+ t dt) max-time dt)))
+(def X (flip 0.7))
+(def Y (flip 0.4))
+(def Z (* X Y))
+(+ Z C)
 {% endhighlight %}
 
+  | X | Y | Z |  P   |
+  |===|===|===|======|
+  | 0 | 0 | 0 | 0.18 |
+  | 0 | 1 | 1 | 0.12 |
+  | 1 | 0 | 1 | 0.42 |
+  | 1 | 1 | 2 | 0.28 |  
 
-The simplest way Sigma could answer this question is to compute with the distrubtion and restrict the result distribution to that which satisfied the predicate.  And return the ratio of the mass.
+  | X | Y | Z | A | B | C |   P   |
+  |===|===|===|===|===|===|=======|
+  | 0 | 0 | 0 | 0 | 0 | 0 | 0.045 |
+  | 0 | 1 | 1 | 0 | 0 | 0 | 0.045 |
+  | 1 | 0 | 1 | 0 | 0 | 0 | 0.045 |
+  | 1 | 1 | 2 | 0 | 0 | 0 | 0.045 |
+  | 0 | 0 | 0 | 0 | 1 | 1 |  0.03 |
+  | 0 | 1 | 1 | 0 | 1 | 1 |  0.03 |
+  | 1 | 0 | 1 | 0 | 1 | 1 |  0.03 |
+  | 1 | 1 | 2 | 0 | 1 | 1 |  0.03 |
+  | 0 | 0 | 0 | 1 | 0 | 1 | 0.105 |
+  | 0 | 1 | 1 | 1 | 0 | 1 | 0.105 |
+  | 1 | 0 | 1 | 1 | 0 | 1 | 0.105 |
+  | 1 | 1 | 2 | 1 | 0 | 1 | 0.105 |
+  | 0 | 0 | 0 | 1 | 1 | 2 |  0.07 |
+  | 0 | 1 | 1 | 1 | 1 | 2 |  0.07 |
+  | 1 | 0 | 1 | 1 | 1 | 2 |  0.07 |
+  | 1 | 1 | 2 | 1 | 1 | 2 |  0.07 |
 
-So let's create a simpler non-linear example: a ray bouncing around some environment.
+- Its not the case that we have to find the cartesian product for every new varible
+- For each random variable find the non-shared variables and find the cross product of these *sets*
 
-The first operations that need to be handled will be seen when we find the vector between two points.
+  *D*
 
-{% highlight clojure %}
-(defn points-to-vec
-  "convert pair of points to vector"
-  [[x1 y1] [x2 y2]]
-  [(- x2 x1) (- y2 y1)])
+  | A | B | D  |  P   |
+  |===|===|====|======|
+  | 0 | 0 |  0 | 0.25 |
+  | 0 | 1 |  1 | 0.25 |
+  | 1 | 0 | -1 | 0.25 |
+  | 1 | 1 |  0 | 0.25 |
+
+(/ D C)
+
+  | A | B | D  | C | (/ D C) |  P   |
+  |===|===|====|===|=========|======|
+  | 0 | 0 |  0 | 0 | undef   | 0.25 |
+  | 0 | 1 |  1 | 1 | 1       | 0.25 |
+  | 1 | 0 | -1 | 1 | -1      | 0.25 |
+  | 1 | 1 |  0 | 2 | 0       | 0.25 |
+
+  - The number of rows did not grow.  This is because all the dependent variables were shared
+
+  
+  *E (+ D (flip))*
+
+  | A | B | D  | flip | E  |   P   |
+  |===|===|====|======|====|=======|
+  | 0 | 0 |  0 |    0 |  0 | 0.125 |
+  | 0 | 0 |  0 |    1 |  0 | 0.125 |
+  | 0 | 1 |  1 |    0 |  1 | 0.125 |
+  | 0 | 1 |  1 |    1 |  2 | 0.125 |
+  | 1 | 0 | -1 |    0 | -1 | 0.125 |
+  | 1 | 0 | -1 |    1 |  0 | 0.125 |
+  | 1 | 1 |  0 |    0 |  0 | 0.125 |
+  | 1 | 1 |  0 |    1 |  1 | 0.125 |
+
+  - New variable not in list, only had independent vvariable
+  - found cross product with existing table
+
+(* E A)
+
+  | A | B | D  | flip | E  | (* E A) |   P   |
+  |===|===|====|======|====|=========|=======|
+  | 0 | 0 |  0 |    0 |  0 |       0 | 0.125 |
+  | 0 | 0 |  0 |    1 |  0 |       0 | 0.125 |
+  | 0 | 1 |  1 |    0 |  1 |       0 | 0.125 |
+  | 0 | 1 |  1 |    1 |  2 |       0 | 0.125 |
+  | 1 | 0 | -1 |    0 | -1 |      -1 | 0.125 |
+  | 1 | 0 | -1 |    1 |  0 |       0 | 0.125 |
+  | 1 | 1 |  0 |    0 |  0 |       0 | 0.125 |
+  | 1 | 1 |  0 |    1 |  1 |       1 | 0.125 |
+
+- All variables were in table already, did not need
+- to add any more columns, just more rows
+
+(* E (double A))
+
+  | A | B | D  | flip | E  | (double A) | (* E (double A)) |   P   |
+  |===|===|====|======|====|============|==================|=======|
+  | 0 | 0 |  0 |    0 |  0 |          0 |                0 | 0.125 |
+  | 0 | 0 |  0 |    1 |  0 |          0 |                0 | 0.125 |
+  | 0 | 1 |  1 |    0 |  1 |          0 |                0 | 0.125 |
+  | 0 | 1 |  1 |    1 |  2 |          0 |                0 | 0.125 |
+  | 1 | 0 | -1 |    0 | -1 |          2 |               -2 | 0.125 |
+  | 1 | 0 | -1 |    1 |  0 |          2 |                0 | 0.125 |
+  | 1 | 1 |  0 |    0 |  0 |          2 |                0 | 0.125 |
+  | 1 | 1 |  0 |    1 |  1 |          2 |                2 | 0.125 |
+
+- (+ D (flip 0.9))
+
+  | D | (flip 0.9) | (/ D (flip 0.9)) |  P   |
+  |===|============|==================|======|
+  | 0 |          0 |                ⊥ | 0.05 |
+  | 0 |          1 |                0 | 0.45 |
+  | 1 |          0 |                ⊥ | 0.05 |
+  | 1 |          1 |                1 | 0.45 |
+
+(+ (* E (double A))
+   (+ D (flip 0.9)))
+
+  | A | B | D  | flip | E  | (double A) | (* E (dbl A)) | flip 0.9 | /D | P |
+  |===|===|====|======|====|============|===============|==========|====|===|
+  | 0 | 0 |  0 |    0 |  0 |          0 |             0 |        0 | ⊥  |   |
+  | 0 | 0 |  0 |    1 |  0 |          0 |             0 |        0 | ⊥  |   |
+  | 0 | 1 |  1 |    0 |  1 |          0 |             0 |        0 | ⊥  |   |
+  | 0 | 1 |  1 |    1 |  2 |          0 |             0 |        0 | ⊥  |   |
+  | 1 | 0 | -1 |    0 | -1 |          2 |            -2 |        0 | ⊥  |   |
+  | 1 | 0 | -1 |    1 |  0 |          2 |             0 |        0 | ⊥  |   |
+  | 1 | 1 |  0 |    0 |  0 |          2 |             0 |        0 | ⊥  |   |
+  | 1 | 1 |  0 |    1 |  1 |          2 |             2 |        0 | ⊥  |   |
+  | 0 | 0 |  0 |    0 |  0 |          0 |             0 |        1 | 0  |   |
+  | 0 | 0 |  0 |    1 |  0 |          0 |             0 |        1 | 0  |   |
+  | 0 | 1 |  1 |    0 |  1 |          0 |             0 |        1 | 1  |   |
+  | 0 | 1 |  1 |    1 |  2 |          0 |             0 |        1 | 1  |   |
+  | 1 | 0 | -1 |    0 | -1 |          2 |            -2 |        1 | -1 |   |
+  | 1 | 0 | -1 |    1 |  0 |          2 |             0 |        1 | -1 |   |
+  | 1 | 1 |  0 |    0 |  0 |          2 |             0 |        1 | 0  |   |
+  | 1 | 1 |  0 |    1 |  1 |          2 |             2 |        1 | 0  |   |
+
+-- Algorithm
+- Every random primitive has a name
+
+{% highlight python %}
+# Given a set of random variables and a variable name
+# return the row of values of that variable name
+def values(var-name rvs)
+
+def apply-binary-f(f, rv-a, rv-b):
+    # Find variable names which overlap
+    same = intersection(var-names(rv-a), var-names(rv-b))
+    diff = symmetric-difference(var-names(rv-a), var-names(rv-b))
+
+    # Get all the values for all the diff variables
+    all-values = map(values, diff)
+
+    # Find their cartesian product
+    product = cart-product(values))
+
 {% endhighlight %}
 
-__*Requirement 1: Here all the arguments wil be uniform distributions, and so must support subtraction on these.*__
+(def x
+  (let [a (normal 10 1)
+        b (normal a )]
+    (condition a #(= b 4))))
 
-{% highlight clojure %}
-(defn intersection-point
-  "Find the intersection point of two 2D vectors.
-   Each vector is defined as a pair of points, [a b].
-   returns t parameter on line [a0 a1].
-   fraction of distane from a0 to a1."
-  [[a0 a1 :as v] [b0 b1 :as q]]
-  {:pre [(not (parallel? v q))]}
-  (let [[u1 u2] (points-to-vec a0 a1)
-        [v1 v2] (points-to-vec b0 b1)
-        [w1 w2] (points-to-vec b0 a0)
-        denom (- (* v1 u2) (* v2 u1))]
-    [(/ (- (* v2 w1) (* v1 w2)) denom)
-     (/ (- (* u1 w2) (* u2 w1)) (- denom))]))
-{% endhighlight %}
-
-Then `u1 u2 v1 v2 w1 w2` will all be bound to values of this form (subtraction of uniform distributions).  These distributions are not independent.
-
-Each of these will create a uniform difference distribution
-
-__*Requirement 3: Computing the denominator `(- (* v1 u2) (* v2 u1))` requires the multiplication of these uniform difference distributions.*__
-
-__*Requirement 4: Whatever the resulting distribution of Computing the denominator `(- (* v1 u2) (* v2 u1))` requires the multiplication of these uniform difference distributions, and then subtraction*__
-
-__*Requirement 5: The denominator is subject to negation `(- denom)`__
-
-__*Requirement 6: These distributions are divided by one another*__
-
-Generally we have all the arithmetic operations `+ - / *` on distributiosn which are functions of uniform distributions.  They are not independent.
+(sample x 1000)
