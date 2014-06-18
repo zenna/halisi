@@ -1,5 +1,5 @@
 ---
-layout: post
+layout: classic
 title:  "Progress"
 date:   2014-03-31 20:30:18
 categories: progress
@@ -252,8 +252,9 @@ __Discrete Example__
   | 1 | 0 | 1 | 1 | 1 | 2 |  0.07 |
   | 1 | 1 | 2 | 1 | 1 | 2 |  0.07 |
 
-- Its not the case that we have to find the cartesian product for every new varible
-- For each random variable find the non-shared variables and find the cross product of these *sets*
+- Demonstrates a function of two random variables with independent dependents
+- Its not the case that we have to find the cartesian product for every new variable
+- if cpt tables x and y have dimensions, n, p, and a, b respectively. f(x,y) in this case has dimensions n*a, p+b - i.e. we see all combinations of rows. 
 
   *D*
 
@@ -273,9 +274,28 @@ __Discrete Example__
   | 1 | 0 | -1 | 1 | -1      | 0.25 |
   | 1 | 1 |  0 | 2 | 0       | 0.25 |
 
+  - Demonstrates a function of two random variables which share both dependents
   - The number of rows did not grow.  This is because all the dependent variables were shared
 
-  
+{% highlight clojure %}
+(+ D (- A (flip)))
+{% endhighlight %}
+
+
+  | A | B | D  | (flip) | (- D (flip) |   P   |
+  |===|===|====|========|=============|=======|
+  | 0 | 0 |  0 |      0 |           0 | 0.125 |
+  | 0 | 1 |  1 |      0 |           1 | 0.125 |
+  | 1 | 0 | -1 |      0 |          -1 | 0.125 |
+  | 1 | 1 |  0 |      0 |           0 | 0.125 |
+  | 0 | 0 |  0 |      1 |          -1 | 0.125 |
+  | 0 | 1 |  1 |      1 |           0 | 0.125 |
+  | 1 | 0 | -1 |      1 |          -2 | 0.125 |
+  | 1 | 1 |  0 |      1 |           1 | 0.125 |
+
+- Demonstrates a function of two random variable which share one but not both dependents
+- number of rows grew
+
   *E (+ D (flip))*
 
   | A | B | D  | flip | E  |   P   |
@@ -352,8 +372,50 @@ __Discrete Example__
   | 1 | 1 |  0 |    0 |  0 |          2 |             0 |        1 | 0  |   |
   | 1 | 1 |  0 |    1 |  1 |          2 |             2 |        1 | 0  |   |
 
--- Algorithm
+-- Observations
+
+- When we apply a function to random variables, we need to consider all possible pairs of values each random variable can take.  The point is, if two values derive from the same nondeterministic or probabilistic *origin*, there will be pairs in the cross product which are not possible.
+- For instance if A = uniform-int(0 3) and B = X^2 and C = X + 2.
+- B = [0 1 4 9] C = [2 3 4 5].  Values in the cross product eg. [B=0 C=3] values cannot exist.
+- So we might say that we only need to find the cros prodiuct if they dont share primitive dependent variables.
+- But what about if we create a random variables. consider a geometric distribution
+
+(defn geometric [var-name n p]
+  (if (flip var-name p)
+      n
+      (geometric var-name (inc n) p)))
+
+- Do we want to expose random flip variable, probably not. In the same we don't want to be able to access lexically scoped variables.
+- So what about if we say a primitive distribution is independent from any other both in its scope, and ALL others outside its scope.
+    
 - Every random primitive has a name
+- The main problem at hand was that it seems wrong to treat functions of random variables differently.
+- For instance if I repeat the example with the geometric instead of the uniform distribution it would be folly to say that because geometric i not a "primitve distirbution"
+
+What would actually happen?
+{% highlight clojure %}
+(defn finite-geometric [var-name n p]
+  (if (or (flip var-name p) (> n 2))
+      n
+      (geometric var-name (inc n) p)))
+
+(def x (geometric 'x p))
+{% endhighlight %}
+
+(flip 'x 7) $$\to$$ 
+
+| X |  P  |
+|===|=====|
+| 0 | 0.3 |
+| 1 | 0.7 |
+
+if really returns a categrical distribution over its argument
+
+We can just think of if as a function returning
+its arguments
+
+
+
 
 {% highlight python %}
 # Given a set of random variables and a variable name
@@ -372,10 +434,3 @@ def apply-binary-f(f, rv-a, rv-b):
     product = cart-product(values))
 
 {% endhighlight %}
-
-(def x
-  (let [a (normal 10 1)
-        b (normal a )]
-    (condition a #(= b 4))))
-
-(sample x 1000)

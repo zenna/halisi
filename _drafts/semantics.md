@@ -106,14 +106,6 @@ Expectation
 Conditioning
 Sampling
 
-## Expectation Queries
-
-Expectations are weighted sums.
-Expectations are more general than more familiar *probability questions* (i.e. those )
-
-(defn probability [random-variable predicate]
-  (expectation (predicate random-variable)))
-
 ## Conditioning
 
 Conditioning is the most complex query.
