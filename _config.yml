@@ -1,3 +1,4 @@
 name: Sigma
 markdown: kramdown
 pygments: true
+baseurl: /sigma
