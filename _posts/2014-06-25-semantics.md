@@ -1,7 +1,7 @@
 ---
 layout: classic
 title:  "Semantics"
-date:   2014-03-31 20:30:18
+date:   2014-06-25 20:30:18
 categories: Semantics
 ---
 # The Sigma Language
@@ -313,7 +313,7 @@ Extending the example above, if we define a predicate (i.e. $$f(x)=x>0)$$ \textt
 
 
 
-<!-- 
+<!--
 
 Programming languages are specified by defining syntax and semantics.
 
