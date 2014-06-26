@@ -116,7 +116,7 @@ Where if $$\lambda^*$$ denotes the Lebesgue measure, for any subset of $$A \subs
 P_X(A) &=& Ω f dP
 \]
 
-#Hausdorff Conditional Semantics}
+#Hausdorff Conditional Semantics
 The sematic function $$S$$ is often intractable or not computable.  For example we can not explicitly represent the probability of all subsets of a infinite $$\Omega$$.  Even in finite $$\mathcal{F} = \mathcal{P}(\Omega)$$ will become intractably large for non-trivial problems.  Moreover, determining independence is a numerical calculation, whereas many independence properties can be derived from the program structure.
 
 We will define a second semantics $$G$$ which will still be exact, incomputable, but from which a number of approximate, efficient semantics will be derived.
