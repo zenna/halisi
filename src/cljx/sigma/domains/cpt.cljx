@@ -1,27 +1,33 @@
 (ns ^{:doc "Conditional Probability Table Domain"
       :author "Zenna Tavares"}
-  sigma.domains.conditional-table
+  sigma.domains.cpt
   (:require [veneer.pattern.dsl-macros :refer [defrule]]
             [clozen.helpers :as clzn]
             [clozen.debug :as dbg]
-            [clojure.set :as s]))
+            [clojure.set :as s]
+            [clojure.core.matrix :as m]
+            [veneer.pattern.transformer :as transformer :refer [rewrite]]
+            [sigma.construct :refer [std-rules]]))
 
 ;; ========================= INSTA REPL
-(require '[sigma.construct :refer :all]
-         '[veneer.pattern.rule :refer [context-itr]]
-         '[veneer.pattern.transformer :as transformer :refer [rewrite]]
-         '[clojure.core.matrix :as m]
-         '[clojure.set :as s])
+;; (require '[sigma.construct :refer :all]
+;;          '[veneer.pattern.transformer :as transformer :refer [rewrite]])
 ;=====================================
 
 (def sigma-rewrite rewrite)
 
 ;; TODO
-;; - "Fill in" Dependent values
 ;; - Extend to arbitrary arity, mixed rv/scalar arguments
 ;; - Move necessary libraries out to clozen
 ;; - Defrule for categorical distribution
 ;; - Add sanity check - Sum of probabilities is 1
+;; - Categorical distribution
+;; - Catch errors pass undefined.
+;; - Pass in Rules
+
+;; - Condition/Expectation *DONE
+;; - "Fill in" Dependent values *DONE
+
 
 ;; Helpers - Some To Move to Clozen Helprs ====================================
 (defn first-index
@@ -35,9 +41,9 @@
 ;; Matrix Abstractions ========================================================
 (defn concat-rows
   "Concat the rows for two matrices"
-  [entries1 entries2]
+  [m1 m2]
   ; TODO: Highly inefficient transpose just to concat rows
-  (m/transpose (m/join-along 0 (m/transpose entries1) (m/transpose entries2))))
+  (m/transpose (m/join-along 0 (m/transpose m1) (m/transpose m2))))
 
 ;; Cpt abstractions ===========================================================
 (defn row-probability
@@ -49,6 +55,7 @@
   (next row))
 
 (defn independent-var-name
+  "Variable name of the indepedent random variable"
   [cpt]
   (last (:var-names cpt)))
 
@@ -86,7 +93,8 @@
 (defn cpt-uniform
   "Create a uniform conditional probability table"
   [var-name low-bound up-bound]
-  (let [n (- up-bound low-bound)]
+  (let [[a b c] [var-name low-bound up-bound]
+        n (- up-bound low-bound)]
     (->cpt-single-var var-name (vec (repeat (inc n) (/ 1 (inc n))))
                                (range low-bound (inc up-bound)))))
 
@@ -156,8 +164,8 @@
       primitive-joint
       [cpt1 cpt2]))
 
-
 (defn apply-binary-cpt
+  "Apply a function to cpt1 and cpt2"
   [f cpt1 cpt2 new-name]
   (let [all-primitives (apply merge (map :primitives [cpt1 cpt2]))
         primitives (mapv (fn [[name table]] (->Cpt [name] table nil)) (seq all-primitives))
@@ -175,16 +183,56 @@
                          (update-in [:var-names] #(conj % new-name)))))
 
 (defn sum-to-one?
-  "Probability column should sum to one"
+  "Does the probability column sum to one?"
   [cpt]
   (clzn/tolerant= 1.0
                   (clzn/sum (first (m/columns (:entries cpt))))))
 
+;; Conditional Expectation ====================================================
+(defn normalize
+  "Normalise a cpt"
+  [cpt]
+  (let [[probs & values] (m/columns cpt)]
+    (m/matrix
+     (m/transpose
+      (concat [(map #(/ % (clzn/sum probs)) probs)]
+              values)))))
+
+(defn unnormalised-cond-dist
+  "Conditional expectation of rv given pred?
+   Currently only supports hard constraints on random variable itself"
+  [pred? table]
+  (m/matrix (filter #(pred? (last %)) (m/rows table))))
+
+(defn cond-dist
+  "Conditional distribution of rv given pred?
+   Currently only supports hard constraints on random variable itself"
+  [cpt pred?]
+  (update-in cpt [:entries] #(normalize (unnormalised-cond-dist pred? %))))
+
+(defn expectation
+  "Expectation of a cpt"
+  [cpt]
+  (let [prob-col (first (m/columns (:entries cpt)))
+        val-col (last (m/columns (:entries cpt)))]
+  (double (m/esum (mapv * prob-col val-col)))))
+
+;; ;; Rules ======================================================================
+(defrule uniform-int
+  "Discrete Uniform Contructor"
+  (-> ('uniform-int var-name x y) (cpt-uniform var-name x y)))
+
 (defrule apply-binary-cpt-rule
   "Apply a function to a pair of random variables"
-  (-> (?f cpt1 cpt2) (apply-binary-cpt ?f cpt1 cpt2) :when (and (Cpt? cpt1) (Cpt? cpt2))))
+  (-> (?f cpt1 cpt2) (apply-binary-cpt ?f cpt1 cpt2 'what) :when (and (Cpt? cpt1) (Cpt? cpt2)
+                                                                      (fn? ?f))))
 
-(def a (cpt-uniform 'x 0 1))
+(defrule expectation-rule
+  "Compute the expectation of a cpt"
+  (-> ('expectation cpt) (expectation cpt) :when (Cpt? cpt)))
+
+;; Examples ===================================================================
+(def a (cpt-uniform 'x 0 4))
 (def b (cpt-uniform 'b 0 1))
 (def c (cpt-uniform 'c 1 2))
 
@@ -195,43 +243,19 @@
 (def z (cpt-uniform 'z 2 3))
 
 (def p (apply-binary-cpt * z x '(* z x)))
-(sum-to-one? p)
-;; ;; Conditional Expectation ====================================================
-;; (defn unnormalised-cond-dist
-;;   "Conditional expectation of rv given pred?
-;;    Currently only supports hard constraints on random variable itself"
-;;   [pred? table]
-;;   (m/matrix (filter #(pred? (last %)) (m/rows table))))
 
-;; (defn cond-dist
-;;   "Conditional distribution of rv given pred?
-;;    Currently only supports hard constraints on random variable itself"
-;;   [table pred?]
-;;   (normalize (unnormalised-cond-dist pred? table)))
+(def fer (cpt-uniform 'fer 4 8))
 
-;; (defn cond-exp
-;;   [pred? table]
-;;   (println (pred? 3)))
-;; ;;   (m/esum (first (m/columns (unnormalised-cond-dist pred? table)))))
+(def d (apply-binary-cpt * p fer '(* p fer)))
 
-;; ;; Rules ======================================================================
-;; (defrule uniform-int
-;;   "Discrete Uniform Contructor"
-;;   (-> (uniform-int var-name x y) (cpt-uniform var-name x y)))
+(expectation p)
 
-;; (defrule conditional-expectation
-;;   "Conditional Expectation Rule"
-;;   (-> (cond-exp pred? X) (cond-exp pred? (:entries X)) :when (Cpt? X)))
+(def rules (concat [apply-binary-cpt-rule expectation-rule uniform-int] std-rules))
+(def eager-transformer (partial transformer/eager-transformer rules))
 
-;; (def rules (concat std-rules [uniform-int conditional-expectation]))
-;; (def eager-transformer (partial transformer/eager-transformer rules))
-;; (def a (sigma-rewrite '(uniform-int 'x 0 4) eager-transformer))
+(defn -main []
+  (sigma-rewrite '(expectation (+ (uniform-int 'y 0 4) (uniform-int 'x 0 4))) eager-transformer))
 
-;; (sigma-rewrite '(cond-exp (fn [x] > x 2) (uniform-int 'x 1 3)) eager-transformer)
-
-;; (defn normalize
-;;   "Normalise a discrete distribution"
-;;   [cpt-matrix]
-;;   (let [[probs & values] (m/columns cpt-matrix)]
-;;     (m/matrix (concat [(map #(/ % (clzn/sum probs)) probs)]
-;;             values))))
+;; (sigma-rewrite
+;;  '(let [x (uniform-int 'x 0 3)
+;;         y (uniform-int 'y 0 3)] (+ x y)) eager-transformer))

@@ -55,7 +55,7 @@
                      :compiler {:output-to "target/main.js"
                                 :optimizations :whitespace
                                 :pretty-print true}}}}
-  :hooks [cljx.hooks]
+;;   :hooks [cljx.hooks]
   :main sigma.core
   :jvm-opts [~(str "-Djava.library.path=/usr/local/lib:native/:"
                      (System/getProperty "java.library.path"))])
