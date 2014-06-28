@@ -9,12 +9,6 @@
             [veneer.pattern.transformer :as transformer :refer [rewrite]]
             [sigma.construct :refer [std-rules]]))
 
-;; ========================= INSTA REPL
-;; (require '[sigma.construct :refer :all]
-;;          '[veneer.pattern.transformer :as transformer :refer [rewrite]])
-;=====================================
-
-(def sigma-rewrite rewrite)
 
 ;; TODO
 ;; - Extend to arbitrary arity, mixed rv/scalar arguments
@@ -25,18 +19,6 @@
 ;; - Catch errors pass undefined.
 ;; - Pass in Rules
 
-;; - Condition/Expectation *DONE
-;; - "Fill in" Dependent values *DONE
-
-
-;; Helpers - Some To Move to Clozen Helprs ====================================
-(defn first-index
-  "Finds index of value in coll, nil if not found"
-  [coll value]
-  (let [i (.indexOf coll value)]
-    (if (= -1 i)
-        nil
-        i)))
 
 ;; Matrix Abstractions ========================================================
 (defn concat-rows
@@ -45,7 +27,67 @@
   ; TODO: Highly inefficient transpose just to concat rows
   (m/transpose (m/join-along 0 (m/transpose m1) (m/transpose m2))))
 
+(defn normalised?
+  "Does the probability column sum to one?"
+  [cpt]
+  (clzn/tolerant= 1.0
+                  (clzn/sum (first (m/columns (:entries cpt))))))
+
+(defn normalise
+  "Normalise a cpt"
+  [cpt]
+  (let [[probs & values] (m/columns cpt)]
+    (m/matrix
+     (m/transpose
+      (concat [(map #(/ % (clzn/sum probs)) probs)]
+              values)))))
+
 ;; Cpt abstractions ===========================================================
+(defrecord Cpt
+  ^{:doc "A conditional probability table"}
+  [var-names entries primitives])
+
+(defn Cpt? [x]
+  (instance? Cpt x))
+
+
+(instance? Cpt (Cpt. 1 2 3))
+
+;; ============
+;; Constructors
+(defn ->cpt-single-var
+ ^{:doc
+   "A conditional probability table for a finite set of named variables
+    Stores all combinations of values and associated probabilities
+    In contrast to a joint probability table, this represents a a random variable
+
+    var-names stores variable names
+    entries - matrix where column 0 represents a probability
+              column 0, .., n -1 are values for each dependent variable
+              column n is value for independent variable"}
+  [var-name probs var-values]
+  {:pre [(clzn/tolerant= (clzn/sum probs) 1.0)
+         (clzn/count= var-values probs)]}
+  (->Cpt [var-name] (m/transpose (m/matrix [probs var-values]))
+                    {var-name (m/transpose (m/matrix [probs var-values]))}))
+
+(defn cpt-uniform
+  "Create a uniform conditional probability table"
+  [var-name low-bound up-bound]
+  (let [[a b c] [var-name low-bound up-bound]
+        n (- up-bound low-bound)]
+    (->cpt-single-var var-name (vec (repeat (inc n) (/ 1 (inc n))))
+                               (range low-bound (inc up-bound)))))
+
+(defn ->flip-int
+  "Bernoulli"
+  [var-name weight]
+  (->cpt-single-var var-name [(- 1 weight) weight] [0 1]))
+
+
+;; ============
+;; Abstractions
+
 (defn row-probability
   [row]
   (first row))
@@ -65,38 +107,10 @@
   (m/get-column
    (:entries cpt)
    ; inc because first col is probability col
-   (inc (first-index (:var-names cpt) var-name))))
+   (inc (clzn/first-index (:var-names cpt) var-name))))
 
-(defrecord Cpt
-  ^{:doc "A conditional probability table"}
-  [var-names entries primitives])
-
-(defn ->cpt-single-var
- ^{:doc
-   "A conditional probability table for a finite set of named variables
-    Stores all combinations of values and associated probabilities
-    In contrast to a joint probability table, this represents a a random variable
-
-    var-names stores variable names
-    entries - matrix where column 0 represents a probability
-              column 0, .., n -1 are values for each dependent variable
-              column n is value for independent variable"}
-  [var-name probs var-values]
-  {:pre [(clzn/tolerant= (clzn/sum probs) 1.0)
-         (clzn/count= var-values probs)]}
-  (->Cpt [var-name] (m/transpose (m/matrix [probs var-values]))
-                    {var-name (m/transpose (m/matrix [probs var-values]))}))
-
-(defn Cpt? [x]
-  (instance? Cpt x))
-
-(defn cpt-uniform
-  "Create a uniform conditional probability table"
-  [var-name low-bound up-bound]
-  (let [[a b c] [var-name low-bound up-bound]
-        n (- up-bound low-bound)]
-    (->cpt-single-var var-name (vec (repeat (inc n) (/ 1 (inc n))))
-                               (range low-bound (inc up-bound)))))
+;; =================
+;; Functions on cpts
 
 (defn merge-tables
   "Merge two tables by finding cart-product of values and multiplying probabilities"
@@ -166,7 +180,7 @@
 
 (defn apply-binary-cpt
   "Apply a function to cpt1 and cpt2"
-  [f cpt1 cpt2 new-name]
+  [f new-name cpt1 cpt2]
   (let [all-primitives (apply merge (map :primitives [cpt1 cpt2]))
         primitives (mapv (fn [[name table]] (->Cpt [name] table nil)) (seq all-primitives))
         primitive-combos (reduce merge-tables (first (seq primitives)) (next (seq primitives)))
@@ -182,21 +196,37 @@
     (-> primitive-combos (update-in [:entries] #(concat-rows % x))
                          (update-in [:var-names] #(conj % new-name)))))
 
-(defn sum-to-one?
-  "Does the probability column sum to one?"
-  [cpt]
-  (clzn/tolerant= 1.0
-                  (clzn/sum (first (m/columns (:entries cpt))))))
 
-;; Conditional Expectation ====================================================
-(defn normalize
-  "Normalise a cpt"
-  [cpt]
-  (let [[probs & values] (m/columns cpt)]
-    (m/matrix
-     (m/transpose
-      (concat [(map #(/ % (clzn/sum probs)) probs)]
-              values)))))
+(defn split-with-pos
+  "Split a vector, and get positions"
+  [pred? coll]
+  (subvec
+    (reduce
+     (fn [[i & _ :as accum] elem]
+       (if (pred? elem)
+           (-> accum (update-in [1] #(conj % elem))
+                     (update-in [3] #(conj % i))
+                     (update-in [0] inc))
+           (-> accum (update-in [2] #(conj % elem))
+                     (update-in [4] #(conj % i))
+                     (update-in [0] inc))))
+     [0 [][][][]]
+     coll)
+     1))
+
+(defn apply-cpt
+  [name f & cpts]
+  (let [[cpts non-cpts cpt-pos non-cpt-po] (split-with-pos Cpt? cpts)]
+    cpts))
+
+(def breast (->flip-int 'breast 0.01))
+(def conseq (->flip-int 'conseq 0.8))
+(def alt (->flip-int 'alt 0.096))
+
+(def x (apply-cpt 'tertiary + breast conseq alt))
+
+;; =======
+;; Queries
 
 (defn unnormalised-cond-dist
   "Conditional expectation of rv given pred?
@@ -208,7 +238,7 @@
   "Conditional distribution of rv given pred?
    Currently only supports hard constraints on random variable itself"
   [cpt pred?]
-  (update-in cpt [:entries] #(normalize (unnormalised-cond-dist pred? %))))
+  (update-in cpt [:entries] #(normalise (unnormalised-cond-dist pred? %))))
 
 (defn expectation
   "Expectation of a cpt"
@@ -217,45 +247,52 @@
         val-col (last (m/columns (:entries cpt)))]
   (double (m/esum (mapv * prob-col val-col)))))
 
-;; ;; Rules ======================================================================
-(defrule uniform-int
+;; =====
+;; Rules
+
+(defrule uniform-int->
   "Discrete Uniform Contructor"
   (-> ('uniform-int var-name x y) (cpt-uniform var-name x y)))
 
-(defrule apply-binary-cpt-rule
+(defrule apply-binary-cpt->
   "Apply a function to a pair of random variables"
-  (-> (?f cpt1 cpt2) (apply-binary-cpt ?f cpt1 cpt2 'what) :when (and (Cpt? cpt1) (Cpt? cpt2)
+  (-> (?f cpt1 cpt2) (apply-binary-cpt 'TODO ?f cpt1 cpt2) :when (and (Cpt? cpt1) (Cpt? cpt2)
                                                                       (fn? ?f))))
-
-(defrule expectation-rule
+(defrule expectation->
   "Compute the expectation of a cpt"
   (-> ('expectation cpt) (expectation cpt) :when (Cpt? cpt)))
 
-;; Examples ===================================================================
-(def a (cpt-uniform 'x 0 4))
-(def b (cpt-uniform 'b 0 1))
-(def c (cpt-uniform 'c 1 2))
+(def rules [uniform-int-> apply-binary-cpt-> expectation->])
 
-(def the-sum (apply-binary-cpt + b c '(+ b c)))
+(comment
+  (def sigma-rewrite rewrite)
 
-(def x (apply-binary-cpt + the-sum b '(+ b (+ b c))))
+  (def a (cpt-uniform 'x 0 4))
+  (def b (cpt-uniform 'b 0 1))
+  (def c (cpt-uniform 'c 1 2))
 
-(def z (cpt-uniform 'z 2 3))
+  (def the-sum (apply-binary-cpt '(+ b c) + b c ))
 
-(def p (apply-binary-cpt * z x '(* z x)))
+  (def x (apply-binary-cpt '(+ b (+ b c)) + the-sum b))
 
-(def fer (cpt-uniform 'fer 4 8))
+  (def z (cpt-uniform 'z 2 3))
 
-(def d (apply-binary-cpt * p fer '(* p fer)))
+  (def p (apply-binary-cpt '(* z x) * z x ))
 
-(expectation p)
+  (def fer (cpt-uniform 'fer 4 8))
 
-(def rules (concat [apply-binary-cpt-rule expectation-rule uniform-int] std-rules))
-(def eager-transformer (partial transformer/eager-transformer rules))
+  (def d (apply-binary-cpt '(* p fer) * p fer ))
 
-(defn -main []
-  (sigma-rewrite '(expectation (+ (uniform-int 'y 0 4) (uniform-int 'x 0 4))) eager-transformer))
+  (expectation p)
 
-;; (sigma-rewrite
-;;  '(let [x (uniform-int 'x 0 3)
-;;         y (uniform-int 'y 0 3)] (+ x y)) eager-transformer))
+  (def rules (concat [apply-binary-cpt-rule expectation-rule uniform-int] std-rules))
+  (def eager-transformer (partial transformer/eager-transformer rules))
+
+  (defn -main []
+    (sigma-rewrite '(expectation (+ (uniform-int 'y 0 4) (uniform-int 'x 0 4))) eager-transformer)))
+
+  ;; (sigma-rewrite
+  ;;  '(let [x (uniform-int 'x 0 3)
+  ;;         y (uniform-int 'y 0 3)] (+ x y)) eager-transformer))
+
+  ;;;;;;;;;;;; This file autogenerated from src/cljx/sigma/domains/cpt.cljx
