@@ -5,9 +5,7 @@
             [clozen.helpers :as clzn]
             [clozen.debug :as dbg]
             [clojure.set :as s]
-            [clojure.core.matrix :as m]
-            [veneer.pattern.transformer :as transformer :refer [rewrite]]
-            [sigma.construct :refer [std-rules]]))
+            [clojure.core.matrix :as m]))
 
 
 ;; TODO
@@ -18,6 +16,23 @@
 ;; - Categorical distribution
 ;; - Catch errors pass undefined.
 ;; - Pass in Rules
+
+(defn split-with-pos
+  "Split a vector, and get positions"
+  [pred? coll]
+  (subvec
+    (reduce
+     (fn [[i & _ :as accum] elem]
+       (if (pred? elem)
+           (-> accum (update-in [1] #(conj % elem))
+                     (update-in [3] #(conj % i))
+                     (update-in [0] inc))
+           (-> accum (update-in [2] #(conj % elem))
+                     (update-in [4] #(conj % i))
+                     (update-in [0] inc))))
+     [0 [][][][]]
+     coll)
+     1))
 
 
 ;; Matrix Abstractions ========================================================
@@ -50,8 +65,10 @@
 (defn Cpt? [x]
   (instance? Cpt x))
 
-
-(instance? Cpt (Cpt. 1 2 3))
+(defn ->Cpt [a b c]
+  "Some bug in lighttable/clojure is making instance? not work with ->
+   constructed values"
+  (Cpt. a b c))
 
 ;; ============
 ;; Constructors
@@ -84,6 +101,10 @@
   [var-name weight]
   (->cpt-single-var var-name [(- 1 weight) weight] [0 1]))
 
+(defn ->flip
+  "Bernoulli distribution over true/false"
+  [var-name weight]
+  (->cpt-single-var var-name [(- 1 weight) weight] [false true]))
 
 ;; ============
 ;; Abstractions
@@ -149,7 +170,7 @@
 
    We do this (TODO: Very inefficiently) by for each row in the argument, findng the
    matching row in the new joint"
-  [primitive-joint cpt1 cpt2]
+  [primitive-joint cpts]
   (reduce
     (fn [final-cpt arg-cpt]
       ;; Which of its rows are not already in the final cpt
@@ -176,7 +197,7 @@
                   (update-in [:var-names] #(vec (concat % unseen-vars)))))
           final-cpt)))
       primitive-joint
-      [cpt1 cpt2]))
+      cpts))
 
 (defn apply-binary-cpt
   "Apply a function to cpt1 and cpt2"
@@ -187,7 +208,7 @@
         primitive-combos (assoc primitive-combos :primitives all-primitives)
 
         ; Add dependent variables
-        primitive-combos (add-dependent-vars primitive-combos cpt1 cpt2)
+        primitive-combos (add-dependent-vars primitive-combos [cpt1 cpt2])
 
         ; Apply f to inependent values
         independent-cols (mapv #(var-name-values primitive-combos (independent-var-name %)) [cpt1 cpt2])
@@ -197,33 +218,31 @@
                          (update-in [:var-names] #(conj % new-name)))))
 
 
-(defn split-with-pos
-  "Split a vector, and get positions"
-  [pred? coll]
-  (subvec
-    (reduce
-     (fn [[i & _ :as accum] elem]
-       (if (pred? elem)
-           (-> accum (update-in [1] #(conj % elem))
-                     (update-in [3] #(conj % i))
-                     (update-in [0] inc))
-           (-> accum (update-in [2] #(conj % elem))
-                     (update-in [4] #(conj % i))
-                     (update-in [0] inc))))
-     [0 [][][][]]
-     coll)
-     1))
+(defn primitive-joint
+  [cpts]
+  (let [all-primitives (apply merge (map :primitives cpts))
+        primitives (mapv (fn [[name table]] (->Cpt [name] table nil)) (seq all-primitives))
+        joint (reduce merge-tables (first (seq primitives)) (next (seq primitives)))]
+    (assoc joint :primitives all-primitives)))
 
 (defn apply-cpt
   [name f & cpts]
-  (let [[cpts non-cpts cpt-pos non-cpt-po] (split-with-pos Cpt? cpts)]
-    cpts))
+  (let [[cpts non-cpts cpt-pos non-cpt-po] (split-with-pos Cpt? cpts)
+        joint (primitive-joint cpts)
 
-(def breast (->flip-int 'breast 0.01))
-(def conseq (->flip-int 'conseq 0.8))
-(def alt (->flip-int 'alt 0.096))
+        ; Add dependent variables
+        joint (add-dependent-vars joint cpts)
 
-(def x (apply-cpt 'tertiary + breast conseq alt))
+        ; Apply f to inependent values
+        independent-cols (mapv #(var-name-values joint (independent-var-name %)) cpts)
+        x (apply (partial mapv f) independent-cols)]
+    (-> joint (update-in [:entries] #(concat-rows % x))
+              (update-in [:var-names] #(conj % name)))))
+
+(defn if-f
+  [condition consequent alternative]
+  (if condition consequent alternative))
+
 
 ;; =======
 ;; Queries
@@ -262,28 +281,33 @@
   "Compute the expectation of a cpt"
   (-> ('expectation cpt) (expectation cpt) :when (Cpt? cpt)))
 
-(def rules [uniform-int-> apply-binary-cpt-> expectation->])
+(defrule flip->
+  "Bernoulli Distribution over the integers"
+  (-> ('flip var-name weight) (->flip var-name weight)))
+
+(defrule cpt-if->
+  "If for cpt condition.
+   FIXME: This only works when all arguments are CPTS, make more general"
+  (-> ('if condition consequent alternative)
+      (apply-cpt 'TODO if-f condition consequent alternative)
+      :when (and (Cpt? condition)
+                 (Cpt? consequent)
+                 (Cpt? alternative))))
+
+(def rules [cpt-if-> flip-> uniform-int-> apply-binary-cpt-> expectation->])
+  (require  '[veneer.pattern.transformer :as transformer :refer [rewrite]]
+            '[sigma.construct :refer [std-rules]])
+(defn -main
+  []
+  (require  '[veneer.pattern.transformer :as transformer :refer [rewrite]]
+            '[sigma.construct :refer [std-rules]])
+  (let [rules (concat rules std-rules)
+        eager-transformer (partial transformer/eager-transformer rules)]
+    (rewrite '(if (flip 'breast-cancer 0.01) (flip 'c 0.8) (flip 'a 0.096)) eager-transformer)))
 
 (comment
-  (def sigma-rewrite rewrite)
-
-  (def a (cpt-uniform 'x 0 4))
-  (def b (cpt-uniform 'b 0 1))
-  (def c (cpt-uniform 'c 1 2))
-
-  (def the-sum (apply-binary-cpt '(+ b c) + b c ))
-
-  (def x (apply-binary-cpt '(+ b (+ b c)) + the-sum b))
-
-  (def z (cpt-uniform 'z 2 3))
-
-  (def p (apply-binary-cpt '(* z x) * z x ))
-
-  (def fer (cpt-uniform 'fer 4 8))
-
-  (def d (apply-binary-cpt '(* p fer) * p fer ))
-
-  (expectation p)
+  [veneer.pattern.transformer :as transformer :refer [rewrite]]
+            [sigma.construct :refer [std-rules]]
 
   (def rules (concat [apply-binary-cpt-rule expectation-rule uniform-int] std-rules))
   (def eager-transformer (partial transformer/eager-transformer rules))
@@ -296,3 +320,5 @@
   ;;         y (uniform-int 'y 0 3)] (+ x y)) eager-transformer))
 
   ;;;;;;;;;;;; This file autogenerated from src/cljx/sigma/domains/cpt.cljx
+
+;;;;;;;;;;;; This file autogenerated from src/cljx/sigma/domains/cpt.cljx
