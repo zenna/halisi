@@ -199,25 +199,6 @@
       primitive-joint
       cpts))
 
-(defn apply-binary-cpt
-  "Apply a function to cpt1 and cpt2"
-  [f new-name cpt1 cpt2]
-  (let [all-primitives (apply merge (map :primitives [cpt1 cpt2]))
-        primitives (mapv (fn [[name table]] (->Cpt [name] table nil)) (seq all-primitives))
-        primitive-combos (reduce merge-tables (first (seq primitives)) (next (seq primitives)))
-        primitive-combos (assoc primitive-combos :primitives all-primitives)
-
-        ; Add dependent variables
-        primitive-combos (add-dependent-vars primitive-combos [cpt1 cpt2])
-
-        ; Apply f to inependent values
-        independent-cols (mapv #(var-name-values primitive-combos (independent-var-name %)) [cpt1 cpt2])
-        asrt (dbg/asrt #(apply clzn/count= %) independent-cols)
-        x (apply (partial mapv f) independent-cols)]
-    (-> primitive-combos (update-in [:entries] #(concat-rows % x))
-                         (update-in [:var-names] #(conj % new-name)))))
-
-
 (defn primitive-joint
   [cpts]
   (let [all-primitives (apply merge (map :primitives cpts))
@@ -226,13 +207,10 @@
     (assoc joint :primitives all-primitives)))
 
 (defn apply-cpt
+  "Apply a function to set of cpts"
   [name f & cpts]
   (let [[cpts non-cpts cpt-pos non-cpt-po] (split-with-pos Cpt? cpts)
-        joint (primitive-joint cpts)
-
-        ; Add dependent variables
-        joint (add-dependent-vars joint cpts)
-
+        joint (add-dependent-vars (primitive-joint cpts) cpts)
         ; Apply f to inependent values
         independent-cols (mapv #(var-name-values joint (independent-var-name %)) cpts)
         x (apply (partial mapv f) independent-cols)]
@@ -258,6 +236,57 @@
    Currently only supports hard constraints on random variable itself"
   [cpt pred?]
   (update-in cpt [:entries] #(normalise (unnormalised-cond-dist pred? %))))
+
+(defn collate-duplicate-rows
+  ""
+  [cpt])
+
+(defn collapse
+  "Collapse a cpt to a var"
+  [cpt var-name]
+  (if-let [var-pos (clzn/first-index (:var-names cpt) var-name)]
+    (#(->cpt-single-var var-name (nth % 0) (nth % (inc var-pos))) (m/columns (:entries cpt)))
+    (throw (Exception. "tried to collapse to non-existent var-name"))))
+
+(defn probability
+  "What is the probability of taking this value
+   TODO: Does a linear search each time. SUPERSLOW
+   TODO: This could probably be subsumed by a proper expectation func"
+  [cpt value]
+  (let [columns (unnormalised-cond-dist #(= value %) (:entries cpt))]
+    (if (seq columns)
+        (m/esum (first (m/columns columns)))
+          0.0)))
+
+(defn propagate
+  [cpt restricted-prop]
+  (let [shared-vars (s/intersection (set (:var-names cpt)) (set (:var-names restricted-prop)))
+
+        ; I'm looking for the closest parent and finding it by exploiting ordering
+        ; in var-names, but FIXME: I'm not sure whether it should be first or last
+        ; and i'm not sure whether ordering is preserved correctly - use of sets
+        ; in apply-cpt may be preventing that
+        closest-shared-var (last (intersect-vec-set (:var-names cpt) shared-vars))
+        shared-var-pos (inc (clzn/first-index (:var-names cpt) closest-shared-var))
+        collapsed (collapse restricted-prop closest-shared-var)]
+    (->>
+      cpt
+      (#(mapv
+        (fn [row]
+          (let [factor (probability restricted-prop (row shared-var-pos))]
+            (update-in row [0] (partial * factor))))
+        (m/rows (:entries %))))
+     normalise)))
+
+(defn condition
+  [cpt prop-cpt]
+  (let [shared-vars (s/intersection (set (:var-names cpt)) (set (:var-names prop-cpt)))]
+    (if (seq shared-vars)
+        (let [restricted-prop (update-in prop-cpt [:entries] #(normalise (unnormalised-cond-dist true? %)))]
+          (if ((set (:var-names prop-cpt)) (independent-var-name cpt))
+              (collapse restricted-prop (independent-var-name cpt))
+              (propagate cpt restricted-prop)))
+        cpt)))
 
 (defn expectation
   "Expectation of a cpt"
