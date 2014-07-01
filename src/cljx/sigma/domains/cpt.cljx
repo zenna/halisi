@@ -128,6 +128,7 @@
   "When entries have duplicate value rows,
    combine these by summing probabilities of duplicates"
   [entries]
+  (println "Heya  ")
   (let [unique-vals-to-prob
         (reduce
           (fn [accum elem]
@@ -220,7 +221,6 @@
 (defn apply-cpt
   "Apply a function to set of cpts"
   [name f args]
-  (println "The arg are!!" args)
   (let [[cpts non-cpts cpt-pos non-cpt-pos] (clzn/split-with-pos Cpt? args)
         joint (add-dependent-vars (primitive-joint cpts) cpts)
         ; Apply f to inependent values
@@ -266,8 +266,8 @@
 (defn refresh
   "Recalculate from primitives"
   [cpt]
-  (update-in [:entries]
-             (add-dependent-vars (primitive-joint [cpt]) [cpt])
+  (update-in (add-dependent-vars (primitive-joint [cpt]) [cpt])
+             [:entries]
              reduce-duplicate-rows))
 
 (defn propagate
@@ -298,7 +298,7 @@
     (if (seq shared-vars)
         (let [restricted-prop (update-in prop-cpt [:entries] #(normalise (unnormalised-cond-dist true? %)))]
           (if (cpt-contains? prop-cpt cpt) ; If conditioned cpt contains other, we needn't propagate
-              (collapse restricted-prop (independent-var-name cpt))
+              (update-in restricted-prop [:entries] reduce-duplicate-rows)
               (propagate cpt restricted-prop)))
         cpt)))
 
@@ -337,7 +337,12 @@
                  (Cpt? consequent)
                  (Cpt? alternative))))
 
-(def rules [cpt-if-> flip-> uniform-int-> apply-cpt-> expectation->])
+(defrule condition->
+  "Condition rule
+   (condition cpt cpt-proposition)"
+  (-> ('condition cpt prop) (condition cpt prop) :when (and (Cpt? cpt) (Cpt? prop))))
+
+(def cpt-rules [cpt-if-> condition-> flip-> uniform-int-> apply-cpt-> expectation->])
 
 
 ;; ========
@@ -350,11 +355,35 @@
 
 ;; (condition c prop)
 
-(def x (cpt-uniform 'x 0 1))
-(def y (cpt-uniform 'y 0 1))
-(def sum (apply-cpt 'sum + [x y]))
-(def prop (apply-cpt 'prop >= [sum 1]))
-(condition x prop)
+;; (def x (cpt-uniform 'x 0 1))
+;; (def y (cpt-uniform 'y 0 1))
+;; (def c (apply-cpt 'c - [x 4]))
+;; (def sum (apply-cpt 'sum + [x y]))
+;; (def prop (apply-cpt 'prop >= [sum 1]))
+;; (condition c prop)
+
+
+;; (def cancer (->flip 'cancer 0.01))
+;; (def conseq (->flip 'coseq 0.8))
+;; (def alt (->flip 'alt 0.096))
+;; (def mamogram (apply-cpt 'mamo if-f [cancer conseq alt]))
+
+;; (condition cancer mamogram)
+
+
+(defn -main []
+  (def x (cpt-uniform 'x 0 5))
+  (def y (cpt-uniform 'y 0 100))
+  (def sum (apply-cpt 'x+y + [x y]))
+  (def prop (apply-cpt 'x+y=10 = [sum 10]))
+  (def res (condition sum prop))
+  (println res))
+
+;; (let [breast-cancer (flip 'a 0.01)
+;;       positive-mamogram (if breast-cancer (flip 'c 0.8) (flip 'a 0.096))]
+;;   (condition breast-cancer positive-mamogram))
+
+
 ;; (require  '[veneer.pattern.transformer :as transformer :refer [rewrite]]
 ;;             '[sigma.construct :refer [std-rules]])
 ;; ;; (defn -main

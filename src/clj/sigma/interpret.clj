@@ -1,14 +1,18 @@
 (ns ^{:doc "The actual interpreter"
       :author "Zenna Tavares"}
   sigma.interpret
-  (:require [sigma.construct :refer :all]
+  (:require [sigma.construct :refer [std-rules global-env]]
+            [sigma.domains.cpt :refer [cpt-rules]]
             [clozen.helpers :as clzn]
             [veneer.pattern.transformer :as transformer]
             [clojure.core.match :refer [match]]
-            [fipp.edn :refer (pprint) :rename {pprint fipp}])
+            [fipp.edn :refer (pprint) :rename {pprint fipp}]
+            [clojure.repl :refer [doc]])
   (import [java.io PushbackReader FileReader]))
 
-(def eager-transformer (partial transformer/eager-transformer sigma.construct/std-rules))
+(def all-rules (concat cpt-rules std-rules))
+
+(def eager-transformer (partial transformer/eager-transformer all-rules))
 (def sigma-rewrite veneer.pattern.transformer/rewrite)
 
 (defn parse-clj [fname]
@@ -49,10 +53,14 @@
 (defmethod get-command :default
   [exp] (sigma-rewrite exp eager-transformer))
 
+(defn doc-cheat [x]
+  (doc x))
+
 (defn sigma-repl
   "Very Simple Repl"
   []
   (println "===== Welcome σ REPL, type exit to exit ========")
+  (println (map doc-cheat all-rules))
   (loop [ip (read)]
     (let
       [x (match ip
