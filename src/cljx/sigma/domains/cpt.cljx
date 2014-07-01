@@ -1,7 +1,8 @@
 (ns ^{:doc "Conditional Probability Table Domain"
       :author "Zenna Tavares"}
   sigma.domains.cpt
-  (:require [veneer.pattern.dsl-macros :refer [defrule]]
+  (:require
+            [veneer.pattern.dsl-macros :refer [defrule]]
             [clozen.helpers :as clzn]
             [clozen.debug :as dbg]
             [clojure.set :as s]
@@ -17,23 +18,10 @@
 ;; - Catch errors pass undefined.
 ;; - Pass in Rules
 
-(defn split-with-pos
-  "Split a vector, and get positions"
-  [pred? coll]
-  (subvec
-    (reduce
-     (fn [[i & _ :as accum] elem]
-       (if (pred? elem)
-           (-> accum (update-in [1] #(conj % elem))
-                     (update-in [3] #(conj % i))
-                     (update-in [0] inc))
-           (-> accum (update-in [2] #(conj % elem))
-                     (update-in [4] #(conj % i))
-                     (update-in [0] inc))))
-     [0 [][][][]]
-     coll)
-     1))
 
+(defn if-f
+  [condition consequent alternative]
+  (if condition consequent alternative))
 
 ;; Matrix Abstractions ========================================================
 (defn concat-rows
@@ -49,7 +37,7 @@
                   (clzn/sum (first (m/columns (:entries cpt))))))
 
 (defn normalise
-  "Normalise a cpt"
+  "Normalise a cpt so that probability col sums to 1"
   [cpt]
   (let [[probs & values] (m/columns cpt)]
     (m/matrix
@@ -130,6 +118,28 @@
    ; inc because first col is probability col
    (inc (clzn/first-index (:var-names cpt) var-name))))
 
+(defn var-name-cpt
+  [cpt var-name]
+  (let [wobble (m/columns (:entries cpt))
+        var-pos (inc (clzn/first-index (:var-names cpt) var-name))]
+    (->cpt-single-var var-name (nth wobble 0) (nth wobble var-pos))))
+
+(defn reduce-duplicate-rows
+  "When entries have duplicate value rows,
+   combine these by summing probabilities of duplicates"
+  [entries]
+  (let [unique-vals-to-prob
+        (reduce
+          (fn [accum elem]
+            (if (accum (next elem))
+                (update-in accum [(next elem)] (partial + (first elem)))
+                (assoc accum (next elem) (first elem))))
+          {}
+          (m/rows entries))]
+    (m/matrix (mapv (fn [[values p]]
+                                    (concat [p] values))
+                              (seq unique-vals-to-prob)))))
+
 ;; =================
 ;; Functions on cpts
 
@@ -200,6 +210,7 @@
       cpts))
 
 (defn primitive-joint
+  "Find the joint distributio by finding all combinations of primitive dists"
   [cpts]
   (let [all-primitives (apply merge (map :primitives cpts))
         primitives (mapv (fn [[name table]] (->Cpt [name] table nil)) (seq all-primitives))
@@ -208,19 +219,17 @@
 
 (defn apply-cpt
   "Apply a function to set of cpts"
-  [name f & cpts]
-  (let [[cpts non-cpts cpt-pos non-cpt-po] (split-with-pos Cpt? cpts)
+  [name f args]
+  (println "The arg are!!" args)
+  (let [[cpts non-cpts cpt-pos non-cpt-pos] (clzn/split-with-pos Cpt? args)
         joint (add-dependent-vars (primitive-joint cpts) cpts)
         ; Apply f to inependent values
         independent-cols (mapv #(var-name-values joint (independent-var-name %)) cpts)
-        x (apply (partial mapv f) independent-cols)]
+        constants (mapv #(repeat (count (first independent-cols)) %) non-cpts)
+        all-args (clzn/unsplit independent-cols constants cpt-pos non-cpt-pos)
+        x (apply (partial mapv f) all-args)]
     (-> joint (update-in [:entries] #(concat-rows % x))
               (update-in [:var-names] #(conj % name)))))
-
-(defn if-f
-  [condition consequent alternative]
-  (if condition consequent alternative))
-
 
 ;; =======
 ;; Queries
@@ -236,10 +245,6 @@
    Currently only supports hard constraints on random variable itself"
   [cpt pred?]
   (update-in cpt [:entries] #(normalise (unnormalised-cond-dist pred? %))))
-
-(defn collate-duplicate-rows
-  ""
-  [cpt])
 
 (defn collapse
   "Collapse a cpt to a var"
@@ -258,32 +263,41 @@
         (m/esum (first (m/columns columns)))
           0.0)))
 
+(defn refresh
+  "Recalculate from primitives"
+  [cpt]
+  (update-in [:entries]
+             (add-dependent-vars (primitive-joint [cpt]) [cpt])
+             reduce-duplicate-rows))
+
 (defn propagate
   [cpt restricted-prop]
-  (let [shared-vars (s/intersection (set (:var-names cpt)) (set (:var-names restricted-prop)))
+  ; Find overlap between cpts primitives and variables in restricted-prop
+  (let [primitives (s/intersection (set (keys (:primitives cpt)))
+                                   (set (:var-names restricted-prop)))
+        primitives (vec primitives)
+        primitive-cpts (mapv #(:entries
+                               (update-in (var-name-cpt restricted-prop %)
+                                         [:entries]
+                                         reduce-duplicate-rows))
+                              primitives)]
+    (refresh
+     (update-in cpt [:primitives] #(merge % (zipmap primitives primitive-cpts))))))
 
-        ; I'm looking for the closest parent and finding it by exploiting ordering
-        ; in var-names, but FIXME: I'm not sure whether it should be first or last
-        ; and i'm not sure whether ordering is preserved correctly - use of sets
-        ; in apply-cpt may be preventing that
-        closest-shared-var (last (intersect-vec-set (:var-names cpt) shared-vars))
-        shared-var-pos (inc (clzn/first-index (:var-names cpt) closest-shared-var))
-        collapsed (collapse restricted-prop closest-shared-var)]
-    (->>
-      cpt
-      (#(mapv
-        (fn [row]
-          (let [factor (probability restricted-prop (row shared-var-pos))]
-            (update-in row [0] (partial * factor))))
-        (m/rows (:entries %))))
-     normalise)))
+(defn cpt-contains?
+  "Does cpt1 contain cpt2 as a dependent variable"
+  [cpt1 cpt2]
+  (if ((set (:var-names cpt1)) (independent-var-name cpt2))
+      true
+      false))
 
 (defn condition
+  "Condition a cpt, such that prop-cpt is true"
   [cpt prop-cpt]
   (let [shared-vars (s/intersection (set (:var-names cpt)) (set (:var-names prop-cpt)))]
     (if (seq shared-vars)
         (let [restricted-prop (update-in prop-cpt [:entries] #(normalise (unnormalised-cond-dist true? %)))]
-          (if ((set (:var-names prop-cpt)) (independent-var-name cpt))
+          (if (cpt-contains? prop-cpt cpt) ; If conditioned cpt contains other, we needn't propagate
               (collapse restricted-prop (independent-var-name cpt))
               (propagate cpt restricted-prop)))
         cpt)))
@@ -302,10 +316,10 @@
   "Discrete Uniform Contructor"
   (-> ('uniform-int var-name x y) (cpt-uniform var-name x y)))
 
-(defrule apply-binary-cpt->
+(defrule apply-cpt->
   "Apply a function to a pair of random variables"
-  (-> (?f cpt1 cpt2) (apply-binary-cpt 'TODO ?f cpt1 cpt2) :when (and (Cpt? cpt1) (Cpt? cpt2)
-                                                                      (fn? ?f))))
+  (-> (?f & args) (apply-cpt 'TODO ?f args) :when (and (some Cpt? args) (fn? ?f))))
+
 (defrule expectation->
   "Compute the expectation of a cpt"
   (-> ('expectation cpt) (expectation cpt) :when (Cpt? cpt)))
@@ -323,27 +337,36 @@
                  (Cpt? consequent)
                  (Cpt? alternative))))
 
-(def rules [cpt-if-> flip-> uniform-int-> apply-binary-cpt-> expectation->])
-  (require  '[veneer.pattern.transformer :as transformer :refer [rewrite]]
-            '[sigma.construct :refer [std-rules]])
-(defn -main
-  []
-  (require  '[veneer.pattern.transformer :as transformer :refer [rewrite]]
-            '[sigma.construct :refer [std-rules]])
-  (let [rules (concat rules std-rules)
-        eager-transformer (partial transformer/eager-transformer rules)]
-    (rewrite '(if (flip 'breast-cancer 0.01) (flip 'c 0.8) (flip 'a 0.096)) eager-transformer)))
+(def rules [cpt-if-> flip-> uniform-int-> apply-cpt-> expectation->])
 
-(comment
-  [veneer.pattern.transformer :as transformer :refer [rewrite]]
-            [sigma.construct :refer [std-rules]]
 
-  (def rules (concat [apply-binary-cpt-rule expectation-rule uniform-int] std-rules))
-  (def eager-transformer (partial transformer/eager-transformer rules))
+;; ========
+;; Examples
 
-  (defn -main []
-    (sigma-rewrite '(expectation (+ (uniform-int 'y 0 4) (uniform-int 'x 0 4))) eager-transformer)))
+;; (def a (cpt-uniform 'a 0 3))
+;; (def b (apply-cpt 'b + [a 3]))
+;; (def c (apply-cpt 'c - [a 2]))
+;; (def prop (apply-cpt 'prop > [b 4]))
 
-  ;; (sigma-rewrite
-  ;;  '(let [x (uniform-int 'x 0 3)
-  ;;         y (uniform-int 'y 0 3)] (+ x y)) eager-transformer))
+;; (condition c prop)
+
+(def x (cpt-uniform 'x 0 1))
+(def y (cpt-uniform 'y 0 1))
+(def sum (apply-cpt 'sum + [x y]))
+(def prop (apply-cpt 'prop >= [sum 1]))
+(condition x prop)
+;; (require  '[veneer.pattern.transformer :as transformer :refer [rewrite]]
+;;             '[sigma.construct :refer [std-rules]])
+;; ;; (defn -main
+;; ;;   []
+;;   (require  '[veneer.pattern.transformer :as transformer :refer [rewrite]]
+;;             '[sigma.construct :refer [std-rules]])
+;;   (let [rules (concat rules std-rules)
+;;         eager-transformer (partial transformer/eager-transformer rules)]
+;; ;;     (rewrite '(if (flip 'breast-cancer 0.01) (flip 'c 0.8) (flip 'a 0.096)) eager-transformer)
+;;     (rewrite '(+ (uniform-int 'smelly 0 3) 7 (uniform-int 'smelly 0 3)) eager-transformer)
+;;     )
+
+;; (-main)
+
+;;;;;;;;;;;; This file autogenerated from src/cljx/sigma/domains/cpt.cljx
