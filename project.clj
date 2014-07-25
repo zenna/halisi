@@ -17,6 +17,7 @@
                  [org.clojure/core.match "0.2.1"]
                  [org.clojure/tools.cli "0.3.1"]
                  [net.mikera/vectorz-clj "0.22.0"]
+                 [backtick "0.3.0"]
                  [clozen "0.1.0-SNAPSHOT"]
                  [veneer "0.1.0-SNAPSHOT"]]
   :source-paths ["src/clj" "target/classes"]
@@ -33,5 +34,5 @@
                      :compiler {:output-to "target/main.js"
                                 :optimizations :whitespace
                                 :pretty-print true}}}}
-;;   :hooks [cljx.hooks]
+  :hooks [cljx.hooks]
   :main sigma.core)

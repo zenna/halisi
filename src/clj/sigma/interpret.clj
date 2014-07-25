@@ -53,14 +53,14 @@
 (defmethod get-command :default
   [exp] (sigma-rewrite exp eager-transformer))
 
-(defn doc-cheat [x]
-  (doc x))
+(defn rule-doc [x]
+  (:doc (meta x)))
 
 (defn sigma-repl
   "Very Simple Repl"
   []
   (println "===== Welcome σ REPL, type exit to exit ========")
-  (println (map doc-cheat all-rules))
+;;   (println (map rule-doc all-rules))
   (loop [ip (read)]
     (let
       [x (match ip

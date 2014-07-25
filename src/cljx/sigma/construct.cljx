@@ -59,7 +59,8 @@
   (swap! global-env assoc name value))
 
 (defn lookup-compound
-  "Lookup the source of a compound function"
+  "Lookup the source of a compound function
+   FIXME: This does not check that f is a funciton"
   [f]
   (@global-env f))
 
@@ -107,15 +108,24 @@
   (-> (?f & args) `(~(lookup-compound ?f) ~@args) :when (compound? ?f)))
 
 (defn mapx [f coll]
+  "This is a bad solution, which will cause bugs. FIXME!"
   (if (vector? coll)
       (mapv f coll)
       (map f coll)))
+
+; FIXME: TEMP HACK TO PREVENT modifying cpt
+(require '[sigma.domains.cpt :refer [Cpt?]])
 
 (defn body-replace
   "Substitutes arguments into the body of a function"
   ([body bindings] (body-replace body bindings #{}))
   ([body bindings rebound]
   (cond
+
+    ; FIXME: MEGAHACK - need better traversal strategy
+    (Cpt? body)
+    body
+
     (and (symbol? body)
          (bindings body)
          (not (rebound body)))
@@ -129,6 +139,9 @@
     (mapx #(body-replace % bindings rebound) body)
 
     :else body)))
+
+;; =====
+;; Rules
 
 (defrule variable-sub-rule
   "A variable substitution rule"
@@ -152,7 +165,7 @@
 
 (def if-rule
   "Substitute in variables"
-  (rule
+  (->Rule
   '->
   (->CorePattern
     (match-fn
@@ -176,6 +189,7 @@
   (or (= f '+)
       (= f (primitives '+))))
 
+
 (defrule associativity-rule
   "Associativity"
   (-> (?f (?g y z) x) (list ?f x y z) :when (and (= ?f ?g)
@@ -190,7 +204,8 @@
   (-> ('defn name docs args body) `(def ~name (~'fn ~args ~body))))
 
 (def std-rules
-  [eval-primitives compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule  primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule! defn-rule])
+  [compound-f-sub-rule variable-sub-rule-nullary variable-sub-rule
+   primitive-apply-rule if-rule associativity-rule let-to-fn-rule define-rule! defn-rule eval-primitives])
 
 (comment
   (use '[fipp.edn :refer (pprint) :rename {pprint fipp}])

@@ -10,16 +10,50 @@
 
 
 ;; TODO
-;; - Extend to arbitrary arity, mixed rv/scalar arguments
-;; - Move necessary libraries out to clozen
-;; - Defrule for categorical distribution
-;; - Add sanity check - Sum of probabilities is 1
-;; - Categorical distribution
-;; - Catch errors pass undefined.
-;; - Pass in Rules
 
+;; It is in a working condition, which is in cool.
+
+;; - THe interpreter
+;; The interpreter has become somehwat broken, I need to make it less broken and less fragile
+;; Make unit tests
+;; Fix let issue
+;; fix def issue
+;; fix rule for def without docstring
+;; exception handling so we don't break the whole reduce-duplicate-rows
+;; make it return values
+;; traverse all elements of a list?
+;; better errrors
+
+;; the inference algorithms
+;; we have an exponential algorithm here
+;; - values should only maintain in their table ones they are directly dependent on
+
+;; independence and the naming system
+
+;; - make sure everything is well documented
+;; get documentation in repl
+
+;; - naming conventions
+;; be consistent,
+
+;; - bugs
+;; there was a bug when i tried to normalise wit hmaxes Example
+
+;; - recursion
+
+;; - Sort out pre's
+
+;; - Increase distribution familiee
+;; Binomial
+;; Geometric
+;; Hyper-geometric
+
+
+;; - Defrule for categorical distribution
+;; - Catch errors pass undefined.
 
 (defn if-f
+  "If as a function"
   [condition consequent alternative]
   (if condition consequent alternative))
 
@@ -60,6 +94,7 @@
 
 ;; ============
 ;; Constructors
+
 (defn ->cpt-single-var
  ^{:doc
    "A conditional probability table for a finite set of named variables
@@ -93,6 +128,13 @@
   "Bernoulli distribution over true/false"
   [var-name weight]
   (->cpt-single-var var-name [(- 1 weight) weight] [false true]))
+
+(defn ->categorical-cpt
+  "Categorical Distribution"
+  [var-name cats weights]
+  {:pre [(clzn/count= cats weights)
+         (clzn/tolerant= 1.0 (clzn/sum weights))]}
+  (->cpt-single-var var-name weights cats))
 
 ;; ============
 ;; Abstractions
@@ -312,13 +354,38 @@
 ;; =====
 ;; Rules
 
-(defrule uniform-int->
-  "Discrete Uniform Contructor"
-  (-> ('uniform-int var-name x y) (cpt-uniform var-name x y)))
-
 (defrule apply-cpt->
   "Apply a function to a pair of random variables"
   (-> (?f & args) (apply-cpt 'TODO ?f args) :when (and (some Cpt? args) (fn? ?f))))
+
+(defrule cpt-if->
+  "If for cpt condition.
+   FIXME: This only works when all arguments are CPTS, make more general"
+  (-> ('if condition consequent alternative)
+      (apply-cpt 'TODO if-f [condition consequent alternative])
+      :when (and (Cpt? condition)
+                 (Cpt? consequent)
+                 (Cpt? alternative))))
+
+;; Distribution Constructors
+(defrule uniform-int->
+  "Construct a uniform integer distribution
+   (uniform-int 'x 0 10)"
+  (-> ('uniform-int var-name x y) (cpt-uniform var-name x y)))
+
+(defrule categorical->
+  "Construct a categorical distribution
+   (categorical 'x '[apple orange pair peach] [0.3 0.1 0.2 0.4])"
+  (-> ('categorical var-name cats weights) (->categorical-cpt var-name cats weights)))
+
+;; Queries
+(defrule condition->
+  "Condition a discrete
+
+   (let [x (uniform-int 'x 0 10)
+         y (uniform-int 'y 2 4)]
+     (condition x (even? (* x y))))"
+  (-> ('condition cpt prop) (condition cpt prop) :when (and (Cpt? cpt) (Cpt? prop))))
 
 (defrule expectation->
   "Compute the expectation of a cpt"
@@ -328,74 +395,36 @@
   "Bernoulli Distribution over the integers"
   (-> ('flip var-name weight) (->flip var-name weight)))
 
-(defrule cpt-if->
-  "If for cpt condition.
-   FIXME: This only works when all arguments are CPTS, make more general"
-  (-> ('if condition consequent alternative)
-      (apply-cpt 'TODO if-f condition consequent alternative)
-      :when (and (Cpt? condition)
-                 (Cpt? consequent)
-                 (Cpt? alternative))))
-
-(defrule condition->
-  "Condition rule
-   (condition cpt cpt-proposition)"
-  (-> ('condition cpt prop) (condition cpt prop) :when (and (Cpt? cpt) (Cpt? prop))))
-
 (def cpt-rules [cpt-if-> condition-> flip-> uniform-int-> apply-cpt-> expectation->])
-
 
 ;; ========
 ;; Examples
 
-;; (def a (cpt-uniform 'a 0 3))
-;; (def b (apply-cpt 'b + [a 3]))
-;; (def c (apply-cpt 'c - [a 2]))
-;; (def prop (apply-cpt 'prop > [b 4]))
+(comment
 
-;; (condition c prop)
-
-;; (def x (cpt-uniform 'x 0 1))
-;; (def y (cpt-uniform 'y 0 1))
-;; (def c (apply-cpt 'c - [x 4]))
-;; (def sum (apply-cpt 'sum + [x y]))
-;; (def prop (apply-cpt 'prop >= [sum 1]))
-;; (condition c prop)
+    (let [breast-cancer (flip 'breast 0.01)
+      positive-mamogram (if breast-cancer (flip 'c 0.8) (flip 'a 0.096))]
+  (condition breast-cancer positive-mamogram))
 
 
-;; (def cancer (->flip 'cancer 0.01))
-;; (def conseq (->flip 'coseq 0.8))
-;; (def alt (->flip 'alt 0.096))
-;; (def mamogram (apply-cpt 'mamo if-f [cancer conseq alt]))
+  (def a (cpt-uniform 'a 0 3))
+  (def b (apply-cpt 'b + [a 3]))
+  (def c (apply-cpt 'c - [a 2]))
+  (def prop (apply-cpt 'prop > [b 4]))
 
-;; (condition cancer mamogram)
+  (condition c prop)
 
-
-(defn -main []
-  (def x (cpt-uniform 'x 0 5))
-  (def y (cpt-uniform 'y 0 100))
-  (def sum (apply-cpt 'x+y + [x y]))
-  (def prop (apply-cpt 'x+y=10 = [sum 10]))
-  (def res (condition sum prop))
-  (println res))
-
-;; (let [breast-cancer (flip 'a 0.01)
-;;       positive-mamogram (if breast-cancer (flip 'c 0.8) (flip 'a 0.096))]
-;;   (condition breast-cancer positive-mamogram))
+  (def x (cpt-uniform 'x 0 1))
+  (def y (cpt-uniform 'y 0 1))
+  (def c (apply-cpt 'c - [x 4]))
+  (def sum (apply-cpt 'sum + [x y]))
+  (def prop (apply-cpt 'prop >= [sum 1]))
+  (condition c prop)
 
 
-;; (require  '[veneer.pattern.transformer :as transformer :refer [rewrite]]
-;;             '[sigma.construct :refer [std-rules]])
-;; ;; (defn -main
-;; ;;   []
-;;   (require  '[veneer.pattern.transformer :as transformer :refer [rewrite]]
-;;             '[sigma.construct :refer [std-rules]])
-;;   (let [rules (concat rules std-rules)
-;;         eager-transformer (partial transformer/eager-transformer rules)]
-;; ;;     (rewrite '(if (flip 'breast-cancer 0.01) (flip 'c 0.8) (flip 'a 0.096)) eager-transformer)
-;;     (rewrite '(+ (uniform-int 'smelly 0 3) 7 (uniform-int 'smelly 0 3)) eager-transformer)
-;;     )
+  (def cancer (->flip 'cancer 0.01))
+  (def conseq (->flip 'coseq 0.8))
+  (def alt (->flip 'alt 0.096))
+  (def mamogram (apply-cpt 'mamo if-f [cancer conseq alt]))
 
-;; (-main)
-
-;;;;;;;;;;;; This file autogenerated from src/cljx/sigma/domains/cpt.cljx
+  (condition cancer mamogram))
