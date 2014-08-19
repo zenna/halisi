@@ -1,18 +1,52 @@
 using NLopt
+using Iterators
 
 import Base.intersect, Base.convert
 
-# TODO
-# Implement contructive approaches, e.g. when linear
-# Do some smarter things with optimisation
-# Implement multiple argument function
-# Get example
+## =====
+## Types
+
+# abstract VariateForm
+# type Univariate    <: VariateForm end
+# type Multivariate  <: VariateForm end
+
+# abstract ValueSupport
+# type Discrete   <: ValueSupport end
+# type Continuous <: ValueSupport end
+
+# # Random variables / probability distributions express probabilities of different
+# # A conditional probability distriution relates different values of different random variables
+# #
+
+# abstract RandomVariable{F<:VariateForm,S<:ValueSupport}
+
+# Many domains can be used for different random variables
+# A single random variable could even be expressed in multiple domains
+# Different conditions have different random variables
+
 
 typealias Point Vector
+typealias Line Array{2,1}
 
-immutable Linear
+## ================
+## Abstract Domains
+
+abstract Domain
+
+immutable Linear <: Domain
   points::Vector{Point}
 end
+
+immutable ConditionalDistribution
+  abstractions::Vector{Domain}
+end
+
+immutable Joint
+  cpds::Vector{ConditionalDistribution}
+end
+
+## ================
+## Utils
 
 function linear_interpolate(p1::Point, p2::Point, n_points)
   delta_v = (1 / (1 + n_points)) * (p2 - p1)
@@ -24,19 +58,16 @@ end
 
 function uniform_real(low,up,n)
   height = 1 / (up - low)
-  [height low]
   points = linear_interpolate([height, low],[height, up], n)
   Linear(points)
 end
 
-a = function(a,b) b end
-
-prob_axis = function(p::Point) p[1] end
-i_axis = function(p::Point) p[end] end
-var_axes = function(p::Point) p[2:end] end
+prob_axis(p::Point)  = p[1]
+i_axis(p::Point) = p[end]
+var_axes(p::Point) = p[2:end]
 
 # Euclidean Distance
-function dist(a::Vector, b::Vector)
+function dist(a::Point, b::Point)
   tot = 0.0
   for i = range(1, length(a))
     d = a[i] - b[i]
@@ -47,13 +78,13 @@ end
 
 # Hausford Measure;
 function measure(points::Vector) #FIXME Type is too generic?
-  part_sums = Float64[]
+  tot = 0.0
   for i = range(1,length(points) - 1)
     a = points[i]
     b = points[i + 1]
-    push!(part_sums, 0.5 * dist(a,b) * (prob_axis(a) + prob_axis(b)))
+    tot += 0.5 * dist(a,b) * (prob_axis(a) + prob_axis(b))
   end
-  sum(part_sums)
+  tot
 end
 
 # Find intersection of two intervals in R
@@ -95,9 +126,7 @@ function interval_measure(points::Vector, interval::Vector, dim)
 end
 
 # root square difference
-function rsq(x,y)
-  sqrt(abs2(x-y))
-end
+rsq(x,y) = sqrt(abs2(x-y))
 
 # What is the cost on a single interval
 function interval_cost(l::Linear,  intervals::Vector, image_intervals::Vector, interval_measures::Vector)
@@ -117,11 +146,9 @@ function interval_cost(l::Linear,  intervals::Vector, image_intervals::Vector, i
   m + rsq(measure(l.points), 1.0)
 end
 
-function lower_bound(p::Vector) min(p) end
-function upper_bound(p::Vector) max(p) end
-function bounds(p::Vector)
-  [min(p), max(p)]
-end
+lower_bound(p::Vector) = min(p)
+upper_bound(p::Vector) = max(p)
+bounds(p::Vector) = [min(p), max(p)]
 
 # Sample uniformly w/in interval [low, up]
 function rand_in_interval(low, up)
@@ -149,6 +176,19 @@ function interpolate_n_intervals(low, up, n)
   intervals
 end
 
+function interpolate_n_rectangles(bounds::Vector, n::Integer)
+  a = map(b->interpolate_n_intervals(b[1],b[2],n), bounds)
+  combos = apply(product,a)
+  res = Any[]
+  for c in combos
+    push!(res, c)
+  end
+  res
+end
+
+
+a = interpolate_n_rectangles(Array[[1,5],[2,7]], 2)
+
 # Project a Linear down to a single axis
 function project(l::Linear, dim)
   [ x[dim] for x in l.points ]
@@ -159,6 +199,8 @@ function project_i (l::Linear)
   [ x[end] for x in l.points ]
 end
 
+## ========
+## Intervals
 immutable Interval <: Number
   low
   up
@@ -176,11 +218,16 @@ function *(a::Interval, b::Interval)
   Interval(a.low * a.low, b.up * b.up)
 end
 
-function dbl(x) x * 2 end
 
 function *(i::Interval, n::Int64)
   Interval(i.low * n, i.up *n)
 end
+
+## ============
+## Optimisation
+
+function dbl(x) x * 2 end
+
 
 function structure_points(x::Vector, d)
   @assert length(x) % d == 0
@@ -196,6 +243,20 @@ end
 function generate_objf(f, l::Linear, n_points, n_intervals)
   projection = project_i(l)
   intervals = interpolate_n_intervals(min(projection), max(projection), n_intervals)
+  image_intervals = map(i->convert(Vector,f(Interval(i))), intervals)
+  measures = map(x->interval_measure(l.points,x,1), intervals) #FIXME: HARDCODED IN DIM
+  objf = function(x::Vector, grad::Vector)
+     #FIXMEL WHY THREE?
+    shape = Linear(structure_points(x, 3))
+#     println("measure is", measure(shape.points), "shape is", shape)
+    interval_cost(shape, intervals, image_intervals, measures)
+#     (l::Linear, intervals::Vector, interval_measures::Vector)
+  end
+end
+
+function generate_objf(f, ls::Vector{Linear}, n_points, n_rectangles)
+  projections = map(project_i, ls)
+  rectangles = interpolate_n_intervals(min(projection), max(projection), n_intervals)
   image_intervals = map(i->convert(Vector,f(Interval(i))), intervals)
   measures = map(x->interval_measure(l.points,x,1), intervals) #FIXME: HARDCODED IN DIM
   objf = function(x::Vector, grad::Vector)
@@ -233,6 +294,17 @@ function *(l::Linear, n)
   println("got $minf at $minx after iterations (returned $ret)")
   Linear(structure_points(minx,3))
 end
+
+function *(la::Linear, lb::Linear)
+  n_points = 2
+  f = function(x) x*n end
+  objf = generate_objf(f, l, n_points, 10)
+  opt = Opt(:LN_COBYLA, n_points*3)
+  # lower_bounds!(opt, [-Inf, 0.])
+  xtol_rel!(opt,1e-4)
+  min_objective!(opt, objf)
+  init_params = rand(n_points * 3)
+
 
 ## Example
 x = uniform_real(0,5,3)
