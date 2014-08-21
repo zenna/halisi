@@ -1,6 +1,6 @@
-import Base.convert
+import Base.convert, Base.rand, Base.sqrt
 using Iterators
-abstract Box <: Number
+abstract Box <: Real
 type NDimBox <: Box
   intervals::Array{Float64,2}
 end
@@ -43,7 +43,7 @@ overlap(x::Interval, y::Interval) = y.l < x.u && x.l < y.u
 >=(x::Interval, y::Real) = !(x < y)
 >=(y::Real, x::Interval) = !(x < y)
 +(x::Interval, y::Interval) = Interval(x.l + y.l, x.u + y.u)
--(x::Interval, y::Interval) = Interval(x.l - y.l, x.u - y.u)
+-(x::Interval, y::Interval) = Interval(x.l - y.u, x.u - y.l)
 +(x::Interval, y::Real) = Interval(x.l + y, x.u + y)
 +(y::Real, x::Interval) = y + x
 -(x::Interval, y::Real) = Interval(x.l - y, x.u - y)
@@ -51,6 +51,12 @@ overlap(x::Interval, y::Interval) = y.l < x.u && x.l < y.u
 
 *(x::Interval, y::Real) = Interval(x.l * y, x.u * y)
 *(y::Real, x::Interval) = x * y
+
+sqrt(x::Interval) = Interval(sqrt(x.l), sqrt(x.u))
+function sqr(x::Interval)
+  a,b,c,d = x.l * x.l, x.l * x.u, x.u * x.l, x.u * x.u
+  Interval(max(min(a,b,c,d),0),max(a,b,c,d,0))
+end
 
 function *(x::Interval, y::Interval)
   a,b,c,d = x.l * y.l, x.l * y.u, x.u * y.l, x.u * y.u
@@ -118,3 +124,8 @@ end
 # Split box into 2^d equally sized boxes by cutting down middle of each axis"
 middle_split(b::Box) = split_box(b, middle_point(b))
 volume(b::Box) = prod([b.intervals[2,i] - b.intervals[1,i] for i = 1:num_dims(b)])
+
+## ========
+## Sampling
+rand_interval(a::Float64, b::Float64) = a + (b - a) * rand()
+rand(b::Box) = [apply(rand_interval,b.intervals[:,i]) for i = 1:num_dims(b)]

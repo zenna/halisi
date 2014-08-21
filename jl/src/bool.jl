@@ -19,13 +19,17 @@ end
 
 ## ==================
 ## Boolean Arithmetic
-|(x::AbstractBool, y::AbstractBool) = if x == TF || y == TF TF elseif x == T && y == T T else F end
+(==)(x::AbstractBool, y::AbstractBool) = x === TF || y === TF ? TF : x === T && y === T || x === F && y === F
+(==)(x::AbstractBool, y::Bool) = x == convert(AbstractBool, y)
+(==)(y::Bool, x::AbstractBool) = x == y
+
+|(x::AbstractBool, y::AbstractBool) = if x === TF || y === TF TF elseif x === T && y === T T else F end
 |(x::AbstractBool, y::Bool) = |(x,convert(AbstractBool,y))
 |(y::Bool, x::AbstractBool) = |(convert(AbstractBool,y), x)
 
 function (&)(x::AbstractBool, y::AbstractBool)
-  if x == F || y == F false
-  elseif x == TF || y == TF TF
+  if x === F || y === F F
+  elseif x === TF || y === TF TF
   else T
   end
 end

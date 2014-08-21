@@ -1,14 +1,21 @@
 module Sigma
 
 using Distributions
-using Gadfly
 
 include("bool.jl")
 include("box.jl")
 include("refinement.jl")
 
-# Machines
-# export Collection, Source, Worker
-# export Delta, Socket
-# export run!, push!, hard, socket_id, no_sockets
+export
+  Interval,
+  NDimBox,
+  AbstractBool,
+  T, F, TF,
+  @If,
+  pre,
+  pre_recursive,
+  pre_greedy,
+  ndcube,
+  sqr,
+  sqrt
 end

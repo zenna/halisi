@@ -7,4 +7,3 @@ end
 function uniform(a,b)
   a + (b - a) * rand()
 end
-
