@@ -48,6 +48,23 @@ The first rewrite is on uniform-int of x.
  (+ x y))
 {% endhighlight %}
 
+__Vectors Matching Lists and Vice Versa__
+Patterns with vectors are matching against ones with lists.
+
+
+__Compound Lookup is Wrong__
+
+{% highlight clojure %}
+
+(let [x 10 y 20] (+ x y))
+
+-> compound-f-sub-rule
+(let (10 10 y 20) (+ x y))
+
+{% endhighlight %}
+
+It thinks `x` is a compound function.
+
 __Cryptic error message when non-rule is supplied to rewrite:__
 
 You can pass an arbitrary function in to rewrite as a rule, we should prevent this with types!

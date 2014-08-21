@@ -6,6 +6,14 @@ categories: goals
 ---
 <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
+## TODO
+- Implement @If @While @for
+- Fix boundary conditions
+- Fix interval arithmetic dependency problem, either using another library or implementing it myself
+- Currently I am only keeping the fully subsumed ones, which means I am under approximating - I need to overapproximate, or do both
+- Implement Motion Planning Example
+- Make Boolean Operations More efficient - we could encode T, F, TF as 0 1 2.  Then there are eight combinatiosn 
+
 ## Theory
 
 - Understand whether we should be thinking in terms of sets of distributions or approximations of distributions
