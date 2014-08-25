@@ -5,9 +5,6 @@ type NDimBox <: Box
   intervals::Array{Float64,2}
 end
 
-unit_box(num_dims) = NDimBox([zeros(num_dims) ones(num_dims)]')
-ndcube(l::Float64, u::Float64, num_dims) = NDimBox(repmat([l,u],1,num_dims))
-
 # Open Interval
 immutable Interval <: Box
   l::Real
@@ -16,14 +13,17 @@ immutable Interval <: Box
 end
 
 Interval(v::Vector) = Interval(v[1],v[2])
-
 to_intervals(b::Box) = [Interval(b.intervals[:,i]) for i = 1:num_dims(b)]
+
+# Constructors
+unit_box(num_dims) = NDimBox([zeros(num_dims) ones(num_dims)]')
+ndcube(l::Float64, u::Float64, num_dims) = NDimBox(repmat([l,u],1,num_dims))
 
 #FIX ME: Handle End Points properly
 subsumes(x::Interval, y::Interval) = y.l >= x.l && y.u <= x.u
 overlap(x::Interval, y::Interval) = y.l < x.u && x.l < y.u
 
-## ============
+## ====================================
 ## Interval Arithmetic and Inequalities
 
 >(x::Interval, y::Interval) = if overlap(x,y) TF elseif x.l > y.u T else F end
@@ -45,7 +45,7 @@ overlap(x::Interval, y::Interval) = y.l < x.u && x.l < y.u
 +(x::Interval, y::Interval) = Interval(x.l + y.l, x.u + y.u)
 -(x::Interval, y::Interval) = Interval(x.l - y.u, x.u - y.l)
 +(x::Interval, y::Real) = Interval(x.l + y, x.u + y)
-+(y::Real, x::Interval) = y + x
++(y::Real, x::Interval) = x + y
 -(x::Interval, y::Real) = Interval(x.l - y, x.u - y)
 -(y::Real, x::Interval) = Interval(y - x.l, y - x.u)
 
@@ -69,9 +69,7 @@ function /(x::Interval, y::Interval)
 end
 
 ## =========
-## Intervals
-
-
+## Merging
 function merge_interval(a::Interval, b::Interval)
   l = min(a.l,b.l)
   u = max(a.u, b.u)
@@ -86,6 +84,16 @@ end
 
 ## ========
 ## WHATEVER
+
+flip(x::Interval) = Interval(-x.l,-x.u)
+lower_bound_at(x::Interval, lower_bound) = Interval(max(x.l,0), max(x.u,0))
+
+function abs(x::Interval)
+  if x.l >= 0.0 && x.u >= 0.0 x
+  elseif x.u >= 0.0 Interval(0,max(abs(x.l), abs(x.u)))
+  else lower_bound_at(flip(x),0.0)
+  end
+end
 
 INTERVAL_DIM_ERR = "Interval has only one single dimension"
 num_dims(i::Interval) = 1

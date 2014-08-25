@@ -1,9 +1,10 @@
 # ==========
 # Probability
-function probability(rv::Function, Ω, ℙ)
+function prob(rv::Function, Ω, ℙ)
   ℙ(pre(rv, T, Ω))
 end
 
-function uniform(a,b)
-  a + (b - a) * rand()
+function uniform(x,y)
+  global count += 1
+  Interval(x,y)
 end
