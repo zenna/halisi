@@ -15,15 +15,13 @@ export
   T, F, TF,
   @If,
   @While,
-  @Whiley,
   pre,
   pre_recursive,
   pre_greedy,
   ndcube,
   sqr,
-  sqrt
-
-  plot_2d_boxes
+  sqrt,
+  plot_2d_boxes,
 
   #utils
   tolerant_eq

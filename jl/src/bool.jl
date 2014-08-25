@@ -26,7 +26,12 @@ end
 (==)(x::AbstractBool, y::Bool) = x == convert(AbstractBool, y)
 (==)(y::Bool, x::AbstractBool) = x == y
 
-|(x::AbstractBool, y::AbstractBool) = if x === TF || y === TF TF elseif x === T && y === T T else F end
+function (|)(x::AbstractBool, y::AbstractBool)
+  if x === T || y === T T
+  elseif x === TF || y === TF TF
+  elseif x === T && y === T T else F
+  end
+end
 |(x::AbstractBool, y::Bool) = |(x,convert(AbstractBool,y))
 |(y::Bool, x::AbstractBool) = |(convert(AbstractBool,y), x)
 
