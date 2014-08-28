@@ -1,7 +1,7 @@
 # PreImage Computation
 
-function split_many_boxes(to_split::Vector{Box})
-  bs = Box[]
+function split_many_boxes{T}(to_split::Vector{T})
+  bs = T[]
   for b in to_split
     for bj in middle_split(b)
       push!(bs, bj)
@@ -21,7 +21,6 @@ function pre(f::Function, y, bs; n_iters = 10)
     println("BS Volumes", sum(map(volume,bs)))
     for b in bs
       image = apply(f, to_intervals(b))
-      println("image",image)
 
 #       println(b.intervals)
 #       println(image)
@@ -42,6 +41,8 @@ function pre(f::Function, y, bs; n_iters = 10)
   end
   goodboxes
 end
+
+
 
 function pre_recursive(f::Function, y, bs, depth = 1; box_count = 0, max_depth = 4, box_budget =2000)
   goodboxes = Box[]

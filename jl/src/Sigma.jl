@@ -6,6 +6,7 @@ include("util.jl")
 include("bool.jl")
 include("box.jl")
 include("refinement.jl")
+include("query.jl")
 include("vis.jl")
 
 export
@@ -22,6 +23,9 @@ export
   sqr,
   sqrt,
   plot_2d_boxes,
+
+  # Probabilistic functions
+  prob
 
   #utils
   tolerant_eq

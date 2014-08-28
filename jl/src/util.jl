@@ -1,6 +1,1 @@
-function tolerant_eq(a,b,epsilon)
-  println(a)
-  println(b)
-  println(epsilon)
-  abs(a - b) <= epsilon
-end
+tolerant_eq(a,b,epsilon = 1E-5) = abs(a - b) <= epsilon

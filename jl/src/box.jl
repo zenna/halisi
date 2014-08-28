@@ -82,6 +82,17 @@ function merge_interval(a::Interval, b::Real)
   Interval(l,u)
 end
 
+## ===========
+## Conversions
+
+function convert(NDimBox, i::Vector{Interval})
+  intervals = Array(Float64,2,length(i))
+  for j in 1:length(i)
+    intervals[:,j] = [i[j].l i[j].u]
+  end
+  NDimBox(intervals)
+end
+
 ## ========
 ## WHATEVER
 
