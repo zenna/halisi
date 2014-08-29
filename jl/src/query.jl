@@ -19,6 +19,15 @@ for op = (:+, :*, :&, :|, :$, :>, :>=, :<=, :<)
   end
 end
 
+for op = (:!,)
+  @eval begin
+    function ($op)(a::RandomVariable)
+      f(ω) = ($op)(a(ω))
+    end
+  end
+end
+
+
 # ==========
 # Probability
 
@@ -42,22 +51,29 @@ logmeasure{B<:Box}(bs::Vector{B}) = sum(map(x->exp(logvolume(x)),bs))
 measure(os::Vector{Omega}) = measure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
 logmeasure(os::Vector{Omega}) = logmeasure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
 
-function prob(rv::RandomVariable; pre_T = (rv,y,X)->pre2(rv, y, X; n_iters = 12))
+function prob(rv::RandomVariable; pre_T = (rv,y,X)->pre2(rv, y, X; n_iters = 7))
   preimage = pre_T(rv, T, [Omega()])
+  println("num in preimage", length(preimage))
   measure(preimage)
 end
 
 function logprob(rv::RandomVariable; pre_T = (rv,y,X)->pre2(rv, y, X; n_iters = 4))
   preimage = pre_T(rv, T, [Omega()])
-  println(preimage)
+  println("num in preimage", length(preimage))
   logmeasure(preimage)
 end
 
+function prob_deep(rv::RandomVariable)
+  preimage_tree = pre_deepening(rv, T, Omega())
+  preimage = tree_to_boxes(preimage_tree)
+  measure(preimage)
+end
+
 ## Convenience
-prob_recursive(rv::RandomVariable) = prob(rv, pre_T = (rv,y,X)->pre_recursive2(rv, y, X;max_depth = 15))
+prob_recursive(rv::RandomVariable) = prob(rv, pre_T = (rv,y,X)->pre_recursive2(rv, y, X;max_depth = 16, box_budget=3000))
+
 
 random(i) = ω->ω[i]
-
 
 function middle_split(o::Omega)
   ks = collect(keys(o.intervals))

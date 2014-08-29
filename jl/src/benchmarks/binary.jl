@@ -1,9 +1,11 @@
 # Miscellaneous binary examples
 using Sigma
 using Gadfly
-
+import Sigma.Box
+include("../vis.jl")
 ineq_pre = pre_recursive((x,y)->y>x+0.01, T, [ndcube(0.0,10.0,2)],max_depth = 10)
 ineq_pre
+methods(plot_2d_boxes)
 plot_2d_boxes(ineq_pre)
 draw(SVGJS("ineq_plot.js.svg", 6inch, 6inch), p)
 draw(PNG("ineq_plot.png", 6inch, 3inch), p)
@@ -31,6 +33,8 @@ end
 # preimage2 = pre((x,y)->two_circles(5.0,x,y), T, [ndcube(-100.0,100.0,2)],n_iters = 14)
 preimage2 = pre_recursive(emilys_formula, T, [ndcube(-100.0,100.0,2)],max_depth = 15)
 # preimage2 = pre(heart, T, [ndcube(-100.0,100.0,2)],n_iters = 14)
-preimage2
+methods(Sigma.to_intervals)
+preimage_emily_deep = pre_deepening(emilys_formula,T, ndcube(-100.0,100.0,2), max_depth = 6)
+Sigma.tree_to_boxes(preimage_emily_deep)
 plot_2d_boxes(preimage2)
 

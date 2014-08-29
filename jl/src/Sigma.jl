@@ -7,18 +7,23 @@ include("bool.jl")
 include("box.jl")
 include("refinement.jl")
 include("query.jl")
-include("vis.jl")
+# include("vis.jl")
 
 export
+  RandomVariable,
   Interval,
   NDimBox,
   AbstractBool,
   T, F, TF,
   @If,
   @While,
+
+  # Preimages
   pre,
   pre_recursive,
   pre_greedy,
+  pre_deepening,
+
   ndcube,
   sqr,
   sqrt,
@@ -26,6 +31,7 @@ export
 
   # Probabilistic functions
   prob,
+  prob_deep,
 
   # Distributions
   normal,

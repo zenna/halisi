@@ -65,11 +65,8 @@ merge_interval(a::Bool, b::Bool) = a == b ? a : TF
 
 ## ============
 ## Control Flow
-macro make_rv(v, ω)
-  :(isa($(esc(v)),RandomVariable) ? "a" : "b")
-end
 
-make_rv_f(v, ω) = isa(v,RandomVariable) ? v(ω)  : v
+make_rv(v, ω) = isa(v,RandomVariable) ? v(ω)  : v
 
 macro If(condition, conseq, alt)
   q =
@@ -79,12 +76,14 @@ macro If(condition, conseq, alt)
     (ω)->begin
           d = c(ω)
           if isa(d, Bool)
-            d ? $(esc(conseq)) : $(esc(alt))
-          elseif d === T || d === F
-            convert(Bool,d) ? $(esc(conseq)) : $(esc(alt))
+            d ? make_rv($(esc(conseq)), ω) : make_rv($(esc(alt)), ω)
+          elseif d === T
+            make_rv($(esc(conseq)), ω)
+          elseif d === F
+            make_rv($(esc(alt)), ω)
           elseif d === TF
-            a = $(esc(conseq))
-            b = $(esc(alt))
+            a = make_rv($(esc(conseq)), ω)
+            b = make_rv($(esc(alt)), ω)
             merge_interval(a,b)
           else
             error
