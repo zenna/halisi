@@ -25,7 +25,12 @@ export
   plot_2d_boxes,
 
   # Probabilistic functions
-  prob
+  prob,
+
+  # Distributions
+  normal,
+  uniform,
+  flip,
 
   #utils
   tolerant_eq

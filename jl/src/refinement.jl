@@ -1,15 +1,6 @@
 # PreImage Computation
 
-function split_many_boxes{T}(to_split::Vector{T})
-  bs = T[]
-  for b in to_split
-    for bj in middle_split(b)
-      push!(bs, bj)
-    end
-  end
-  bs
-end
-
+# DEPRECATE
 # Find the pre-image of a function on set y
 function pre(f::Function, y, bs; n_iters = 10)
   goodboxes = Box[]
@@ -42,8 +33,33 @@ function pre(f::Function, y, bs; n_iters = 10)
   goodboxes
 end
 
+# Find the pre-image of a function on set y
+function pre2{T}(f::Function, y, bs::Vector{T}; n_iters = 10)
+  goodboxes = T[]
+  for i = 1:n_iters
+    println("\n\n iteration - ", i)
+    to_split = T[]
 
+    # For each box, find the image and test intersection with y
+    #     println("BS Volumes", sum(map(volume,bs)))
+    println("bs len- ", length(bs))
+    for b in bs
+      image = f(b)
+      # Split box further iff image overlaps
+      if subsumes(y,image)
+        push!(goodboxes, b)
+      elseif overlap(image,y)
+        push!(to_split, b)
+      end
+    end
+    println("to_split len- ", length(to_split))
 
+    bs = split_many_boxes(to_split)
+  end
+  goodboxes
+end
+
+# Recursive preimage refinement
 function pre_recursive(f::Function, y, bs, depth = 1; box_count = 0, max_depth = 4, box_budget =2000)
   goodboxes = Box[]
   println("Depth is", depth)
@@ -61,6 +77,37 @@ function pre_recursive(f::Function, y, bs, depth = 1; box_count = 0, max_depth =
       elseif overlap(image,y)
 #         println("Will Recurse")
         boxes_from_deeper = pre_recursive(f,y,middle_split(b),depth + 1,
+                                          box_count = length(goodboxes) + box_count,
+                                          max_depth = max_depth,
+                                          box_budget = box_budget)
+        goodboxes = vcat(goodboxes, boxes_from_deeper)
+#       else
+#         println("Wasteman Box")
+      end
+    end
+  end
+  goodboxes
+end
+
+# Recursive preimage refinement
+function pre_recursive2{T}(f::Function, y, bs::Vector{T}, depth = 1;
+                           box_count = 0, max_depth = 4, box_budget =2000)
+  goodboxes = T[]
+#   println("Depth is", depth)
+  if depth < max_depth
+#     println("Found ",length(goodboxes) + box_count, "out of budget of ", box_budget)
+    for b in bs
+      if length(goodboxes) + box_count >= box_budget
+        return goodboxes
+      end
+
+      image = f(b)
+      if subsumes(y,image)
+#         println("Good Box")
+        push!(goodboxes, b)
+      elseif overlap(image,y)
+#         println("Will Recurse")
+        boxes_from_deeper = pre_recursive2(f,y,middle_split(b),depth + 1,
                                           box_count = length(goodboxes) + box_count,
                                           max_depth = max_depth,
                                           box_budget = box_budget)

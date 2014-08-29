@@ -143,6 +143,17 @@ end
 # Split box into 2^d equally sized boxes by cutting down middle of each axis"
 middle_split(b::Box) = split_box(b, middle_point(b))
 volume(b::Box) = prod([b.intervals[2,i] - b.intervals[1,i] for i = 1:num_dims(b)])
+logvolume(b::Box) = sum(map(log,[b.intervals[2,i] - b.intervals[1,i] for i = 1:num_dims(b)]))
+
+function split_many_boxes{T}(to_split::Vector{T})
+  bs = T[]
+  for b in to_split
+    for bj in middle_split(b)
+      push!(bs, bj)
+    end
+  end
+  bs
+end
 
 ## ========
 ## Sampling

@@ -9,6 +9,9 @@ using Sigma
 # and actuator errors ensure that the rate at which the container is being filled can be slightly different from the commanded rate.
 # The actuator can be commanded to fill the container in  one of three modes “fast”, “medium” or “slow”.
 
+x = uniform(1,0,1)
+y = uniform(0,0,1)
+
 function find_vol()
   volToFill = 20.0
   fast = 10.0
@@ -33,7 +36,6 @@ function find_vol()
   vol
 end
 
-prob()
 
 # estimateProb(vol > (1.1 * volToFill));
 # estimateProb(vol > (10.0 + volToFill));

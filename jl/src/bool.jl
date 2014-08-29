@@ -63,23 +63,46 @@ merge_interval(a::Bool, b::Bool) = a == b ? a : TF
 # Flip interval around 0 axis,
 # TODO make this parametric on symmetry point
 
-
 ## ============
 ## Control Flow
+macro make_rv(v, ω)
+  :(isa($(esc(v)),RandomVariable) ? "a" : "b")
+end
+
+make_rv_f(v, ω) = isa(v,RandomVariable) ? v(ω)  : v
+
 macro If(condition, conseq, alt)
-  e = :(c =  $(esc(condition));
-        if isa(c, Bool)
-          c ? $(esc(conseq)) : $(esc(alt))
-        elseif c === T || c === F
-          convert(Bool,c) ? $(esc(conseq)) : $(esc(alt))
-        elseif c === TF
-          a = $(esc(conseq))
-          b = $(esc(alt))
-          merge_interval(a,b)
-        else
-          error
-        end)
-  return e
+  q =
+  quote
+  c =  $(esc(condition));
+  if isa(c, RandomVariable)
+    (ω)->begin
+          d = c(ω)
+          if isa(d, Bool)
+            d ? $(esc(conseq)) : $(esc(alt))
+          elseif d === T || d === F
+            convert(Bool,d) ? $(esc(conseq)) : $(esc(alt))
+          elseif d === TF
+            a = $(esc(conseq))
+            b = $(esc(alt))
+            merge_interval(a,b)
+          else
+            error
+          end
+        end
+  elseif isa(c, Bool)
+    c ? $(esc(conseq)) : $(esc(alt))
+  elseif c === T || c === F
+    convert(Bool,c) ? $(esc(conseq)) : $(esc(alt))
+  elseif c === TF
+    a = $(esc(conseq))
+    b = $(esc(alt))
+    merge_interval(a,b)
+  else
+    error
+  end
+  end
+  return q
 end
 
 macro While(c, todo)
