@@ -115,7 +115,7 @@ end
 function pre_deepening{T}(f::Function, Y_sub, X::T; box_budget = 2000, max_depth = 4)
   tree = Tree(Node(rand(Uint64), UNKNOWNSAT, X))
   for depth_limit = 1:max_depth
-    println("Deepening Depth Limit", depth_limit)
+#     println("Deepening Depth Limit", depth_limit)
     tree = dls(f, Y_sub, zero(Uint), depth_limit, tree, root(tree))
   end
   sat_tree_data(tree)

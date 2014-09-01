@@ -23,6 +23,7 @@ export
   pre_recursive,
   pre_greedy,
   pre_deepening,
+  cond_prob_deep,
 
   ndcube,
   sqr,
