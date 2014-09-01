@@ -3,4 +3,4 @@ using Sigma
 a = flip(0)
 b = flip(1)
 c = flip(2)
-prob(a & b & c, flip(@If(a==b) 1.0 0.3) & flip(@If(b == c) 1.0 0.3))
+cond_prob_deep(a & b & c, flip(3, @If (a==b) 1.0 0.3) & flip(4, @If (a==b) 1.0 0.3) , max_depth = 7)
