@@ -68,7 +68,11 @@ function prob_deep(rv::RandomVariable;  max_depth = 5)
   return measure(preimage)
 end
 
-
+function cond_prob_deep(rv::RandomVariable, q::RandomVariable; max_depth = 5)
+  pre_cond = pre_deepening(rv & q, T, Omega(), max_depth = max_depth)
+  pre_query = pre_deepening(q, T, Omega(), max_depth = max_depth)
+  return measure(pre_cond) / measure(pre_query)
+end
 
 
 ## Convenience
