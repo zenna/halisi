@@ -51,7 +51,7 @@ logmeasure{B<:Box}(bs::Vector{B}) = sum(map(x->exp(logvolume(x)),bs))
 measure(os::Vector{Omega}) = measure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
 logmeasure(os::Vector{Omega}) = logmeasure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
 
-function prob(rv::RandomVariable; pre_T = (rv,y,X)->pre2(rv, y, X; n_iters = 7))
+function prob(rv::RandomVariable; pre_T = (rv,y,X)->pre_bfs(rv, y, X; n_iters = 7))
   preimage = pre_T(rv, T, [Omega()])
   println("num in preimage", length(preimage))
   measure(preimage)
@@ -63,15 +63,16 @@ function logprob(rv::RandomVariable; pre_T = (rv,y,X)->pre2(rv, y, X; n_iters = 
   logmeasure(preimage)
 end
 
-function prob_deep(rv::RandomVariable)
-  preimage_tree = pre_deepening(rv, T, Omega())
-  preimage = tree_to_boxes(preimage_tree)
-  measure(preimage)
+function prob_deep(rv::RandomVariable;  max_depth = 5)
+  preimage = pre_deepening(rv, T, Omega(), max_depth = max_depth)
+  return measure(preimage)
 end
+
+
+
 
 ## Convenience
 prob_recursive(rv::RandomVariable) = prob(rv, pre_T = (rv,y,X)->pre_recursive2(rv, y, X;max_depth = 16, box_budget=3000))
-
 
 random(i) = ω->ω[i]
 
@@ -82,6 +83,8 @@ function middle_split(o::Omega)
   z = middle_split(box)
   map(x->Omega(Dict(ks,to_intervals(x))),z)
 end
+
+middle_split(os::Vector{Omega}) = map(middle_split, os)
 
 ## =======================
 ## Primitive Distributions

@@ -7,7 +7,7 @@ include("bool.jl")
 include("box.jl")
 include("refinement.jl")
 include("query.jl")
-# include("vis.jl")
+include("vis.jl")
 
 export
   RandomVariable,
@@ -19,7 +19,7 @@ export
   @While,
 
   # Preimages
-  pre,
+  pre_bfs,
   pre_recursive,
   pre_greedy,
   pre_deepening,

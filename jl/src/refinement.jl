@@ -2,42 +2,12 @@
 # Given a function f:X->Y and Y' ⊆ Y -
 # -- find X' ⊆ X such that f(x') ∈ Y'
 
-# DEPRECATE
-# Find the pre-image of a function on set y
-function pre(f::Function, y, bs; n_iters = 10)
-  goodboxes = Box[]
-  for i = 1:n_iters
-    output = Int[]
-    to_split = Box[]
-
-    # For each box, find the image and test intersection with y
-    println("BS Volumes", sum(map(volume,bs)))
-    for b in bs
-      image = apply(f, to_intervals(b))
-
-#       println(b.intervals)
-#       println(image)
-      # Split box further iff image overlaps
-      if subsumes(y,image)
-        push!(goodboxes, b)
-#         println("GoodBox")
-      elseif overlap(image,y)
-        push!(to_split, b)
-#         println("Splitting")
-#       else
-#         println("Leaving the box alone")
-      end
-#       println()
-    end
-    bs = split_many_boxes(to_split)
-#   println("Volumes", sum(map(volume,goodboxes)))
-  end
-  goodboxes
-end
-
-# Find the pre-image of a function on set y
-function pre2{T}(f::Function, y, bs::Vector{T}; n_iters = 10)
+# Bread first search pre
+# Warning, high memory usage
+function pre_bfs{T}(f::Function, y, X::T; n_iters = 10)
   goodboxes = T[]
+  bs = Vector[X]
+  println("bs is", bs)
   for i = 1:n_iters
     println("\n\n iteration - ", i)
     to_split = T[]
@@ -57,67 +27,6 @@ function pre2{T}(f::Function, y, bs::Vector{T}; n_iters = 10)
     println("to_split len- ", length(to_split))
 
     bs = split_many_boxes(to_split)
-  end
-  goodboxes
-end
-
-# Recursive preimage refinement
-function pre_recursive(f::Function, y, bs, depth = 1; box_count = 0, max_depth = 4, box_budget =2000)
-  goodboxes = Box[]
-  println("Depth is", depth)
-  if depth < max_depth
-    println("Found ",length(goodboxes) + box_count, "out of budget of ", box_budget)
-    for b in bs
-      if length(goodboxes) + box_count >= box_budget
-        return goodboxes
-      end
-
-      image = apply(f,to_intervals(b))
-      if subsumes(y,image)
-#         println("Good Box")
-        push!(goodboxes, b)
-      elseif overlap(image,y)
-#         println("Will Recurse")
-        boxes_from_deeper = pre_recursive(f,y,middle_split(b),depth + 1,
-                                          box_count = length(goodboxes) + box_count,
-                                          max_depth = max_depth,
-                                          box_budget = box_budget)
-        goodboxes = vcat(goodboxes, boxes_from_deeper)
-#       else
-#         println("Wasteman Box")
-      end
-    end
-  end
-  goodboxes
-end
-
-# Recursive preimage refinement
-function pre_recursive2{T}(f::Function, y, bs::Vector{T}, depth = 1;
-                           box_count = 0, max_depth = 4, box_budget =2000)
-  goodboxes = T[]
-#   println("Depth is", depth)
-  if depth < max_depth
-#     println("Found ",length(goodboxes) + box_count, "out of budget of ", box_budget)
-    for b in bs
-      if length(goodboxes) + box_count >= box_budget
-        return goodboxes
-      end
-
-      image = f(b)
-      if subsumes(y,image)
-#         println("Good Box")
-        push!(goodboxes, b)
-      elseif overlap(image,y)
-#         println("Will Recurse")
-        boxes_from_deeper = pre_recursive2(f,y,middle_split(b),depth + 1,
-                                          box_count = length(goodboxes) + box_count,
-                                          max_depth = max_depth,
-                                          box_budget = box_budget)
-        goodboxes = vcat(goodboxes, boxes_from_deeper)
-#       else
-#         println("Wasteman Box")
-      end
-    end
   end
   goodboxes
 end
@@ -169,19 +78,15 @@ has_children(t::Tree, n::Node) = !isempty(t.children[n.id])
 node_from_id(t::Tree, node_id::Integer) = t.nodes[node_id]
 children_ids(t::Tree, n::Node) = t.children[n.id]
 
+sat_tree_data(t::Tree) = map(n->n.data,filter(n->n.status==SAT,t.nodes))
+
 function dls(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, node::Node; box_budget = 2000)
-#   println("\nDepth = ", depth, " Node Status ", node.status, "limit is", depth_limit)
-#   println("T is ", t)
   # Resolve SAT status is unknown
   if node.status == UNKNOWNSAT
-#     println("node data is  ", node)
     image = f(node.data)
-#     println("image is ", image)
     satstatus = if subsumes(Y_sub, image) SAT elseif overlap(image,Y_sub) MIXEDSAT else UNSAT end
-#     println("sat statsis ", satstatus)
     node.status = satstatus
   end
-#   println("Depth = ", depth, " Node Status ", node.status)
 
   if node.status == MIXEDSAT
     if has_children(t, node)
@@ -192,7 +97,7 @@ function dls(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, 
         end
       end
     elseif depth + 1 < depth_limit
-      children_data = middle_split(node.data)
+      children_data =   middle_split(node.data)
       children_nodes = Array(typeof(node),length(children_data)) # DO THIS LAZILY
       for i = 1:length(children_data)
         new_node = Node(rand(Uint64), UNKNOWNSAT, children_data[i])
@@ -207,18 +112,17 @@ function dls(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, 
   t
 end
 
-
 function pre_deepening{T}(f::Function, Y_sub, X::T; box_budget = 2000, max_depth = 4)
   tree = Tree(Node(rand(Uint64), UNKNOWNSAT, X))
   for depth_limit = 1:max_depth
     println("Deepening Depth Limit", depth_limit)
     tree = dls(f, Y_sub, zero(Uint), depth_limit, tree, root(tree))
   end
-  tree
+  sat_tree_data(tree)
 end
 
-tree_to_boxes(t::Tree) = map(n->n.data,filter(n->n.status==SAT,t.nodes))
-
+## ===========================================
+## Greedy Preconditioning - Single Covering Box
 
 function pre_greedy(f::Function, y, bs, depth = 1)
   @label start_again

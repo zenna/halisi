@@ -1,13 +1,13 @@
-import Base.abs
+import Base.abs, Base.show, Base.print, Base.showcompact
 
 # Abstract Boolean Types
 immutable AbstractBool
-  x::Set{Bool}
+  v::Uint8
 end
 
-const T = AbstractBool(Set(true))
-const F = AbstractBool(Set(false))
-const TF = AbstractBool(Set(true, false))
+const T = AbstractBool(0x0)
+const F = AbstractBool(0x1)
+const TF = AbstractBool(0x2)
 
 function !(b::AbstractBool)
   if b === T
@@ -111,3 +111,9 @@ macro While(c, todo)
     end
   end
 end
+
+## Printing
+string(x::AbstractBool) = [0x0 => "{T}", 0x1 => "{F}", 0x2 => "{T,F}"][x.v]
+print(io::IO, x::AbstractBool) = print(io, string(x))
+show(io::IO, x::AbstractBool) = print(io, string(x))
+showcompact(io::IO, x::AbstractBool) = print(io, string(x))

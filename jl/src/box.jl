@@ -14,6 +14,7 @@ end
 
 Interval(v::Vector) = Interval(v[1],v[2])
 to_intervals(b::Box) = [Interval(b.intervals[:,i]) for i = 1:num_dims(b)]
+gen_arguments(l::Float64, u::Float64, n_dim::Integer) = to_intervals(ndcube(l,u,n_dim))
 
 # Constructors
 unit_box(num_dims) = NDimBox([zeros(num_dims) ones(num_dims)]')
@@ -142,8 +143,10 @@ end
 
 # Split box into 2^d equally sized boxes by cutting down middle of each axis"
 middle_split(b::Box) = split_box(b, middle_point(b))
+middle_split(is::Vector{Interval}) = map(to_intervals,middle_split(convert(NDimBox, is,)))
+
 volume(b::Box) = prod([b.intervals[2,i] - b.intervals[1,i] for i = 1:num_dims(b)])
-logvolume(b::Box) = sum(map(log,[b.intervals[2,i] - b.intervals[1,i] for i = 1:num_dims(b)]))
+logvolume(b::Box) = sum(map(log,[b.intervals[2,i] - b.intervals[1,i] for i = 1:num_dims(b)]))$
 
 function split_many_boxes{T}(to_split::Vector{T})
   bs = T[]
