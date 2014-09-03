@@ -2,21 +2,14 @@ using Sigma
 using Gadfly
 # ========
 # Examples
-function testy(x, y)
-  x*y
-end
 
-function testy2(x, y)
-  x  > y + .1
-end
-
-function testy3(x,y)
-  @If x > 3.5 x>y+0.1 y*y>x+-.1
-end
-
-gen_path(n) = repmat([Interval(0,10) Interval(0,10)],2,n)
+gen_path(n) = [uniform(j+5*(i-1), 0, 10) for i=1:2, j=1:n]
 
 function point_in_box(x::Number,y::Number, box::Array{Float64, 2})
+  (x >= box[1,1]) & (x <= box[2,1]) & (y >= box[1,2]) & (y <= box[2,2])
+end
+
+function point_in_box(x::Any,y::Any, box::Array{Float64, 2})
   (x >= box[1,1]) & (x <= box[2,1]) & (y >= box[1,2]) & (y <= box[2,2])
 end
 
@@ -58,6 +51,19 @@ function valid_path(start_box, dest_box, obstacles, path_box)
   good_start & good_dest & good_distances & avoids_obstacles
 end
 
+start_box = [1.01 1.01; 2.01 2.06]
+dest_box = [5.01 5.02; 6.01 7.06]
+obstacles = Array[[3.01 4.01; 4.01 5.56]]
+path_box = gen_path(4)
+v = valid_path(start_box,dest_box, obstacles, path_box)
+d = cond_prob_deep(path_b$ox[2,2]>5, v, max_depth = 20)
+d
+println("whaa")
+d
+Sigma.measure(d[2])
+
+## Vis
+
 rand_take_n(v::Vector, n::Int) = [v[rand(1:length(v))] for i in 1:n]
 
 function line_layer(b::Box)
@@ -82,26 +88,7 @@ function boxes_layer(bs::Vector{NDimBox})
   layer(x_min=x_min, x_max=x_max, y_min=y_min,color=rand(length(bs)), y_max=y_max,Geom.rectbin)
 end
 
-start_box = [1.01 1.01; 2.01 2.06]
-dest_box = [5.01 5.01; 6.01 7.06]
-obstacles = Array[[3.01 4.01; 4.01 5.56]]
-
-# preimage = pre_recursive(testy3, T, [ndcube(0.0,10.0,2)], max_depth = 9)
-# preimage = pre_recursive(x->valid_path(start_box,dest_box,obstacles,x), T, [ndcube(0.0,10.0,10)],
-#                          max_depth = 50, box_budget=3)
-preimage = pre_greedy(x->valid_path(start_box,dest_box,obstacles,x), T,
-                      [ndcube(0.0,10.0,6)])
-preimage
-# preimage
-# # path_box = to_intervals(preimage[3])
-
 # apply(plot, [boxes_layer([NDimBox(start_box)]),
 #              boxes_layer([NDimBox(dest_box)]),
 #              map(o->boxes_layer([NDimBox(o)]),obstacles)...,
 #              line_layer(preimage[rand(1:length(preimage))])])
-
-
-
-# function plot_planning_scene(start,target,obstacles,paths)
-#   plot(layer(x=rand(10), y=rand(10), Geom.point),
-

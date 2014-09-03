@@ -5,7 +5,7 @@ typealias RandomVariable typeof(+)
 # Lift primitive operators to work on random variables
 # A function applied to a random variable evaluates to
 # a random variable
-for op = (:+, :*, :&, :|, :$, :>, :>=, :<=, :<)
+for op = (:+, :-, :*, :/, :./, :&, :|, :$, :>, :>=, :<=, :<)
   @eval begin
     function ($op)(a::RandomVariable, b::RandomVariable)
       f(ω) = ($op)(a(ω),b(ω))
@@ -19,14 +19,22 @@ for op = (:+, :*, :&, :|, :$, :>, :>=, :<=, :<)
   end
 end
 
-for op = (:!,)
+## Array Operations
+for op = (:*,:./)
+  @eval begin
+    function ($op){T <:Number}(a::RandomVariable, arr::Array{T})
+      f(ω) = map(b->($op)(a(ω),b), arr)
+    end
+  end
+end
+
+for op = (:!,:sqrt,:sqr,:abs)
   @eval begin
     function ($op)(a::RandomVariable)
       f(ω) = ($op)(a(ω))
     end
   end
 end
-
 
 # ==========
 # Probability
@@ -48,7 +56,13 @@ end
 
 measure{B<:Box}(bs::Vector{B}) = sum(map(volume,bs))
 logmeasure{B<:Box}(bs::Vector{B}) = sum(map(x->exp(logvolume(x)),bs))
-measure(os::Vector{Omega}) = measure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
+function measure(os::Vector{Omega})
+  if isempty(os)
+    0.0
+  else
+    measure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
+  end
+end
 logmeasure(os::Vector{Omega}) = logmeasure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
 
 function prob(rv::RandomVariable; pre_T = (rv,y,X)->pre_bfs(rv, y, X; n_iters = 7))
@@ -63,15 +77,19 @@ function logprob(rv::RandomVariable; pre_T = (rv,y,X)->pre2(rv, y, X; n_iters = 
   logmeasure(preimage)
 end
 
-function prob_deep(rv::RandomVariable;  max_depth = 5)
-  preimage = pre_deepening(rv, T, Omega(), max_depth = max_depth)
-  return measure(preimage)
+function prob_deep(rv::RandomVariable;  max_depth = 5, box_budget = 300000)
+  tree = pre_deepening(rv, T, Omega(), max_depth = max_depth, box_budget = box_budget)
+  under_pre, over_pre = sat_tree_data(tree), mixedsat_tree_data(tree)
+  measure(under_pre), measure(over_pre)
 end
 
 function cond_prob_deep(rv::RandomVariable, q::RandomVariable; max_depth = 5)
-  pre_cond = pre_deepening(rv & q, T, Omega(), max_depth = max_depth)
-  pre_query = pre_deepening(q, T, Omega(), max_depth = max_depth)
-  return measure(pre_cond) / measure(pre_query)
+  tree1 = pre_deepening(rv & q, T, Omega(), max_depth = max_depth)
+  under_pre_cond, over_pre_cond = sat_tree_data(tree1), mixedsat_tree_data(tree1)
+
+  tree2 = pre_deepening(q, T, Omega(), max_depth = max_depth)
+  under_pre_query, over_pre_query =  sat_tree_data(tree2), mixedsat_tree_data(tree2)
+  measure(under_pre_cond) / measure(under_pre_query), measure(over_pre_cond) / measure(over_pre_query)
 end
 
 

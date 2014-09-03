@@ -3,6 +3,7 @@ module Sigma
 using Distributions
 
 include("util.jl")
+include("randomvariable.jl")
 include("bool.jl")
 include("box.jl")
 include("refinement.jl")
@@ -28,7 +29,6 @@ export
   ndcube,
   sqr,
   sqrt,
-  plot_2d_boxes,
 
   # Probabilistic functions
   prob,
@@ -40,5 +40,10 @@ export
   flip,
 
   #utils
-  tolerant_eq
+  tolerant_eq,
+
+  #Plotting
+  plot_2d_boxes,
+  plot_psuedo_density,
+  plot_volume_distribution
 end

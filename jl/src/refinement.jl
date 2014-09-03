@@ -78,14 +78,27 @@ has_children(t::Tree, n::Node) = !isempty(t.children[n.id])
 node_from_id(t::Tree, node_id::Integer) = t.nodes[node_id]
 children_ids(t::Tree, n::Node) = t.children[n.id]
 
-sat_tree_data(t::Tree) = map(n->n.data,filter(n->n.status==SAT,t.nodes))
+function sat_tree_data(t::Tree)
+  a::Vector{Omega} = map(n->n.data,filter(n->n.status==SAT,t.nodes))
+  a
+end
 
-function dls(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, node::Node; box_budget = 2000)
+function mixedsat_tree_data(t::Tree)
+  a::Vector{Omega} = map(n->n.data,filter(n->(n.status != UNSAT)
+                                              && (!has_children(t,n)),t.nodes))
+  a
+end
+
+function dls(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, node::Node; box_budget = 300000)
   # Resolve SAT status is unknown
   if node.status == UNKNOWNSAT
     image = f(node.data)
     satstatus = if subsumes(Y_sub, image) SAT elseif overlap(image,Y_sub) MIXEDSAT else UNSAT end
     node.status = satstatus
+  end
+
+  if length(t.nodes) >= box_budget
+    return t
   end
 
   if node.status == MIXEDSAT
@@ -104,6 +117,11 @@ function dls(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, 
         children_nodes[i] = new_node
         new_child = add_child!(t, children_nodes[i], node.id)
         t = dls(f, Y_sub, depth + 1, depth_limit, t, new_child; box_budget = box_budget)
+
+        # Poor budget hack
+        if length(t.nodes) >= box_budget
+          return t
+        end
       end
     end
   elseif node.status == UNSAT || node.status == SAT
@@ -112,13 +130,16 @@ function dls(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, 
   t
 end
 
-function pre_deepening{T}(f::Function, Y_sub, X::T; box_budget = 2000, max_depth = 4)
+# Preimage refinement based on iterative deepening
+# Returns under and overapproximating sets of boxes
+function pre_deepening{T}(f::Function, Y_sub, X::T; box_budget = 300000, max_depth = 4)
   tree = Tree(Node(rand(Uint64), UNKNOWNSAT, X))
   for depth_limit = 1:max_depth
 #     println("Deepening Depth Limit", depth_limit)
-    tree = dls(f, Y_sub, zero(Uint), depth_limit, tree, root(tree))
+    tree = dls(f, Y_sub, zero(Uint), depth_limit, tree, root(tree), box_budget = box_budget)
   end
-  sat_tree_data(tree)
+  println(length(tree.nodes))
+  tree
 end
 
 ## ===========================================

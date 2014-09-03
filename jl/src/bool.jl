@@ -29,7 +29,7 @@ end
 function (|)(x::AbstractBool, y::AbstractBool)
   if x === T || y === T T
   elseif x === TF || y === TF TF
-  elseif x === T && y === T T else F
+  else F
   end
 end
 |(x::AbstractBool, y::Bool) = |(x,convert(AbstractBool,y))

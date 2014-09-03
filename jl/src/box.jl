@@ -69,6 +69,11 @@ function /(x::Interval, y::Interval)
   Interval(min(a,b,c,d),max(a,b,c,d))
 end
 
+function /(x::Interval, y::Real)
+  Interval(x.l / y, x.u / y)
+end
+
+
 ## =========
 ## Merging
 function merge_interval(a::Interval, b::Interval)
