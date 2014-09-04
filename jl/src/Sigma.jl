@@ -12,6 +12,10 @@ include("vis.jl")
 
 export
   RandomVariable,
+  RandomArray,
+  MakeRandomArray,
+  independentRandomArray,
+  Omega,
   Interval,
   NDimBox,
   AbstractBool,
@@ -33,6 +37,9 @@ export
   # Probabilistic functions
   prob,
   prob_deep,
+
+  #
+  setindex,
 
   # Distributions
   normal,

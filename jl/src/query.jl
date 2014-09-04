@@ -1,43 +1,7 @@
 import Base.quantile
-using Base.Test
-typealias RandomVariable typeof(+)
 
-# Lift primitive operators to work on random variables
-# A function applied to a random variable evaluates to
-# a random variable
-for op = (:+, :-, :*, :/, :./, :&, :|, :$, :>, :>=, :<=, :<)
-  @eval begin
-    function ($op)(a::RandomVariable, b::RandomVariable)
-      f(ω) = ($op)(a(ω),b(ω))
-    end
-    function ($op)(a::Number, b::RandomVariable)
-      f(ω) = ($op)(a,b(ω))
-    end
-    function ($op)(a::RandomVariable, b::Number)
-      f(ω) = ($op)(a(ω),b)
-    end
-  end
-end
-
-## Array Operations
-for op = (:*,:./)
-  @eval begin
-    function ($op){T <:Number}(a::RandomVariable, arr::Array{T})
-      f(ω) = map(b->($op)(a(ω),b), arr)
-    end
-  end
-end
-
-for op = (:!,:sqrt,:sqr,:abs)
-  @eval begin
-    function ($op)(a::RandomVariable)
-      f(ω) = ($op)(a(ω))
-    end
-  end
-end
-
-# ==========
-# Probability
+# ============
+# Sample Space
 
 immutable Omega
   intervals::Dict{Any,Interval}
@@ -54,6 +18,9 @@ function getindex(o::Omega, key::Int64)
   end
 end
 
+# =======
+# Measure
+
 measure{B<:Box}(bs::Vector{B}) = sum(map(volume,bs))
 logmeasure{B<:Box}(bs::Vector{B}) = sum(map(x->exp(logvolume(x)),bs))
 function measure(os::Vector{Omega})
@@ -64,6 +31,9 @@ function measure(os::Vector{Omega})
   end
 end
 logmeasure(os::Vector{Omega}) = logmeasure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
+
+# =======
+# Queries
 
 function prob(rv::RandomVariable; pre_T = (rv,y,X)->pre_bfs(rv, y, X; n_iters = 7))
   preimage = pre_T(rv, T, [Omega()])
