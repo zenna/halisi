@@ -1,4 +1,3 @@
-import Base.convert, Base.rand, Base.sqrt
 using Iterators
 abstract Box <: Real
 type NDimBox <: Box
@@ -20,7 +19,6 @@ gen_arguments(l::Float64, u::Float64, n_dim::Integer) = to_intervals(ndcube(l,u,
 unit_box(num_dims) = NDimBox([zeros(num_dims) ones(num_dims)]')
 ndcube(l::Float64, u::Float64, num_dims) = NDimBox(repmat([l,u],1,num_dims))
 
-#FIX ME: Handle End Points properly
 subsumes(x::Interval, y::Interval) = y.l >= x.l && y.u <= x.u
 overlap(x::Interval, y::Interval) = y.l < x.u && x.l < y.u
 

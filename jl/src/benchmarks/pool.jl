@@ -24,29 +24,83 @@ function reflect(v,q)
   q_norm = normalise(q)
   n_amb = perp(q_norm)
   v2 = normalise(v)
-  n = @If dotty(-q_norm,v2) < 0 -n_amb n_amb
-  println("dot", dotty(q_norm,v))
+  println("normal before", n_amb)
+  n = @If dotty(q_norm,v2) < 0 n_amb -n_amb
+  println("normal after", n)
+  println("dot ", dotty(q_norm,v2))
   v2 - 2 * (dotty(v2,n) * n)
 end
 
 # is a the smallest element in list ss
 function smallest(x,ys)
+  println("getting here")
   issmallest =
     @If(x < 0.001, false,
         begin
         issmallest = true
-         for y in ys
-          issmallest = @If (y > 0.01) ((y >= x) & issmallest) issmallest
-         end
-#          println("issmallest", issmallest, " ", x, ys)
-         issmallest
+          for i in 1:length(ys)
+            issmallest = @If (ys[i] > 0.01) ((ys[i] >= x) & issmallest) issmallest
+          end
+#           println("issmallest", issmallest, " ", x, ys)
+        issmallest
         end)
   issmallest
 end
 
+# function smallest(rv::RandomVariable, ra::RandomArray)
+#   function(ω)
+#     ys = ra(ω)
+#     x = rv(ω)
+#     issmallest =
+#     @If(x < 0.001, false,
+#         begin
+#           issmallest = true
+#           for i in 1:length(ys)
+#             issmallest = @If (ys[i,1] > 0.01) ((ys[i,1] >= x) & issmallest) issmallest
+#           end
+#           #          println("issmallest", issmallest, " ", x, ys)
+#           issmallest
+#         end)
+#   end
+# end
+
+# a = uniformArray(0,1,3,1)
+# makeIndependentRandomVariables
+
 # if its negative, it can't be the smallest
 # otherwise, for all others
 # its the smallest if its smaller than all the positive ones
+# function bounce(srv,v1rv,v2rv,u1rv,u2rv)
+#   function(ω)
+#     s = srv(ω)
+#     v1 = v1rv(ω)
+#     v2 = v2rv(ω)
+#     u1 = v1rv(ω)
+#     u2 = v2rv(ω)
+#     # The Obstacle
+#     v_norm = sqrt(sqr(v1) + sqr(v2))
+#     v1_normed = v1 / v_norm
+#     v2_normed = v2 / v_norm
+
+#     # The ray
+#     u_norm = sqrt(sqr(u1) + sqr(u2))
+#     u1_normed = u1 / u_norm
+#     u2_normed = u2 / u_norm
+
+#     n1 = -v2
+#     n2  = v1
+
+#     u = [u1,u2]
+#     v = [v1,v2]
+#     n = [n1,n2]
+
+
+#     n1,n2 = @If(dotty(-u,v) < 0,
+#                 -, (n1,n2))
+#     v2 - 2 * (dotty(v2,n) * n)
+#   end
+# end
+
 function bounce(p,s,o)
 #   println("Bouncing", p, s, o)
   v = p[:,2]
@@ -77,11 +131,6 @@ function simulate(num_steps::Integer, obs)
 #       println("d is", p)
       ss[j] = intersect_segments(p, obs[j])
     end
-
-    #     ss = [intersect_segments(p, o) for o in obs]
-    # For each obstacle ask whether or not this s is smaller than all others
-    # for each obstacle that this is yes, do it again
-
     pos_parametric[i+1] = @If(smallest(ss[1],ss), bounce(p,ss[1],obs[2]),
                               @If(smallest(ss[2],ss),bounce(p,ss[2],obs[2]),
                                   bounce(p,ss[3],obs[3])))
@@ -89,9 +138,85 @@ function simulate(num_steps::Integer, obs)
   pos_parametric
 end
 
+# 1+1
+bbb = simulate_prob(5,obstacles)(Omega())
+# bbb
+
+function simulate_prob(num_steps::Integer, obs)
+  function (omega)
+    obs = map(points_to_parametric, obstacles)
+    num_steps = num_steps - 1
+    start_pos = Any[4, 5]
+    v0,v1 = uniform(0,-1,1)(omega), uniform(1,-1,1)(omega)
+    dir  = normalise(Any[v0,v1])
+    pos_parametric = Array(Any, num_steps + 1)
+    pos_parametric[1] = Any[start_pos dir]
+
+    for i = 1:num_steps
+      println("hello")
+      p = pos_parametric[i]
+      println("hu", length(obs))
+      ss = Vector(Any, length(obs))
+      println("gma")
+      for j = 1:length(obs)
+        println("inn", j)
+        ss[j] = intersect_segments(p, obs[j])
+      end
+      pos_parametric[i+1] = @If(smallest(ss[1],ss), bounce(p,ss[1],obs[2]),
+                                @If(smallest(ss[2],ss),bounce(p,ss[2],obs[2]),
+                                    bounce(p,ss[3],obs[3])))
+    end
+    pos_parametric
+  end
+end
+
+function intersect_segments_prob(p0x,p0y,q0x,q0y, u1, u2, v1, v2)
+  w1 = p0x - q0x
+  w2 = p0y - q0y
+
+  u = p[:,2]
+  v = q[:,2]
+  (v2 * w1 - v1 * w2) / (v1 * u2 - v2 * u1)
+end
+
+# function simulate_prob(num_steps::Integer, obs)
+#   obs = map(points_to_parametric, obstacles)
+#   num_steps = num_steps - 1
+#   start_pos = [4, 5]
+
+#   ray = MakeRandomArray(Float64,2,2*(num_steps + 1))
+
+#   ray = setindex(ray, 4, 1,1)
+#   ray = setindex(ray, 5, 2,1)
+#   ray = setindex(ray, uniform(0,-1,1), 1,2)
+#   ray = setindex(ray, uniform(1,-1,1), 2,2)
+
+#   for i = 1:num_steps
+#     p = ray[i]
+#     p0x, p0y, u1, u2 = ray[1,1],ray[2,1],ray[1,2],ray[2,2]
+
+#     ss = MakeRandomArray(Any, length(obs), 1)
+#     for j = 1:length(obs)
+#       o = obs[j]
+#       q0x, q0y, v1, v2 = o[1,1],o[2,1],o[1,2],o[2,2]
+# #       println("d is", p)
+#       s = intersect_segments(p0x,p0y,q0x,q0y, u1, u2, v1, v2)
+#       ss = setindex(ss,s,i,1)
+#     end
+#     pos_parametric[i+1] = @If(smallest(ss[1],ss), bounce(p,ss[1],obs[2]),
+#                               @If(smallest(ss[2],ss),bounce(p,ss[2],obs[2]),
+#                                   bounce(p,ss[3],obs[3])))
+#   end
+#   pos_parametric
+# end
+
+# ray = simulate_prob(2, obstacles)
+# a = simulation_prob[2,:]
+
+# simulation_prob(Omega())
+
 ## ====
 ## Vis
-
 function make_point_pairs(lines)
   b = Array(Any, length(lines)-1)
   for i = 1:length(lines) - 1
@@ -132,3 +257,4 @@ a = make_compose_lines(obstacles)
 b = make_compose_lines(make_point_pairs(simulation))
 
 draw_lines(a,b)
+

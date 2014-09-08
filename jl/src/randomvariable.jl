@@ -1,6 +1,4 @@
-typealias RandomVariable typeof(+)
-
-import Base: sum, dot, length
+typealias RandomVariable Function
 
 # Lift primitive operators to work on random variables
 # A function applied to a random variable evaluates to
@@ -77,4 +75,19 @@ end
 function independentRandomArray(constructor::Function, x::Integer, y::Integer, offset::Integer = 0)
   a = [constructor(i+(j-1)*(y-1)) for i = 1:x, j = 1:y]
   MakeRandomArray(a)
+end
+
+# The problem with smallest is that it requries we iterate over the list
+uniformArray(l,u,x,y) = independentRandomArray(x->uniform(x,l,u),x,y)
+
+function smallest(rv::RandomVariable, ra::RandomArray)
+  function(ω)
+    A = ra(ω)
+    v = rv(ω)
+    smallest = true
+    for a in 1:length(A)
+      smallest = smallest & v < A[i]
+    end
+    smallest
+  end
 end

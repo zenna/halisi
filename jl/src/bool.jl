@@ -1,5 +1,3 @@
-import Base.abs, Base.show, Base.print, Base.showcompact
-
 # Abstract Boolean Types
 immutable AbstractBool
   v::Uint8

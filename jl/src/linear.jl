@@ -77,7 +77,7 @@ function dist(a::Point, b::Point)
 end
 
 # Hausford Measure;
-function measure(points::Vector) #FIXME Type is too generic?
+function measure(points::Vector) falseIXME Type is too generic?
   tot = 0.0
   for i = range(1,length(points) - 1)
     a = points[i]
@@ -244,9 +244,9 @@ function generate_objf(f, l::Linear, n_points, n_intervals)
   projection = project_i(l)
   intervals = interpolate_n_intervals(min(projection), max(projection), n_intervals)
   image_intervals = map(i->convert(Vector,f(Interval(i))), intervals)
-  measures = map(x->interval_measure(l.points,x,1), intervals) #FIXME: HARDCODED IN DIM
+  measures = map(x->interval_measure(l.points,x,1), intervals) falseIXME: HARDCODED IN DIM
   objf = function(x::Vector, grad::Vector)
-     #FIXMEL WHY THREE?
+     falseIXMEL WHY THREE?
     shape = Linear(structure_points(x, 3))
 #     println("measure is", measure(shape.points), "shape is", shape)
     interval_cost(shape, intervals, image_intervals, measures)
@@ -258,9 +258,9 @@ function generate_objf(f, ls::Vector{Linear}, n_points, n_rectangles)
   projections = map(project_i, ls)
   rectangles = interpolate_n_intervals(min(projection), max(projection), n_intervals)
   image_intervals = map(i->convert(Vector,f(Interval(i))), intervals)
-  measures = map(x->interval_measure(l.points,x,1), intervals) #FIXME: HARDCODED IN DIM
+  measures = map(x->interval_measure(l.points,x,1), intervals) falseIXME: HARDCODED IN DIM
   objf = function(x::Vector, grad::Vector)
-     #FIXMEL WHY THREE?
+     falseIXMEL WHY THREE?
     shape = Linear(structure_points(x, 3))
 #     println("measure is", measure(shape.points), "shape is", shape)
     interval_cost(shape, intervals, image_intervals, measures)
@@ -279,7 +279,7 @@ function *(l::Linear, n)
   init_params = rand(n_points * 3)
 
   # Constraints
-  #FIXME : FALSE LOWERBOUND OF ZERO ON PARAMS
+  falseIXME : FALSE LOWERBOUND OF ZERO ON PARAMS
   lower_bounds!(opt::Opt, zeros(init_params))
 
   # Create initial parameters
