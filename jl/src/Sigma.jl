@@ -48,7 +48,20 @@ export
   plot_2d_boxes,
   plot_psuedo_density,
   plot_cond_density,
-  plot_volume_distribution
+  plot_volume_distribution,
+  plot_performance,
+  plot_sat_distribution,
+  distinguished_colors,
+  rand_color,
+
+  # Benchmarking
+  parse_output,
+  run_church,
+  stat_line_layer,
+  stat_ribbon_layer,
+  stat_errorbar_layer,
+  plot_cond_performance,
+  plot_prob_performance
 
 
 include("util.jl")

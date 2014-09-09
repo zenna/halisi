@@ -25,3 +25,10 @@ end
 # cart_product(1,v)
 
 # [cart_product(i,v) for i = 0:23]
+
+
+## =====================
+## Probabilstic Utilities
+
+rand_interval(l,u) = rand() * (u - l) + l
+rand_select(v::Vector) = v[ceil(rand_interval(0,length(v)))]

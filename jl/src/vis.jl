@@ -2,6 +2,10 @@
 ## Visualisation
 using Gadfly
 
+rand_color() = RGB(rand(),rand(),rand())
+distinguished_colors = distinguishable_colors(10)
+faint_colors = map(c->AlphaColorValue(c,0.25), distinguished_colors)
+
 function plot_2d_boxes(bs::Vector{Box})
   x_min = Float64[]
   y_min = Float64[]
@@ -74,18 +78,4 @@ function plot_volume_distribution(t::Tree)
   sat_nodes::Vector{Omega} = map(n->n.data,t.nodes)
   volumes = measure(sat_nodes)
   plot(x = volumes, Geom.histogram, Scale.y_log10)
-end
-
-function plot_performance(X::RandomVariable; num_points = 10, max_boxes = 300000)
-  box_budget = linspace(1,max_boxes,num_points)
-  probs = Array((Float64,Float64), length(box_budget))
-  times = Array(Float64, length(box_budget))
-  for i = 1:num_points
-    tic()
-    probs[i] = prob_deep(X, box_budget = box_budget[i])
-    times[i] = toc()
-  end
-  probmins = map(x->x[1],probs)
-  probmaxs = map(x->x[2],probs)
-  plot(x = box_budget, ymin = probmins, ymax = probmaxs, Geom.ribbon)
 end
