@@ -4,7 +4,7 @@ function cart_product{E}(n, A::Array{Array{E,1},1})
   lengths = [length(a) for a in A]
   elems = Array(E, length(A))
   accum_lengths = Array(Integer, length(A))
-  accum_lengths[1] = prod(lengths[2:])
+  accum_lengths[1] = prod(lengths[2:end])
   for i = 2:length(A)
     accum_lengths[i] = accum_lengths[i-1] / lengths[i]
   end

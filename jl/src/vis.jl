@@ -1,6 +1,7 @@
 ## =============
 ## Visualisation
 using Gadfly
+using Color
 
 rand_color() = RGB(rand(),rand(),rand())
 distinguished_colors = distinguishable_colors(10)

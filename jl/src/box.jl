@@ -22,34 +22,36 @@ ndcube(l::Float64, u::Float64, num_dims) = NDimBox(repmat([l,u],1,num_dims))
 subsumes(x::Interval, y::Interval) = y.l >= x.l && y.u <= x.u
 overlap(x::Interval, y::Interval) = y.l < x.u && x.l < y.u
 
+ConcreteReal = Union(Float64,Int64)
+
 ## ====================================
 ## Interval Arithmetic and Inequalities
 
 >(x::Interval, y::Interval) = if overlap(x,y) TF elseif x.l > y.u T else F end
 <(x::Interval, y::Interval) = if overlap(x,y) TF elseif x.u < y.l T else F end
 
->(x::Interval, y::Real) = if x.l > y true elseif x.u > y >= x.l TF else false end
->(y::Real, x::Interval) =  if x.u < y true elseif x.l < y <= x.u TF else false end
+>(x::Interval, y::ConcreteReal) = if x.l > y true elseif x.u > y >= x.l TF else false end
+>(y::ConcreteReal, x::Interval) =  if x.u < y true elseif x.l < y <= x.u TF else false end
 
-<(x::Interval, y::Real) = y > x
-<(y::Real, x::Interval) = x > y
+<(x::Interval, y::ConcreteReal) = y > x
+<(y::ConcreteReal, x::Interval) = x > y
 
 <=(x::Interval, y::Interval) = !(x > y)
 >=(x::Interval, y::Interval) = !(x < y)
-<=(x::Interval, y::Real) = !(x > y)
-<=(y::Real, x::Interval) = !(y > x)
+<=(x::Interval, y::ConcreteReal) = !(x > y)
+<=(y::ConcreteReal, x::Interval) = !(y > x)
 
->=(x::Interval, y::Real) = !(x < y)
->=(y::Real, x::Interval) = !(x < y)
+>=(x::Interval, y::ConcreteReal) = !(x < y)
+>=(y::ConcreteReal, x::Interval) = !(x < y)
 +(x::Interval, y::Interval) = Interval(x.l + y.l, x.u + y.u)
 -(x::Interval, y::Interval) = Interval(x.l - y.u, x.u - y.l)
-+(x::Interval, y::Real) = Interval(x.l + y, x.u + y)
-+(y::Real, x::Interval) = x + y
--(x::Interval, y::Real) = Interval(x.l - y, x.u - y)
--(y::Real, x::Interval) = Interval(y - x.l, y - x.u)
++(x::Interval, y::ConcreteReal) = Interval(x.l + y, x.u + y)
++(y::ConcreteReal, x::Interval) = x + y
+-(x::Interval, y::ConcreteReal) = Interval(x.l - y, x.u - y)
+-(y::ConcreteReal, x::Interval) = Interval(y - x.l, y - x.u)
 
-*(x::Interval, y::Real) = Interval(x.l * y, x.u * y)
-*(y::Real, x::Interval) = x * y
+*(x::Interval, y::ConcreteReal) = Interval(x.l * y, x.u * y)
+*(y::ConcreteReal, x::Interval) = x * y
 
 sqrt(x::Interval) = Interval(sqrt(x.l), sqrt(x.u))
 function sqr(x::Interval)
@@ -67,7 +69,7 @@ function /(x::Interval, y::Interval)
   Interval(min(a,b,c,d),max(a,b,c,d))
 end
 
-function /(x::Interval, y::Real)
+function /(x::Interval, y::ConcreteReal)
   Interval(x.l / y, x.u / y)
 end
 
@@ -80,7 +82,7 @@ function merge_interval(a::Interval, b::Interval)
   Interval(l,u)
 end
 
-function merge_interval(a::Interval, b::Real)
+function merge_interval(a::Interval, b::ConcreteReal)
   l = min(a.l,b)
   u = max(a.u,b)
   Interval(l,u)
@@ -89,7 +91,7 @@ end
 ## ===========
 ## Conversions
 
-function convert(NDimBox, i::Vector{Interval})
+function convert(Type{NDimBox}, i::Vector{Interval})
   intervals = Array(Float64,2,length(i))
   for j in 1:length(i)
     intervals[:,j] = [i[j].l i[j].u]

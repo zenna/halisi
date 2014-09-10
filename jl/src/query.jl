@@ -42,6 +42,11 @@ function cond_prob_deep(rv::RandomVariable, q::RandomVariable; box_budget = 3000
 
   tree2 = pre_deepening(q, T, Omega(), max_depth = max_depth, box_budget = box_budget)
   under_pre_query, over_pre_query =  sat_tree_data(tree2), mixedsat_tree_data(tree2)
+  println(" under cond: ", sum(measure(under_pre_cond)),
+          " under query: ", sum(measure(under_pre_query)),
+          " over_pre_cond: ", sum(measure(over_pre_cond)),
+          " over_pre_query: ", sum(measure(over_pre_query)))
+
   (sum(measure(under_pre_cond))) / (sum(measure(under_pre_query))), (sum(measure(over_pre_cond))) / (sum(measure(over_pre_query)))
 end
 
@@ -60,7 +65,6 @@ function middle_split(o::Omega)
 end
 
 middle_split(os::Vector{Omega}) = map(middle_split, os)
-
 ## ========
 ## Sampling
 function cond_sample(rv::RandomVariable, q::RandomVariable)
@@ -80,6 +84,7 @@ function cond_sample(rv::RandomVariable, q::RandomVariable)
 #     end
 #   end
 end
+
 # x = uniform(0,0,1)
 # y = uniform(1,0,1)
 # cond_sample(x,x*y>2)

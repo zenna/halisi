@@ -1,5 +1,4 @@
 using Gadfly
-using Sigma
 using Color
 
 # d = [0 => 0.4, 1 => 0.6]
@@ -53,6 +52,7 @@ function plot_cond_performance(X::RandomVariable, Y::RandomVariable;
   times = Array(Float64, length(box_budget))
   for i = 1:num_points
     tic()
+    println("num_points", i)
     probs[i] = cond_prob_deep(X, Y, max_depth = max_depth, box_budget = box_budget[i])
     times[i] = toc() * 1000
   end

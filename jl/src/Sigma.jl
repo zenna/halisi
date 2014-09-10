@@ -43,6 +43,7 @@ export
 
   #utils
   tolerant_eq,
+  rand_select,
 
   #Plotting
   plot_2d_boxes,
@@ -71,5 +72,6 @@ include("box.jl")
 include("omega.jl")
 include("refinement.jl")
 include("query.jl")
+include("benchmarks/benchmark.jl")
 include("vis.jl")
 end
