@@ -91,7 +91,7 @@ end
 ## ===========
 ## Conversions
 
-function convert(Type{NDimBox}, i::Vector{Interval})
+function convert(::Type{NDimBox}, i::Vector{Interval})
   intervals = Array(Float64,2,length(i))
   for j in 1:length(i)
     intervals[:,j] = [i[j].l i[j].u]

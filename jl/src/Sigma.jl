@@ -12,6 +12,7 @@ export
   MakeRandomArray,
   independentRandomArray,
   Omega,
+  SampleOmega,
   Interval,
   NDimBox,
   AbstractBool,
@@ -32,7 +33,7 @@ export
   # Probabilistic functions
   prob,
   prob_deep,
-
+  cond_sample,
   setindex,
 
   # Distributions

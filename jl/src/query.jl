@@ -67,23 +67,36 @@ end
 middle_split(os::Vector{Omega}) = map(middle_split, os)
 ## ========
 ## Sampling
-function cond_sample(rv::RandomVariable, q::RandomVariable)
-  tree = pre_deepening(x*y>0.5, T, Omega(), max_depth = 6)
+function cond_sample(X::RandomVariable, Y::RandomVariable; max_depth = 10)
+  tree = pre_deepening(Y, T, Omega(), max_depth = max_depth)
   over_pre_cond = mixedsat_tree_data(tree)
   measures = measure(over_pre_cond)
   pnormalize!(measures)
-  c = Categorical(measure(over_pre_cond))
+  c = Categorical(measures)
   omegas_as_boxes = convert(Vector{Box}, over_pre_cond)
 
-#   function()
-#     num_tries = 1000
-#     for i = 1:num_tries
-#       omegas_as_boxes[rand(c)]
-#       sample = rand(omegas_as_boxes)
-#       measure(over_pre_cond)
-#     end
-#   end
+  function(num_tries)
+    for i = 1:num_tries
+      box = omegas_as_boxes[rand(c)]
+      sample = rand(box)
+      println(sample)
+      measure(over_pre_cond)
+    end
+  end
 end
+
+# methods(measure)
+
+# cond_sample(uniform(0,0,1),uniform(0,0,1) > 0.5)
+
+
+
+
+# import Sigma.mixedsat_tree_data
+# tree = pre_deepening(flip(0,.7), T, Omega())
+# over_pre_cond = mixedsat_tree_data(tree)
+# measures = measure(over_pre_cond)
+
 
 # x = uniform(0,0,1)
 # y = uniform(1,0,1)

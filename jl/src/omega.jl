@@ -13,6 +13,21 @@ function getindex(o::Omega, key::Int64)
   end
 end
 
+immutable SampleOmega
+  samples::Dict{Int64,Float64}
+end
+SampleOmega() = SampleOmega(Dict{Int64,Float64}())
+
+function getindex(o::SampleOmega, key::Int64)
+  if haskey(o.samples,key)
+    o.samples[key]
+  else
+    i = rand()
+    o.samples[key] = i
+    i
+  end
+end
+
 function convert(::Type{Vector{Box}}, os::Vector{Omega})
   map(x->convert(NDimBox,collect(values(x.intervals))),os)
 end
