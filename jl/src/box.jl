@@ -73,7 +73,36 @@ function /(x::Interval, y::ConcreteReal)
   Interval(x.l / y, x.u / y)
 end
 
+import Base.in
+import Base.inv
+in(c::ConcreteReal, y::Interval) = y.l <= c <= y.u
+inv(x::Interval) = Interval(1/x.u,1/x.l)
 
+ # Ratz Interval Division
+function /(x::Interval, y::Interval)
+  a,b,c,d = x.l,x.u,y.l,y.u
+  if !(0 ∈ y)
+    x * inv(y)
+  elseif (0 ∈ x)
+    Interval(-Inf,Inf)
+  elseif b < 0 && c < d == 0
+    Interval(b/c,Inf)
+  elseif b < 0 && c < 0 < d
+    Inteval(-Inf,Inf)
+  elseif b < 0 && 0 == c < d
+    Interval(-Inf,b/d)
+  elseif 0 < a && c < d == 0
+    Interval(-Inf,a/c)
+  elseif 0 < a && c < 0 < d
+    Interval(-Inf,Inf)
+  elseif 0 < a && 0 == c < d
+    Interval(a/d, Inf)
+  else
+    Inf
+  end
+end
+
+# Interval(0,10)/Interval(10,20)
 ## =========
 ## Merging
 function merge_interval(a::Interval, b::Interval)

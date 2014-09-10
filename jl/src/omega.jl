@@ -13,6 +13,17 @@ function getindex(o::Omega, key::Int64)
   end
 end
 
+measure(o::Omega) = prod([i.u - i.l for i in values(o.intervals)])
+measure(os::Vector{Omega}) = [measure(o) for o in os]
+
+function rand(o::Omega)
+  s = Dict{Int64,Float64}()
+  for interval in o.intervals
+    s[interval[1]] = rand_interval(interval[2].l,interval[2].u)
+  end
+  SampleOmega(s)
+end
+
 immutable SampleOmega
   samples::Dict{Int64,Float64}
 end

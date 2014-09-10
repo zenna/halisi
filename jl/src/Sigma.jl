@@ -63,7 +63,9 @@ export
   stat_ribbon_layer,
   stat_errorbar_layer,
   plot_cond_performance,
-  plot_prob_performance
+  plot_prob_performance,
+  add_KL!,
+  add_KL_church!
 
 
 include("util.jl")

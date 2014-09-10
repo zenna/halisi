@@ -80,3 +80,21 @@ function plot_prob_performance(X::RandomVariable;
   [["probmin" => probmins[i], "probmax" => probmaxs[i], "run_time" => times[i]]
    for i = 1:num_points]
 end
+
+function add_KL!(stats, groundtruth::Dict)
+  for s in stats
+    kl1 = KL(groundtruth, ptrue_to_dist(s["probmin"]))
+    kl2 = KL(groundtruth, ptrue_to_dist(s["probmax"]))
+    s["klmin"] = min(kl1,kl2)
+    s["klmax"] = max(kl1,kl2)
+  end
+  stats
+end
+
+function add_KL_church!(stats, groundtruth::Dict)
+  for s in stats
+    kl = KL(groundtruth, ptrue_to_dist(s["prob"]))
+    s["kl"] = kl
+  end
+  stats
+end

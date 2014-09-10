@@ -30,5 +30,5 @@ end
 ## =====================
 ## Probabilstic Utilities
 
-rand_interval(l,u) = rand() * (u - l) + l
+rand_interval{T<:Real}(a::T, b::T) = a + (b - a) * rand()
 rand_select(v::Vector) = v[ceil(rand_interval(0,length(v)))]

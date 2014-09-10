@@ -6,13 +6,7 @@ import Distributions.pnormalize!
 
 measure{B<:Box}(bs::Vector{B}) = map(volume,bs)
 logmeasure{B<:Box}(bs::Vector{B}) = map(x->exp(logvolume(x)),bs)
-function measure(os::Vector{Omega})
-  if isempty(os)
-    0.0
-  else
-    measure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
-  end
-end
+
 logmeasure(os::Vector{Omega}) = logmeasure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
 
 # =======
@@ -70,17 +64,20 @@ middle_split(os::Vector{Omega}) = map(middle_split, os)
 function cond_sample(X::RandomVariable, Y::RandomVariable; max_depth = 10)
   tree = pre_deepening(Y, T, Omega(), max_depth = max_depth)
   over_pre_cond = mixedsat_tree_data(tree)
-  measures = measure(over_pre_cond)
+  measures::Vector{Float64} = measure(over_pre_cond)
   pnormalize!(measures)
-  c = Categorical(measures)
-  omegas_as_boxes = convert(Vector{Box}, over_pre_cond)
+  println("Total is ", sum(measures))
+  c = Categorical(measures, Distributions.NoArgCheck())
 
   function(num_tries)
     for i = 1:num_tries
-      box = omegas_as_boxes[rand(c)]
-      sample = rand(box)
-      println(sample)
-      measure(over_pre_cond)
+      omega = over_pre_cond[rand(c)]
+      sample = rand(omega)
+      if Y(sample)
+        return X(sample)
+      else
+        println("sample failed, trying again, i = ", i)
+      end
     end
   end
 end

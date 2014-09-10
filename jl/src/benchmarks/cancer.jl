@@ -1,36 +1,28 @@
 using Sigma
 
-groundtruthcancer = ground_truth(0.01)
-ground_truth_dist = ptrue_to_dist(ground_truth(0.01))
-
-ptrue_to_dist(ptrue::Float64) = [1 => ptrue, 0 => (1 - ptrue)]
-KL(ptrue_to_dist(ground_truth(0.01)),ptrue_to_dist(.9))
-
-function add_KL!(stats, groundtruth::Dict)
-  for s in stats
-    kl1 = KL(groundtruth, ptrue_to_dist(s["probmin"]))
-    kl2 = KL(groundtruth, ptrue_to_dist(s["probmax"]))
-    s["klmin"] = min(kl1,kl2)
-    s["klmax"] = max(kl1,kl2)
-  end
-  stats
-end
-
-function add_KL_church!(stats, groundtruth::Dict)
-  for s in stats
-    kl = KL(groundtruth, ptrue_to_dist(s["prob"]))
-    s["kl"] = kl
-  end
-  stats
-end
-
 function ground_truth(cancer_rate)
   (cancer_rate * 0.008) / ((0.008 * cancer_rate) + (0.00096 * 0.99))
 end
 
-ground_truth(0.01)
+ptrue_to_dist(ptrue::Float64) = [1 => ptrue, 0 => (1 - ptrue)]
+
+groundtruthcancer = ground_truth(0.01)
+ground_truth_dist = ptrue_to_dist(ground_truth(0.01))
+
+KL(ptrue_to_dist(ground_truth(0.01)),ptrue_to_dist(.9))
 breast_cancer = flip(1,0.01)
 positive_mammogram = @If breast_cancer flip(2, 0.008) flip(3,0.00096)
+sampler = cond_sample(breast_cancer, positive_mammogram,max_depth = 12)
+
+num_true = 0
+@time for i = 1:1000
+  s = sampler(100)
+  if s
+    num_true += 1
+  end
+end
+num_true/1000
+
 cond_prob_deep(breast_cancer, positive_mammogram, max_depth = 12)
 cond_prob_deep(breast_cancer, positive_mammogram, max_depth = 8)
 sigma_stats = plot_cond_performance(breast_cancer, positive_mammogram, num_points = 10)
