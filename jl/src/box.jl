@@ -4,6 +4,7 @@ type NDimBox <: Box
   intervals::Array{Float64,2}
 end
 
+
 # Open Interval
 immutable Interval <: Box
   l::Real
@@ -23,6 +24,10 @@ subsumes(x::Interval, y::Interval) = y.l >= x.l && y.u <= x.u
 overlap(x::Interval, y::Interval) = y.l < x.u && x.l < y.u
 
 ConcreteReal = Union(Float64,Int64)
+promote_rule{T<:ConcreteReal}(::Type{T}, ::Type{Interval}) = Interval
+
+# A concrete number can be concerted to an interval with no width
+convert(::Type{Interval}, c::ConcreteReal) = Interval(c, c)
 
 ## ====================================
 ## Interval Arithmetic and Inequalities
@@ -64,14 +69,14 @@ function *(x::Interval, y::Interval)
   Interval(min(a,b,c,d),max(a,b,c,d))
 end
 
-function /(x::Interval, y::Interval)
-  a,b,c,d = x.l / y.l, x.l / y.u, x.u / y.l, x.u / y.u
-  Interval(min(a,b,c,d),max(a,b,c,d))
-end
+# function /(x::Interval, y::Interval)
+#   a,b,c,d = x.l / y.l, x.l / y.u, x.u / y.l, x.u / y.u
+#   Interval(min(a,b,c,d),max(a,b,c,d))
+# end
 
-function /(x::Interval, y::ConcreteReal)
-  Interval(x.l / y, x.u / y)
-end
+# function /(x::Interval, y::ConcreteReal)
+#   Interval(x.l / y, x.u / y)
+# end
 
 import Base.in
 import Base.inv
@@ -88,7 +93,7 @@ function /(x::Interval, y::Interval)
   elseif b < 0 && c < d == 0
     Interval(b/c,Inf)
   elseif b < 0 && c < 0 < d
-    Inteval(-Inf,Inf)
+    Interval(-Inf,Inf)
   elseif b < 0 && 0 == c < d
     Interval(-Inf,b/d)
   elseif 0 < a && c < d == 0
@@ -102,20 +107,34 @@ function /(x::Interval, y::Interval)
   end
 end
 
+/(c::ConcreteReal, x::Interval) = convert(Interval,c) / x
+/(x::Interval, c::ConcreteReal) = x / convert(Interval,c)
+
 # Interval(0,10)/Interval(10,20)
 ## =========
 ## Merging
-function merge_interval(a::Interval, b::Interval)
+function ⊔(a::Interval, b::Interval)
   l = min(a.l,b.l)
   u = max(a.u, b.u)
   Interval(l,u)
 end
 
-function merge_interval(a::Interval, b::ConcreteReal)
+function ⊔(a::Interval, b::ConcreteReal)
   l = min(a.l,b)
   u = max(a.u,b)
   Interval(l,u)
 end
+
+⊔(a::ConcreteReal, b::ConcreteReal) = Interval(a,b)
+⊔{R<:ConcreteReal}(a::Vector{R}, b::Vector{R}) = [⊔(a[i],b[i]) for i = 1:length(a)]
+⊔{T,R}(a::Array{T}, b::Array{R}) = map((a,b)->⊔(a,b),a,b)
+
+## ===================
+## Arrays of intervals
+# FIXME: PERFORMANCE
+*(x::Interval, y::Array{Float64}) = map(e->x*e,y)
+
+
 
 ## ===========
 ## Conversions

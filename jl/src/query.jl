@@ -27,7 +27,7 @@ end
 function prob_deep(rv::RandomVariable;  max_depth = 5, box_budget = 300000)
   tree = pre_deepening(rv, T, Omega(), max_depth = max_depth, box_budget = box_budget)
   under_pre, over_pre = sat_tree_data(tree), mixedsat_tree_data(tree)
-  sum(measure(under_pre)), sum(measure(over_pre))
+  measure(under_pre), measure(over_pre)
 end
 
 function cond_prob_deep(rv::RandomVariable, q::RandomVariable; box_budget = 300000, max_depth = 5)

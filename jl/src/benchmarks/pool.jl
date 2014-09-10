@@ -3,6 +3,10 @@ using Sigma
 using Compose
 using Color
 
+obstacles = Array[[8.01 3.01; 1.02 9],
+                  [0.5 3.08; 2.02 9.04],
+                  [0.0 9.99; 3 5.04]]
+
 points_to_parametric(p1,p2) = [p1 points_to_vec(p2,p1)]
 points_to_parametric(edge) = points_to_parametric(edge[:,1], edge[:,2])
 points_to_vec(p1, p2) = [p1[1] - p2[1], p1[2] - p2[2]]
@@ -10,6 +14,7 @@ points_to_vec(edge) = points_to_vec(edge[:,1], edge[:,2])
 
 # Where if anywhere, along p does it interect segment
 function intersect_segments(p, q)
+  println("we doing this?,", p, q)
   w = p[:,1] - q[:,1]
   u = p[:,2]
   v = q[:,2]
@@ -21,15 +26,35 @@ dotty(a,b) = a[1]*b[1] + a[2]*b[2]
 perp(v) = [-v[2],v[1]]
 normalise(v) = v / 5.
 function reflect(v,q)
+  println("New Reflection \n")
   q_norm = normalise(q)
   n_amb = perp(q_norm)
   v2 = normalise(v)
-  println("normal before", n_amb)
+  @show n_amb
+  @show q_norm
+  @show typeof(n_amb)
+  @show typeof(v2)
+  @show v2
+  @show dotty(q_norm,v2)
+#   @show ⊔(n_amb, -n_amb)
+#   println("normal before", typeof(n_amb), "dotty is", dotty(q_norm,v2))
   n = @If dotty(q_norm,v2) < 0 n_amb -n_amb
-  println("normal after", n)
-  println("dot ", dotty(q_norm,v2))
+  @show n
+  @show v2
+#   println("ddot ",n,typeof(n), "-", typeof(v2))
   v2 - 2 * (dotty(v2,n) * n)
 end
+
+
+# n_amb = [-1.404,0.516]
+# q_norm = [0.516,1.404]
+# # typeof(n_amb) => Array{Float64,1}
+# # typeof(v2) => Array{Any,1}
+# v2 = {Interval(0.0,0.04000000000000001),Interval(0.0,0.04000000000000001)}
+# dotty(q_norm,v2)
+# n = [1.404,-0.516]
+# (dotty(v2,n) * n)
+# v2 => {Interval(0.0,0.04000000000000001),Interval(0.0,0.04000000000000001)}
 
 # is a the smallest element in list ss
 function smallest(x,ys)
@@ -37,6 +62,7 @@ function smallest(x,ys)
   issmallest =
     @If(x < 0.001, false,
         begin
+        println("really getting here")
         issmallest = true
           for i in 1:length(ys)
             issmallest = @If (ys[i] > 0.01) ((ys[i] >= x) & issmallest) issmallest
@@ -44,6 +70,7 @@ function smallest(x,ys)
 #           println("issmallest", issmallest, " ", x, ys)
         issmallest
         end)
+  println("leaving here ", issmallest)
   issmallest
 end
 
@@ -102,7 +129,7 @@ end
 # end
 
 function bounce(p,s,o)
-#   println("Bouncing", p, s, o)
+  println("Bouncing")
   v = p[:,2]
   reflection = reflect(v,o[:,2])
   new_pos = p[:,1] + p[:,2] * s
@@ -114,14 +141,8 @@ function simulate(num_steps::Integer, obs)
   num_steps = num_steps - 1
   start_pos = [4, 5]
   dir  = normalise([rand()*2-1,rand()*2-1])
-#   dir = [uniform(1,-1,1),uniform(2,-1,1)]
   pos_parametric = Array(Any, num_steps + 1)
   pos_parametric[1] = [start_pos dir]
-#   pos_parametric = MakeRandomArray(Float64,2,2*(num_steps + 1))
-
-#   pos_parametric = setindex(pos_parametric, 3, 1,1)
-#   pos_parametric = setindex(pos_parametric, 3, 2,1)
-#   pos_parametric(Omega())
 
   for i = 1:num_steps
     p = pos_parametric[i]
@@ -138,37 +159,39 @@ function simulate(num_steps::Integer, obs)
   pos_parametric
 end
 
-# 1+1
-bbb = simulate_prob(5,obstacles)(Omega())
-# bbb
-
-function simulate_prob(num_steps::Integer, obs)
+function simulate_prob(num_stepso::Integer, obs)
   function (omega)
+    println("\nDOING SIMULATION \n\n")
     obs = map(points_to_parametric, obstacles)
-    num_steps = num_steps - 1
+    num_steps = num_stepso - 1
     start_pos = Any[4, 5]
     v0,v1 = uniform(0,-1,1)(omega), uniform(1,-1,1)(omega)
     dir  = normalise(Any[v0,v1])
-    pos_parametric = Array(Any, num_steps + 1)
-    pos_parametric[1] = Any[start_pos dir]
+    pos_parametric = Array(Any, num_stepso + 1)
+    v = [start_pos dir]
+    pos_parametric[1] = v
 
     for i = 1:num_steps
-      println("hello")
+      println("step: ", i, "of ", num_steps)
       p = pos_parametric[i]
-      println("hu", length(obs))
-      ss = Vector(Any, length(obs))
-      println("gma")
+      ss = Array(Any, length(obs))
       for j = 1:length(obs)
-        println("inn", j)
         ss[j] = intersect_segments(p, obs[j])
       end
+      println("finished intersecting obstacles")
       pos_parametric[i+1] = @If(smallest(ss[1],ss), bounce(p,ss[1],obs[2]),
                                 @If(smallest(ss[2],ss),bounce(p,ss[2],obs[2]),
                                     bounce(p,ss[3],obs[3])))
+      println("finished that")
     end
-    pos_parametric
+    pos_parametric[2][1] > 10
+#     pos_parametric[end][1] > 5
   end
 end
+
+s = simulate_prob(2,obstacles)
+prob_deep(s)
+
 
 function intersect_segments_prob(p0x,p0y,q0x,q0y, u1, u2, v1, v2)
   w1 = p0x - q0x
@@ -178,42 +201,6 @@ function intersect_segments_prob(p0x,p0y,q0x,q0y, u1, u2, v1, v2)
   v = q[:,2]
   (v2 * w1 - v1 * w2) / (v1 * u2 - v2 * u1)
 end
-
-# function simulate_prob(num_steps::Integer, obs)
-#   obs = map(points_to_parametric, obstacles)
-#   num_steps = num_steps - 1
-#   start_pos = [4, 5]
-
-#   ray = MakeRandomArray(Float64,2,2*(num_steps + 1))
-
-#   ray = setindex(ray, 4, 1,1)
-#   ray = setindex(ray, 5, 2,1)
-#   ray = setindex(ray, uniform(0,-1,1), 1,2)
-#   ray = setindex(ray, uniform(1,-1,1), 2,2)
-
-#   for i = 1:num_steps
-#     p = ray[i]
-#     p0x, p0y, u1, u2 = ray[1,1],ray[2,1],ray[1,2],ray[2,2]
-
-#     ss = MakeRandomArray(Any, length(obs), 1)
-#     for j = 1:length(obs)
-#       o = obs[j]
-#       q0x, q0y, v1, v2 = o[1,1],o[2,1],o[1,2],o[2,2]
-# #       println("d is", p)
-#       s = intersect_segments(p0x,p0y,q0x,q0y, u1, u2, v1, v2)
-#       ss = setindex(ss,s,i,1)
-#     end
-#     pos_parametric[i+1] = @If(smallest(ss[1],ss), bounce(p,ss[1],obs[2]),
-#                               @If(smallest(ss[2],ss),bounce(p,ss[2],obs[2]),
-#                                   bounce(p,ss[3],obs[3])))
-#   end
-#   pos_parametric
-# end
-
-# ray = simulate_prob(2, obstacles)
-# a = simulation_prob[2,:]
-
-# simulation_prob(Omega())
 
 ## ====
 ## Vis
@@ -243,14 +230,10 @@ function draw_lines(lines...)
   apply(compose,vcat(context(), x))
 end
 
-rand_color() = RGB(rand(),rand(),rand())
 
 ## ========
 ## Examples
 
-obstacles = Array[[8.01 3.01; 1.02 9],
-                  [0.5 3.08; 2.02 9.04],
-                  [0.0 9.99; 3 5.04]]
 
 simulation = simulate(10, obstacles)
 a = make_compose_lines(obstacles)

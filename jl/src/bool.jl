@@ -53,10 +53,10 @@ overlap(x::Bool,y::Bool) = x == y
 overlap(x::AbstractBool, y::Bool) = overlap(x,convert(AbstractBool, y))
 overlap(x::Bool, y::AbstractBool) = overlap(convert(AbstractBool, x),y)
 
-merge_interval(a::AbstractBool, b::AbstractBool) = a === b ? a : TF
-merge_interval(a::Bool, b::AbstractBool) = merge_interval(convert(AbstractBool,a),b)
-merge_interval(a::AbstractBool, b::Bool) = merge_interval(a,convert(AbstractBool,b))
-merge_interval(a::Bool, b::Bool) = a == b ? a : TF
+⊔(a::AbstractBool, b::AbstractBool) = a === b ? a : TF
+⊔(a::Bool, b::AbstractBool) = ⊔(convert(AbstractBool,a),b)
+⊔(a::AbstractBool, b::Bool) = ⊔(a,convert(AbstractBool,b))
+⊔(a::Bool, b::Bool) = a == b ? a : TF
 
 # Flip interval around 0 axis,
 # TODO make this parametric on symmetry point
@@ -82,19 +82,21 @@ macro If(condition, conseq, alt)
           elseif d === TF
             a = make_rv($(esc(conseq)), ω)
             b = make_rv($(esc(alt)), ω)
-            merge_interval(a,b)
+            ⊔(a,b)
           else
             error
           end
         end
   elseif isa(c, Bool)
     c ? $(esc(conseq)) : $(esc(alt))
-  elseif c === T || c === F
-    convert(Bool,c) ? $(esc(conseq)) : $(esc(alt))
+  elseif c === T
+    $(esc(conseq))
+  elseif c === F
+    $(esc(alt))
   elseif c === TF
     a = $(esc(conseq))
     b = $(esc(alt))
-    merge_interval(a,b)
+    ⊔(a,b)
   else
     error
   end

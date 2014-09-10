@@ -2,9 +2,9 @@ module Sigma
 
 using Distributions
 
-import Base: sqrt, abs, convert, rand, getindex
+import Base: sqrt, abs, promote_rule, convert, rand, getindex
 import Base: show, print, showcompact
-import Base: sum, dot, length
+import Base: sum, dot, length, join
 
 export
   RandomVariable,
