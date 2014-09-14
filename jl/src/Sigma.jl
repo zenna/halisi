@@ -2,7 +2,7 @@ module Sigma
 
 using Distributions
 
-import Base: sqrt, abs, promote_rule, convert, rand, getindex
+import Base: sqrt, abs, promote_rule, convert, rand, getindex, string
 import Base: show, print, showcompact
 import Base: sum, dot, length, join
 
@@ -72,9 +72,12 @@ include("util.jl")
 include("randomvariable.jl")
 include("bool.jl")
 include("box.jl")
+include("interval.jl")
+include("intervaldisj.jl")
 include("omega.jl")
 include("refinement.jl")
 include("query.jl")
 include("benchmarks/benchmark.jl")
+include("lazy.jl")
 include("vis.jl")
 end

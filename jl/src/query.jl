@@ -7,8 +7,6 @@ import Distributions.pnormalize!
 measure{B<:Box}(bs::Vector{B}) = map(volume,bs)
 logmeasure{B<:Box}(bs::Vector{B}) = map(x->exp(logvolume(x)),bs)
 
-logmeasure(os::Vector{Omega}) = logmeasure(map(x->convert(NDimBox,collect(values(x.intervals))),os))
-
 # =======
 # Queries
 
@@ -51,15 +49,6 @@ prob_recursive(rv::RandomVariable) = prob(rv, pre_T = (rv,y,X)->pre_recursive2(r
 
 random(i) = ω->ω[i]
 
-function middle_split(o::Omega)
-  ks = collect(keys(o.intervals))
-  vs = collect(values(o.intervals))
-  box = convert(NDimBox,vs)
-  z = middle_split(box)
-  map(x->Omega(Dict(ks,to_intervals(x))),z)
-end
-
-middle_split(os::Vector{Omega}) = map(middle_split, os)
 ## ========
 ## Sampling
 function cond_sample(X::RandomVariable, Y::RandomVariable; max_depth = 10)
@@ -104,7 +93,9 @@ end
 ## Primitive Distributions
 
 quantile(d::Normal, X::RandomVariable) = ω->quantile(d, X(ω))
-quantile(d::Normal, i::Interval) = Interval(quantile(d,i.l),quantile(d,i.u))
+function quantile(d::Normal, i::Interval)
+  Interval(quantile(d,i.l),quantile(d,i.u))
+end
 normal(i, mean, var) = quantile(Normal(mean, var), random(i))
 
 flip(i) = 0.5 > random(i)

@@ -12,6 +12,9 @@ time2 = @If((X < T1),time1,
                 T2 + 7/4 * Y))
 
 
-plot_cond_density(T2,time1 < time2, 0.,20.,n_bars = 40)
-
-cond_prob_deep(T1>10, time2 < time1,n_bars =2)
+X = Sigma.uniform(0,0,1)
+Y = @If X > .5 Sigma.normal(1,0,1) Sigma.uniform(2,-2,3)
+cond_prob_deep(X>.2,Y>.4)
+# plot_cond_density(T2,time1 < time2, 0.,20.,n_bars = 40)
+cond_prob_deep(uniform(0,))
+println(cond_prob_deep(T1>10, time2 < time1,max_depth = 6))

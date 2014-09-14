@@ -53,6 +53,7 @@ overlap(x::Bool,y::Bool) = x == y
 overlap(x::AbstractBool, y::Bool) = overlap(x,convert(AbstractBool, y))
 overlap(x::Bool, y::AbstractBool) = overlap(convert(AbstractBool, x),y)
 
+⊔(a::AbstractBool) = a
 ⊔(a::AbstractBool, b::AbstractBool) = a === b ? a : TF
 ⊔(a::Bool, b::AbstractBool) = ⊔(convert(AbstractBool,a),b)
 ⊔(a::AbstractBool, b::Bool) = ⊔(a,convert(AbstractBool,b))

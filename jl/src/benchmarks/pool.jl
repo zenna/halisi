@@ -17,15 +17,18 @@ function intersect_segments(p, q)
   (v[2] * w[1] - v[1] * w[2]) / (v[1] * u[2] - v[2] * u[1])
 end
 
+Sigma.sqr(x::Real) = x * x
+
 parametric_to_point(p, s) = p[:,1] + s * p[:,2]
 dotty(a,b) = a[1]*b[1] + a[2]*b[2]
 perp(v) = [-v[2],v[1]]
-normalise(v) = v / 5.
+normalise(v) = v / sqrt(sqr(v[1]) + sqr(v[2]))
 function reflect(v,q)
 #   println("New Reflection \n")
   q_norm = normalise(q)
   n_amb = perp(q_norm)
   v2 = normalise(v)
+  @show dotty(q_norm,v2)
   n = @If dotty(q_norm,v2) < 0 n_amb -n_amb
   v2 - 2 * (dotty(v2,n) * n)
 end
@@ -54,11 +57,10 @@ function bounce(p,s,o)
   [new_pos reflection]
 end
 
-function simulate(num_steps::Integer, obs)
+function simulate(num_steps::Integer, start_pos, start_dir, obs)
   obs = map(points_to_parametric, obstacles)
   num_steps = num_steps - 1
-  start_pos = [4, 5]
-  dir  = normalise([rand()*2-1,rand()*2-1])
+  dir  = normalise(start_dir)
   pos_parametric = Array(Any, num_steps + 1)
   pos_parametric[1] = [start_pos dir]
 
@@ -82,7 +84,8 @@ function simulate_prob(num_stepso::Integer, obs)
     obs = map(points_to_parametric, obstacles)
     num_steps = num_stepso - 1
     start_pos = Any[4, 5]
-    v0,v1 = uniform(0,-1,1)(omega), uniform(1,-1,1)(omega)
+#     v0,v1 = Interval(0.5,0.6), Interval(0.5,0.6)
+    v0,v1 = uniform(1,-1,1)(omega), uniform(1,-1,1)(omega)
     dir  = normalise(Any[v0,v1])
     pos_parametric = Array(Any, num_stepso + 1)
     v = [start_pos dir]
@@ -102,6 +105,7 @@ function simulate_prob(num_stepso::Integer, obs)
 #       println("finished that")
     end
 #     @show pos_parametric
+#     pos_parametric[end-1]
     pos_parametric[end-1][1] > 5
 #     pos_parametric[end][1] > 5
   end
@@ -150,12 +154,11 @@ obstacles = Array[[8.01 3.01; 1.02 9],
                   [0.5 3.08; 2.02 9.04],
                   [0.0 9.99; 3 5.04]]
 
-s = simulate_prob(4,obstacles)
-p = prob_deep(s, max_depth = 5)
-sampler = cond_sample()
-probs = [prob_deep(simulate_prob(i,obstacles), max_depth = 12) for i = 2:2:8]
-
-simulation = simulate(10, obstacles)
+# s = simulate_prob(4,obstacles)
+# p = prob_deep(s, max_depth = 5)
+# p = pre_deepening(s,T,Omega(),max_depth = 10)
+# p
+simulation = simulate(4, [3, 5], [rand()*2 - 1,rand()*2 - 1], obstacles)
 a = make_compose_lines(obstacles)
 b = make_compose_lines(make_point_pairs(simulation))
 
