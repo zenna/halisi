@@ -68,26 +68,73 @@ overlap(x::Bool, y::AbstractBool) = overlap(convert(AbstractBool, x),y)
 make_rv(v, ω) = isa(v,RandomVariable) ? v(ω)  : v
 
 macro If(condition, conseq, alt)
+  local idtrue = singleton(gensym())
+  local idfalse = singleton(gensym())
   q =
   quote
   c =  $(esc(condition));
   if isa(c, RandomVariable)
     (ω)->begin
           d = c(ω)
-          if isa(d, Bool)
-            d ? make_rv($(esc(conseq)), ω) : make_rv($(esc(alt)), ω)
-          elseif d === T
-            make_rv($(esc(conseq)), ω)
-          elseif d === F
-            make_rv($(esc(alt)), ω)
-          elseif d === TF
-            a = make_rv($(esc(conseq)), ω)
-            b = make_rv($(esc(alt)), ω)
+          if isa(d, EnvVar)
+            ret = EnvVar()
+            for world in d.worlds
+              if world[2] === T || world[2] === true
+                ret.worlds[world[1]] = $(esc(conseq))
+              elseif world[2] === F || world[2] === false
+                ret.worlds[world[1]] = $(esc(alt))
+              elseif world[2] === TF
+                a = $(esc(conseq))
+                constraintstrue = union(world[1],$idtrue)
+                update_ret!(a,ret, constraintstrue)
+
+                b = $(esc(alt))
+                constraintsfalse = union(world[1],$idfalse)
+                update_ret!(b,ret, constraintsfalse)
+
+              else
+                println("error:", world[2])
+                throw(DomainError())
+              end
+            end
+            ret
+          elseif isa(c, Bool)
+            c ? $(esc(conseq)) : $(esc(alt))
+          elseif c === T
+            $(esc(conseq))
+          elseif c === F
+            $(esc(alt))
+          elseif c === TF
+            a = $(esc(conseq))
+            b = $(esc(alt))
             ⊔(a,b)
           else
             error
           end
         end
+
+  elseif isa(c, EnvVar)
+    ret = EnvVar()
+    for world in c.worlds
+      if world[2] === T || world[2] === true
+        ret.worlds[world[1]] = $(esc(conseq))
+      elseif world[2] === F || world[2] === false
+        ret.worlds[world[1]] = $(esc(alt))
+      elseif world[2] === TF
+        a = $(esc(conseq))
+        constraintstrue = union(world[1],$idtrue)
+        update_ret!(a,ret, constraintstrue)
+
+        b = $(esc(alt))
+        constraintsfalse = union(world[1],$idfalse)
+        update_ret!(b,ret, constraintsfalse)
+
+      else
+        println("error:", world[2])
+        throw(DomainError())
+      end
+    end
+    ret
   elseif isa(c, Bool)
     c ? $(esc(conseq)) : $(esc(alt))
   elseif c === T
@@ -99,7 +146,7 @@ macro If(condition, conseq, alt)
     b = $(esc(alt))
     ⊔(a,b)
   else
-    error
+    throw(DomainError())
   end
   end
   return q

@@ -24,16 +24,16 @@ end
 
 sum_empty(x) = if isempty(x) 0 else sum(x) end
 function prob_deep(rv::RandomVariable;  max_depth = 5, box_budget = 300000)
-  tree = pre_deepening(rv, T, Omega(), max_depth = max_depth, box_budget = box_budget)
+  tree = pre_deepening(rv, T, Omega(Sigma.EnvVar), max_depth = max_depth, box_budget = box_budget)
   under_pre, over_pre = sat_tree_data(tree), mixedsat_tree_data(tree)
   sum_empty(measure(under_pre)), sum_empty(measure(over_pre))
 end
 
 function cond_prob_deep(rv::RandomVariable, q::RandomVariable; box_budget = 300000, max_depth = 5)
-  tree1 = pre_deepening(rv & q, T, Omega(), max_depth = max_depth, box_budget = box_budget)
+  tree1 = pre_deepening(rv & q, T, Omega(Sigma.EnvVar), max_depth = max_depth, box_budget = box_budget)
   under_pre_cond, over_pre_cond = sat_tree_data(tree1), mixedsat_tree_data(tree1)
 
-  tree2 = pre_deepening(q, T, Omega(), max_depth = max_depth, box_budget = box_budget)
+  tree2 = pre_deepening(q, T, Omega(Sigma.EnvVar), max_depth = max_depth, box_budget = box_budget)
   under_pre_query, over_pre_query =  sat_tree_data(tree2), mixedsat_tree_data(tree2)
   println(" under cond: ", sum(measure(under_pre_cond)),
           " under query: ", sum(measure(under_pre_query)),

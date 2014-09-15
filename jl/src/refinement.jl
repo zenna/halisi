@@ -111,7 +111,8 @@ function dls(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, 
       end
     elseif depth + 1 < depth_limit
       children_data =   middle_split(node.data)
-      children_nodes = Array(typeof(node),length(children_data)) # DO THIS LAZILY
+      # children_nodes = Array(typeof(node),length(children_data)) # DO THIS LAZILY
+      children_nodes = Array(Node{Omega{EnvVar{Set{Symbol},Interval}}},length(children_data)) # DO THIS LAZILY
       for i = 1:length(children_data)
         new_node = Node(rand(Uint64), UNKNOWNSAT, children_data[i])
         children_nodes[i] = new_node

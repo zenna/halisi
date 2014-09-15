@@ -1,44 +1,54 @@
 immutable Omega{T}
   intervals::Dict{Int64,T}
 end
+
 Omega() = Omega(Dict{Int64,Interval}())
+Omega(::Type{EnvVar}) = Omega{EnvVar}(Dict{Int64, EnvVar}())
 
 function getindex{T}(o::Omega{T}, key::Int64)
   if haskey(o.intervals,key)
     o.intervals[key]
   else
-    i = T(0.,1.)
+    i = unitinterval(T)
     o.intervals[key] = i
     i
   end
 end
 
-# Middle Split
-# function middle_split(os::Omega{IntervalDisj})
-#   println("IM GETTING HERE SOMEHOW")
-#   @show os
-#   [os]
-# end
+# measure(o::Omega) = prod([measure(i) for i in values(o.intervals)]) #UNDO
+# measure(o::Omega{EnvVar}) = prod([measure(i) for i in values(o.intervals)]) #UNDO
+function measure(o::Omega)
+  prod([measure(i.worlds[noconstraints]) for i in values(o.intervals)])
+end
 
-measure(o::Omega) = prod([measure(i) for i in values(o.intervals)])
 measure(os::Vector{Omega}) = [measure(o) for o in os]
+measure(os::Vector{Omega{EnvVar}}) = [measure(o) for o in os]
+
 
 to_disj_intervals(b::Box) = [IntervalDisj(b.intervals[:,i]) for i = 1:num_dims(b)]
 
-function middle_split(o::Omega)
-  ks = collect(keys(o.intervals))
-  vs = collect(values(o.intervals))
-  box = convert(NDimBox,vs)
-  z = middle_split(box)
-  map(x->Omega(Dict(ks,to_intervals(x))),z)
-end
+# function middle_split(o::Omega)
+#   ks = collect(keys(o.intervals))
+#   vs = collect(values(o.intervals))
+#   box = convert(NDimBox,vs)
+#   z = middle_split(box)
+#   map(x->Omega(Dict(ks,to_intervals(x))),z)
+# end
 
-function middle_split(o::Omega{IntervalDisj})
+# function middle_split(o::Omega{IntervalDisj})
+#   ks = collect(keys(o.intervals))
+#   vs = collect(values(o.intervals))
+#   box = convert(NDimBox,vs)
+#   z = middle_split(box)
+#   map(x->Omega(Dict(ks,to_disj_intervals(x))),z)
+# end
+
+function middle_split(o)
   ks = collect(keys(o.intervals))
-  vs = collect(values(o.intervals))
+  vs = map(x->x.worlds[noconstraints],collect(values(o.intervals)))
   box = convert(NDimBox,vs)
-  z = middle_split(box)
-  map(x->Omega(Dict(ks,to_disj_intervals(x))),z)
+  boxes = middle_split(box)
+  map(x->Omega(Dict(ks,convert(Vector{EnvVar},x))),boxes)
 end
 
 middle_split(os::Vector{Omega}) = map(middle_split, os)
