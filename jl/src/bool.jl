@@ -1,4 +1,6 @@
 # Abstract Boolean Types
+
+#CODEREVIEW - AbstractBool Should be related in type hierarchy to Bool
 immutable AbstractBool
   v::Uint8
 end
@@ -17,9 +19,11 @@ function !(b::AbstractBool)
   end
 end
 
+
 ## ==================
 ## Boolean Arithmetic
 
+# REVIEW: Tests for equality. Also is overriding equality even the right thing to do.
 (==)(x::AbstractBool, y::AbstractBool) = x === TF || y === TF ? TF : x === T && y === T || x === F && y === F
 (==)(x::AbstractBool, y::Bool) = x == convert(AbstractBool, y)
 (==)(y::Bool, x::AbstractBool) = x == y
@@ -48,25 +52,27 @@ subsumes(x::AbstractBool, y::Bool) = subsumes(x,convert(AbstractBool, y))
 
 promote_rule(::Type{Bool}, ::Type{AbstractBool}) = AbstractBool
 convert(::Type{AbstractBool}, b::Bool) = if b T else F end
+
+# REVIEW: Tests for overlap
 overlap(x::AbstractBool, y::AbstractBool) = !((x === T && y === F) || (x === F && y === T))
 overlap(x::Bool,y::Bool) = x == y
 overlap(x::AbstractBool, y::Bool) = overlap(x,convert(AbstractBool, y))
 overlap(x::Bool, y::AbstractBool) = overlap(convert(AbstractBool, x),y)
 
+# Review: Tests for Meet
 ⊔(a::AbstractBool) = a
 ⊔(a::AbstractBool, b::AbstractBool) = a === b ? a : TF
 ⊔(a::Bool, b::AbstractBool) = ⊔(convert(AbstractBool,a),b)
 ⊔(a::AbstractBool, b::Bool) = ⊔(a,convert(AbstractBool,b))
 ⊔(a::Bool, b::Bool) = a == b ? a : TF
 
-# Flip interval around 0 axis,
-# TODO make this parametric on symmetry point
-
 ## ============
 ## Control Flow
 
+# REVIEW: Make this a type dispatch
 make_rv(v, ω) = isa(v,RandomVariable) ? v(ω)  : v
 
+# REVIEW SEPARATE THIS OUT INTO FUNCTIONS
 macro If(condition, conseq, alt)
   local idtrue = singleton(gensym())
   local idfalse = singleton(gensym())
@@ -168,6 +174,7 @@ macro If(condition, conseq, alt)
   return q
 end
 
+# REVIEW: IS THIS STILL RELEVANT? TEST OR REMOVE
 macro While(c, todo)
   quote
     while $(esc(c)) === true || $(esc(c)) === T || $(esc(c)) === TF
@@ -177,6 +184,7 @@ macro While(c, todo)
 end
 
 ## Printing
+# REVIEW: Make this based on list, what is relevance of showcompact, show
 string(x::AbstractBool) = [0x0 => "{T}", 0x1 => "{F}", 0x2 => "{T,F}"][x.v]
 print(io::IO, x::AbstractBool) = print(io, string(x))
 show(io::IO, x::AbstractBool) = print(io, string(x))

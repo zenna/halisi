@@ -11,7 +11,9 @@ ground_truth_dist = ptrue_to_dist(ground_truth(0.01))
 
 KL(ptrue_to_dist(ground_truth(0.01)),ptrue_to_dist(.9))
 breast_cancer = flip(1,0.01)
-positive_mammogram = @If breast_cancer flip(2, 0.008) flip(3,0.00096)
+positive_mammogram = @If breast_cancer flip(2, 0.8) flip(3,0.096)
+cond_prob_deep(breast_cancer, positive_mammogram,$$ max_depth = 10)
+prob_deep(positive_mammogram)
 sampler = cond_sample(breast_cancer, positive_mammogram,max_depth = 12)
 
 num_true = 0

@@ -20,7 +20,7 @@ measure(o::Omega) = prod([measure(i) for i in values(o.intervals)]) #UNDO
 # function measure(o::Omega)
 #   prod([measure(i.worlds[noconstraints]) for i in values(o.intervals)])
 # end
-
+measure(os::Vector{Omega}) = [measure(o) for o in os]
 measure{T}(os::Vector{Omega{T}}) = [measure(o) for o in os]
 measure(os::Vector{Omega{EnvVar}}) = [measure(o) for o in os]
 

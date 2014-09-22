@@ -166,7 +166,7 @@ end
 add_path_constraints(e::ConcreteValue, constraints) = e
 
 function update_ret!(a::Array, ret::EnvVar, constraints)
-  amap = map(x->add_path_constraints(x,constraints),a)
+  amap = map(x->add_path_constraints(x,constraints),a)$$
   ret.worlds[constraints] = amap
 end
 
