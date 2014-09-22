@@ -24,23 +24,23 @@ end
 
 sum_empty(x) = if isempty(x) 0 else sum(x) end
 function prob_deep(rv::RandomVariable;  max_depth = 5, box_budget = 300000)
-  tree = pre_deepening(rv, T, Omega(Sigma.EnvVar), max_depth = max_depth, box_budget = box_budget)
+  tree = pre_deepening(rv, T, Omega(), max_depth = max_depth, box_budget = box_budget)
   under_pre, over_pre = sat_tree_data(tree), mixedsat_tree_data(tree)
   sum_empty(measure(under_pre)), sum_empty(measure(over_pre))
 end
 
 function cond_prob_deep(rv::RandomVariable, q::RandomVariable; box_budget = 300000, max_depth = 5)
-  tree1 = pre_deepening(rv & q, T, Omega(Sigma.EnvVar), max_depth = max_depth, box_budget = box_budget)
+  tree1 = pre_deepening(rv & q, T, Omega(), max_depth = max_depth, box_budget = box_budget)
   under_pre_cond, over_pre_cond = sat_tree_data(tree1), mixedsat_tree_data(tree1)
 
-  tree2 = pre_deepening(q, T, Omega(Sigma.EnvVar), max_depth = max_depth, box_budget = box_budget)
+  tree2 = pre_deepening(q, T, Omega(), max_depth = max_depth, box_budget = box_budget)
   under_pre_query, over_pre_query =  sat_tree_data(tree2), mixedsat_tree_data(tree2)
-  println(" under cond: ", sum(measure(under_pre_cond)),
-          " under query: ", sum(measure(under_pre_query)),
-          " over_pre_cond: ", sum(measure(over_pre_cond)),
-          " over_pre_query: ", sum(measure(over_pre_query)))
+  println(" under cond: ", sum_empty(measure(under_pre_cond)),
+          " under query: ", sum_empty(measure(under_pre_query)),
+          " over_pre_cond: ", sum_empty(measure(over_pre_cond)),
+          " over_pre_query: ", sum_empty(measure(over_pre_query)))
 
-  (sum(measure(under_pre_cond))) / (sum(measure(under_pre_query))), (sum(measure(over_pre_cond))) / (sum(measure(over_pre_query)))
+  (sum_empty(measure(under_pre_cond))) / (sum_empty(measure(under_pre_query))), (sum_empty(measure(over_pre_cond))) / (sum_empty(measure(over_pre_query)))
 end
 
 
@@ -56,17 +56,19 @@ function cond_sample(X::RandomVariable, Y::RandomVariable; max_depth = 10)
   over_pre_cond = mixedsat_tree_data(tree)
   measures::Vector{Float64} = measure(over_pre_cond)
   pnormalize!(measures)
-  println("Total is ", sum(measures))
+  println("Sum of normalised weights is", sum(measures))
   c = Categorical(measures, Distributions.NoArgCheck())
 
   function(num_tries)
+    local num_rejected = 0
     for i = 1:num_tries
       omega = over_pre_cond[rand(c)]
       sample = rand(omega)
       if Y(sample)
-        return X(sample)
+        return X(sample), num_rejected
       else
-        println("sample failed, trying again, i = ", i)
+        num_rejected = num_rejected + 1
+#         println("sample failed, trying again, i = ", i)
       end
     end
   end
@@ -97,6 +99,13 @@ function quantile(d::Normal, i::Interval)
   Interval(quantile(d,i.l),quantile(d,i.u))
 end
 normal(i, mean, var) = quantile(Normal(mean, var), random(i))
+
+# Gamma distribution
+quantile(d::Gamma, X::RandomVariable) = ω->quantile(d, X(ω))
+function quantile(d::Gamma, i::Interval)
+  Interval(quantile(d,i.l),quantile(d,i.u))
+end
+gamma(i,k,theta) = quantile(Gamma(k,theta), random(i))
 
 flip(i) = 0.5 > random(i)
 flip(i,p) = p > random(i)

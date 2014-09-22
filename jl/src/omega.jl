@@ -15,25 +15,25 @@ function getindex{T}(o::Omega{T}, key::Int64)
   end
 end
 
-# measure(o::Omega) = prod([measure(i) for i in values(o.intervals)]) #UNDO
+measure(o::Omega) = prod([measure(i) for i in values(o.intervals)]) #UNDO
 # measure(o::Omega{EnvVar}) = prod([measure(i) for i in values(o.intervals)]) #UNDO
-function measure(o::Omega)
-  prod([measure(i.worlds[noconstraints]) for i in values(o.intervals)])
-end
+# function measure(o::Omega)
+#   prod([measure(i.worlds[noconstraints]) for i in values(o.intervals)])
+# end
 
-measure(os::Vector{Omega}) = [measure(o) for o in os]
+measure{T}(os::Vector{Omega{T}}) = [measure(o) for o in os]
 measure(os::Vector{Omega{EnvVar}}) = [measure(o) for o in os]
 
 
 to_disj_intervals(b::Box) = [IntervalDisj(b.intervals[:,i]) for i = 1:num_dims(b)]
 
-# function middle_split(o::Omega)
-#   ks = collect(keys(o.intervals))
-#   vs = collect(values(o.intervals))
-#   box = convert(NDimBox,vs)
-#   z = middle_split(box)
-#   map(x->Omega(Dict(ks,to_intervals(x))),z)
-# end
+function middle_split(o::Omega)
+  ks = collect(keys(o.intervals))
+  vs = collect(values(o.intervals))
+  box = convert(NDimBox,vs)
+  z = middle_split(box)
+  map(x->Omega(Dict(ks,to_intervals(x))),z)
+end
 
 # function middle_split(o::Omega{IntervalDisj})
 #   ks = collect(keys(o.intervals))
@@ -43,13 +43,13 @@ to_disj_intervals(b::Box) = [IntervalDisj(b.intervals[:,i]) for i = 1:num_dims(b
 #   map(x->Omega(Dict(ks,to_disj_intervals(x))),z)
 # end
 
-function middle_split(o)
-  ks = collect(keys(o.intervals))
-  vs = map(x->x.worlds[noconstraints],collect(values(o.intervals)))
-  box = convert(NDimBox,vs)
-  boxes = middle_split(box)
-  map(x->Omega(Dict(ks,convert(Vector{EnvVar},x))),boxes)
-end
+# function middle_split(o)
+#   ks = collect(keys(o.intervals))
+#   vs = map(x->x.worlds[noconstraints],collect(values(o.intervals)))
+#   box = convert(NDimBox,vs)
+#   boxes = middle_split(box)
+#   map(x->Omega(Dict(ks,convert(Vector{EnvVar},x))),boxes)
+# end
 
 middle_split(os::Vector{Omega}) = map(middle_split, os)
 

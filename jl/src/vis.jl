@@ -1,5 +1,5 @@
 ## =============
-## Visualisation
+# Visualisation
 function vis_init()
   using Gadfly
   using Color
@@ -50,7 +50,6 @@ function plot_psuedo_density(rv::RandomVariable, lower::Float64, upper::Float64;
 end
 
 function plot_cond_density(X::RandomVariable, Y::RandomVariable, lower::Float64, upper::Float64; n_bars = 20, max_depth = 10)
-  conditional_probability = prob_deep(Y, max_depth)
   xs = Array(Float64,n_bars - 1)
   ys = Array(Float64,n_bars - 1)
   ymin = Array(Float64,n_bars - 1)

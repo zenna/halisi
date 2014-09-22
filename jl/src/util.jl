@@ -32,3 +32,5 @@ end
 
 rand_interval{T<:Real}(a::T, b::T) = a + (b - a) * rand()
 rand_select(v::Vector) = v[ceil(rand_interval(0,length(v)))]
+
+sqr(x::Float64) = x * x

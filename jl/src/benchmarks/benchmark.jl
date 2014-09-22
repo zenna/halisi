@@ -18,9 +18,13 @@ function parse_output(out)
   ["compile_time" => compile_time, "run_time" => run_time, "prob" => p_true]
 end
 
-function run_church(program)
+function run_church(program, mhsteps = 10:30:3000)
   [parse_output(readall(`church --timed --program-args $n /home/zenna/sandbox/$program`))
-   for n = 10:30:3000]
+   for n = mhsteps]
+end
+
+function run_church(program, n::Integer)
+  parse_output(readall(`church --timed --program-args $n /home/zenna/sandbox/$program`))
 end
 
 function stat_line_layer(stats,x,y)

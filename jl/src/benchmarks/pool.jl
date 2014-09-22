@@ -1,7 +1,7 @@
 # Pool like simulation/inference
 using Sigma
-using Compose
-using Color
+# using Compose
+# using Color
 
 points_to_parametric(p1,p2) = [p1 points_to_vec(p2,p1)]
 points_to_parametric(edge) = points_to_parametric(edge[:,1], edge[:,2])
@@ -10,11 +10,19 @@ points_to_vec(edge) = points_to_vec(edge[:,1], edge[:,2])
 
 # Where if anywhere, along p does it interect segment
 function intersect_segments(p, q)
-#   println("Intersecting Segments?,", p, q)
-  w = p[:,1] - q[:,1]
-  u = p[:,2]
-  v = q[:,2]
-  (v[2] * w[1] - v[1] * w[2]) / (v[1] * u[2] - v[2] * u[1])
+#   println("Intersecting Segments?,")
+#   @show p
+#   @show q[1,1]
+#   w = p[:,1] - q[:,1]
+  w = [p[1,1] - q[1,1], p[2,1] - q[2,1]]
+#   println("WE DID THE W")
+#   u = p[:,2]
+  u = [p[1,2],p[2,2]]
+#   v = q[:,2]
+  v = [q[1,2],q[2,2]]
+  ret = (v[2] * w[1] - v[1] * w[2]) / (v[1] * u[2] - v[2] * u[1])
+#   @show ret
+  ret
 end
 
 Sigma.sqr(x::Real) = x * x
@@ -22,26 +30,35 @@ Sigma.sqr(x::Real) = x * x
 parametric_to_point(p, s) = p[:,1] + s * p[:,2]
 dotty(a,b) = a[1]*b[1] + a[2]*b[2]
 perp(v) = [-v[2],v[1]]
-normalise(v) = v / sqrt(sqr(v[1]) + sqr(v[2]))
+function normalise(v)
+  denom = sqrt(sqr(v[1]) + sqr(v[2]))
+  [v[i] / denom for i = 1:length(v)]
+end
 function reflect(v,q)
 #   println("New Reflection \n")
   q_norm = normalise(q)
   n_amb = perp(q_norm)
   v2 = normalise(v)
-  @show dotty(q_norm,v2)
+#   @show dotty(q_norm,v2)
   n = @If dotty(q_norm,v2) < 0 n_amb -n_amb
-  v2 - 2 * (dotty(v2,n) * n)
+#   @show n
+#   @show dotty(v2,n)
+  ir = 2 * (dotty(v2,n) * n)
+  [v[1] - ir[1], v[2] - ir[2]]
 end
 
 # is a the smallest element in list ss
 function smallest(x,ys)
-#   println("getting here")
+#   println("\nIn Smallest here")
   issmallest =
+#     @show x
+#     @show x < 0.001
     @If(x < 0.001, false,
         begin
-#         println("really getting here")
+#         println("Inside Smallest")
         issmallest = true
           for i in 1:length(ys)
+#             println("Inside Smallest LOOp")
             issmallest = @If (ys[i] > 0.01) ((ys[i] >= x) & issmallest) issmallest
           end
 #           println("issmallest", issmallest, " ", x, ys)
@@ -51,9 +68,18 @@ function smallest(x,ys)
 end
 
 function bounce(p,s,o)
-  v = p[:,2]
+  println("trying to bounce")
+  v = [p[1,2], p[2,2]]
   reflection = reflect(v,o[:,2])
-  new_pos = p[:,1] + p[:,2] * s
+#   @show reflection
+  sc = [p[1,2] * s, p[2,2] * s]
+  new_pos = [p[1,1] + sc[1],p[2,1] + sc[2]]
+#   [p[1,1] + ]
+#   ir = p[:,1] + p[:,2]
+#   ir = p[:,1] + p[:,2]
+#   new_pos = [ir[1]* s, ir[2] *s]
+#   @show new_pos
+  println("Finished bouncing")
   [new_pos reflection]
 end
 
@@ -92,19 +118,20 @@ function simulate_prob(num_stepso::Integer, obs)
     pos_parametric[1] = v
 
     for i = 1:num_steps
+      println("TAKING A STEP \n\n")
 #       println("step: ", i, "of ", num_steps)
       p = pos_parametric[i]
       ss = Array(Any, length(obs))
       for j = 1:length(obs)
         ss[j] = intersect_segments(p, obs[j])
       end
-#       println("finished intersecting obstacles")
+      println("finished intersecting obstacles")
       pos_parametric[i+1] = @If(smallest(ss[1],ss), bounce(p,ss[1],obs[2]),
                                 @If(smallest(ss[2],ss),bounce(p,ss[2],obs[2]),
                                     bounce(p,ss[3],obs[3])))
-#       println("finished that")
+      println("finished that")
+#       @show pos_parametric
     end
-#     @show pos_parametric
 #     pos_parametric[end-1]
     pos_parametric[end-1][1] > 5
 #     pos_parametric[end][1] > 5
@@ -154,13 +181,14 @@ obstacles = Array[[8.01 3.01; 1.02 9],
                   [0.5 3.08; 2.02 9.04],
                   [0.0 9.99; 3 5.04]]
 
-# s = simulate_prob(4,obstacles)
+s = simulate_prob(4,obstacles)
+s(Omega(Sigma.EnvVar))
 # p = prob_deep(s, max_depth = 5)
 # p = pre_deepening(s,T,Omega(),max_depth = 10)
 # p
 simulation = simulate(4, [3, 5], [rand()*2 - 1,rand()*2 - 1], obstacles)
-a = make_compose_lines(obstacles)
-b = make_compose_lines(make_point_pairs(simulation))
+# a = make_compose_lines(obstacles)
+# b = make_compose_lines(make_point_pairs(simulation))
 
-draw_lines(a,b)
+# draw_lines(a,b)
 

@@ -1,36 +1,6 @@
 # Pre-image Computation:
 # Given a function f:X->Y and Y' ⊆ Y -
 # -- find X' ⊆ X such that f(x') ∈ Y'
-
-# Bread first search pre
-# Warning, high memory usage
-function pre_bfs{T}(f::Function, y, X::T; n_iters = 10)
-  goodboxes = T[]
-  bs = Vector[X]
-  println("bs is", bs)
-  for i = 1:n_iters
-    println("\n\n iteration - ", i)
-    to_split = T[]
-
-    # For each box, find the image and test intersection with y
-    #     println("BS Volumes", sum(map(volume,bs)))
-    println("bs len- ", length(bs))
-    for b in bs
-      image = f(b)
-      # Split box further iff image overlaps
-      if subsumes(y,image)
-        push!(goodboxes, b)
-      elseif overlap(image,y)
-        push!(to_split, b)
-      end
-    end
-    println("to_split len- ", length(to_split))
-
-    bs = split_many_boxes(to_split)
-  end
-  goodboxes
-end
-
 ## ===================================
 ## Iterative Deepening Preconditioning
 
@@ -80,7 +50,7 @@ children_ids(t::Tree, n::Node) = t.children[n.id]
 
 function sat_tree_data(t::Tree)
   a::Vector{Omega} = map(n->n.data,filter(n->n.status==SAT,t.nodes))
-  a
+  a #For some reason this line can't be removed if i want to enforce types
 end
 
 function mixedsat_tree_data(t::Tree)
@@ -111,8 +81,8 @@ function dls(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, 
       end
     elseif depth + 1 < depth_limit
       children_data =   middle_split(node.data)
-      # children_nodes = Array(typeof(node),length(children_data)) # DO THIS LAZILY
-      children_nodes = Array(Node{Omega{EnvVar{Set{Symbol},Interval}}},length(children_data)) # DO THIS LAZILY
+      children_nodes = Array(typeof(node),length(children_data)) # DO THIS LAZILY
+#       children_nodes = Array(Node{Omega{EnvVar{Set{Symbol},Interval}}},length(children_data)) # DO THIS LAZILY
       for i = 1:length(children_data)
         new_node = Node(rand(Uint64), UNKNOWNSAT, children_data[i])
         children_nodes[i] = new_node
@@ -142,6 +112,42 @@ function pre_deepening{T}(f::Function, Y_sub, X::T; box_budget = 300000, max_dep
   println(length(tree.nodes))
   tree
 end
+
+# ## This only looks at the leaf nodes
+# function dlsleaf(f::Function, Y_sub, depth::Integer, depth_limit::Integer, t::Tree, node::Node
+#                  leaflist::Vector{Node}; box_budget)
+#   image = f(node.data)
+#   satstatus = if subsumes(Y_sub, image) SAT elseif overlap(image,Y_sub) MIXEDSAT else UNSAT end
+#   node.status = satstatus
+
+#   if length(t.nodes) >= box_budget
+#     return t, leaflist
+#   end
+
+#   if node.status == MIXEDSAT && depth + 1 < depth_limit
+#     children_data =   middle_split(node.data)
+#     children_nodes = Array(typeof(node),length(children_data)) # DO THIS LAZILY
+#     for i = 1:length(children_data)
+#       new_node = Node(rand(Uint64), UNKNOWNSAT, children_data[i])
+#       children_nodes[i] = new_node
+#       new_child = add_child!(t, children_nodes[i], node.id)
+#       push!(leaflist,new_child)
+#     end
+#   end
+#     t, leaflist
+# end
+
+# function pre_deepend{T}(f::Function, Y_sub, X::T, box_budget, max_depth)
+#   tree = Tree(Node(rand(Uint64), UNKNOWNSAT, X))
+#   leaflist::Vector
+#   for depth_limit = 1:max_depth
+#     println("Deepening Depth Limit", depth_limit)
+#     tree = dls(f, Y_sub, zero(Uint), depth_limit, tree, root(tree), box_budget = box_budget)
+#   end
+#   println(length(tree.nodes))
+#   tree
+# end
+
 
 ## ===========================================
 ## Greedy Preconditioning - Single Covering Box

@@ -1,6 +1,7 @@
 # Variables which can be multiple values
+NotEnv = Union(Float64, Bool, AbstractBool, Array, Int64, Interval)
 immutable EnvVar{K,V}
-  worlds::Dict{K,V}
+  worlds::Dict{K,NotEnv}
 
   EnvVar() = new(Dict{K,V}())
   EnvVar(worlds::Dict{K,V}) = new(worlds)
@@ -21,7 +22,14 @@ unitinterval(::Type{EnvVar}) = intervalenvvar(0.,1.)
 function getindex(e::EnvVar, i::Int64)
   ret = EnvVar()
   for world in e.worlds
-    ret.worlds[world[1]] = world[2][i]
+    val = world[2][i]
+    if isa(val, EnvVar)
+      for valworld in val.worlds
+        ret.worlds[valworld[1]] = valworld[2]
+      end
+    else
+      ret.worlds[world[1]] = world[2][i]
+    end
   end
   ret
 end
@@ -29,10 +37,26 @@ end
 function getindex(e::EnvVar, i::Int64, j::Int64)
   ret = EnvVar()
   for world in e.worlds
-    ret.worlds[world[1]] = world[2][i,j]
+    val = world[2][i,j]
+    if isa(val, EnvVar)
+      for valworld in val.worlds
+        ret.worlds[valworld[1]] = valworld[2]
+      end
+    else
+      ret.worlds[world[1]] = world[2][i,j]
+    end
   end
   ret
 end
+
+
+# function getindex(e::EnvVar, i::Int64, j::Int64)
+#   ret = EnvVar()
+#   for world in e.worlds
+#     ret.worlds[world[1]] = world[2][i,j]
+#   end
+#   ret
+# end
 
 # Set functions
 function subsumes(a::AbstractBool,e::EnvVar)
@@ -55,9 +79,18 @@ function overlap(e::EnvVar, a::AbstractBool)
   doesoverlap
 end
 
+function overlap(a::AbstractBool, e::EnvVar)
+  doesoverlap = false # only has to overlap with one
+  for world in e.worlds
+    doesoverlap = doesoverlap | overlap(a,world[2])
+  end
+  doesoverlap
+end
+
 ConcreteValue = Union(Float64, Int64, Bool)
 
-for op = (:+, :-, :*, :>, :>=, :<=, :<, :&, :|)
+#FIXME, IVE GOT IN and SIZE AS ASSOCIATE BUT ITS NOT
+for op = (:+, :-, :*, :>, :>=, :<=, :<, :&, :|, :in, :/, :size)
   @eval begin
     function ($op)(x::EnvVar, y::EnvVar)
       ret = EnvVar() #FIXME: MAKE TYPE STABLE
@@ -99,6 +132,19 @@ for op = (:+, :-, :*, :>, :>=, :<=, :<, :&, :|)
   end
 end
 
+for op = (:sqr, :sqrt, :inv)
+  @eval begin
+    function ($op)(x::EnvVar)
+      ret = EnvVar() #FIXME: MAKE TYPE STABLE
+      for xworld in x.worlds
+        xworldid = xworld[1]
+        ret.worlds[xworldid] = ($op)(xworld[2])
+      end
+      ret
+    end
+  end
+end
+
 function update_ret!(a::EnvVar,ret::EnvVar, constraints)
   for aworld in a.worlds
     ret.worlds[union(aworld[1],constraints)] = aworld[2]
@@ -111,7 +157,6 @@ end
 
 function add_path_constraints(e::EnvVar, constraints)
   ret = EnvVar()
-  println("WE GETTIN HEa'", constraints)
   for world in e.worlds
     ret.worlds[union(world[1],constraints)] = world[2]
   end
@@ -121,7 +166,6 @@ end
 add_path_constraints(e::ConcreteValue, constraints) = e
 
 function update_ret!(a::Array, ret::EnvVar, constraints)
-  println("WE ARE UPDATING THE ARRAY REK")
   amap = map(x->add_path_constraints(x,constraints),a)
   ret.worlds[constraints] = amap
 end
@@ -135,6 +179,7 @@ macro Iff(condition, conseq, alt)
   local ret
   if isa(c, EnvVar)
     ret = EnvVar()
+    @show world[2]
     for world in c.worlds
       if world[2] === T || world[2] === true
         ret.worlds[world[1]] = $(esc(conseq))
