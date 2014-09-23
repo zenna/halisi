@@ -1,6 +1,7 @@
 # Control flow functions/operators
 # REVIEW: Make this a type dispatch
-make_rv(v, ω) = isa(v,RandomVariable) ? v(ω)  : v
+make_rv(v, ω) = v
+make_rv(v::RandomVariable, ω) = v(ω)
 
 # REVIEW SEPARATE THIS OUT INTO FUNCTIONS
 macro If(condition, conseq, alt)

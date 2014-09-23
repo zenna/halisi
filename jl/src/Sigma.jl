@@ -68,9 +68,9 @@ export
   add_KL_church!
 
 include("domains.jl")
+include("randomvariable.jl")
 include("controlflow.jl")
 include("util.jl")
-include("randomvariable.jl")
 include("omega.jl")
 include("refinement.jl")
 include("query.jl")

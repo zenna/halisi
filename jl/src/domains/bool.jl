@@ -57,7 +57,6 @@ end
 
 ## ===========================
 ## AbstractBool Set Operations
-
 subsumes(x::AbstractBool, y::AbstractBool) = x === TF || x === y
 subsumes(x::AbstractBool, y::Bool) = subsumes(x,convert(AbstractBool, y))
 
@@ -69,10 +68,10 @@ overlap(x::Bool, y::AbstractBool) = overlap(convert(AbstractBool, x),y)
 ⊔(a::AbstractBool, b::AbstractBool) = a === b ? a : TF
 ⊔(a::Bool, b::AbstractBool) = ⊔(convert(AbstractBool,a),b)
 ⊔(a::AbstractBool, b::Bool) = ⊔(a,convert(AbstractBool,b))
+⊔(a::Bool, b::Bool) = a === b ? convert(AbstractBool,a) : TF
 
 ## ===========================
 ## Printing
-# REVIEW: Make this based on list, what is relevance of showcompact, show
 string(x::AbstractBool) = ["{T}","{F}","{T,F}"][x.v]
 print(io::IO, x::AbstractBool) = print(io, string(x))
 show(io::IO, x::AbstractBool) = print(io, string(x))

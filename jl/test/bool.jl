@@ -1,6 +1,6 @@
 using Sigma
 using Base.Test
-import Sigma: overlap, ⊔, flip, abs
+import Sigma: overlap, subsumes, ⊔, flip, abs
 
 @test T & F === F
 @test TF & F === F
@@ -33,6 +33,15 @@ import Sigma: overlap, ⊔, flip, abs
 @test overlap(F,TF) == true
 @test overlap(TF,TF) == true
 
+# Subsumes
+@test subsumes(TF,F) == true
+@test subsumes(TF,T) == true
+@test subsumes(TF,TF) == true
+@test subsumes(F,F) == subsumes(T,T) == true
+@test subsumes(F,T) == subsumes(T,F) == false
+@test subsumes(F,TF) == subsumes(T,TF) == false
+
+# Join
 @test ⊔(T,F) === ⊔(F,T) === TF
 @test ⊔(T,T) === T
 @test ⊔(F,F) === F
