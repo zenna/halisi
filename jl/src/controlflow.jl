@@ -1,74 +1,4 @@
-# Abstract Boolean Types
-
-#CODEREVIEW - AbstractBool Should be related in type hierarchy to Bool
-immutable AbstractBool
-  v::Uint8
-end
-
-const T = AbstractBool(0x0)
-const F = AbstractBool(0x1)
-const TF = AbstractBool(0x2)
-
-function !(b::AbstractBool)
-  if b === T
-    F
-  elseif b === F
-    T
-  elseif b === TF
-    TF
-  end
-end
-
-
-## ==================
-## Boolean Arithmetic
-
-# REVIEW: Tests for equality. Also is overriding equality even the right thing to do.
-(==)(x::AbstractBool, y::AbstractBool) = x === TF || y === TF ? TF : x === T && y === T || x === F && y === F
-(==)(x::AbstractBool, y::Bool) = x == convert(AbstractBool, y)
-(==)(y::Bool, x::AbstractBool) = x == y
-
-function (|)(x::AbstractBool, y::AbstractBool)
-  if x === T || y === T T
-  elseif x === TF || y === TF TF
-  else F
-  end
-end
-|(x::AbstractBool, y::Bool) = |(x,convert(AbstractBool,y))
-|(y::Bool, x::AbstractBool) = |(convert(AbstractBool,y), x)
-
-function (&)(x::AbstractBool, y::AbstractBool)
-  if x === F || y === F F
-  elseif x === TF || y === TF TF
-  else T
-  end
-end
-
-(&)(x::AbstractBool, y::Bool) = x & convert(AbstractBool, y)
-(&)(y::Bool, x::AbstractBool) = convert(AbstractBool, y) & x
-
-subsumes(x::AbstractBool, y::AbstractBool) = x === TF || x === y
-subsumes(x::AbstractBool, y::Bool) = subsumes(x,convert(AbstractBool, y))
-
-promote_rule(::Type{Bool}, ::Type{AbstractBool}) = AbstractBool
-convert(::Type{AbstractBool}, b::Bool) = if b T else F end
-
-# REVIEW: Tests for overlap
-overlap(x::AbstractBool, y::AbstractBool) = !((x === T && y === F) || (x === F && y === T))
-overlap(x::Bool,y::Bool) = x == y
-overlap(x::AbstractBool, y::Bool) = overlap(x,convert(AbstractBool, y))
-overlap(x::Bool, y::AbstractBool) = overlap(convert(AbstractBool, x),y)
-
-# Review: Tests for Meet
-⊔(a::AbstractBool) = a
-⊔(a::AbstractBool, b::AbstractBool) = a === b ? a : TF
-⊔(a::Bool, b::AbstractBool) = ⊔(convert(AbstractBool,a),b)
-⊔(a::AbstractBool, b::Bool) = ⊔(a,convert(AbstractBool,b))
-⊔(a::Bool, b::Bool) = a == b ? a : TF
-
-## ============
-## Control Flow
-
+# Control flow functions/operators
 # REVIEW: Make this a type dispatch
 make_rv(v, ω) = isa(v,RandomVariable) ? v(ω)  : v
 
@@ -182,10 +112,3 @@ macro While(c, todo)
     end
   end
 end
-
-## Printing
-# REVIEW: Make this based on list, what is relevance of showcompact, show
-string(x::AbstractBool) = [0x0 => "{T}", 0x1 => "{F}", 0x2 => "{T,F}"][x.v]
-print(io::IO, x::AbstractBool) = print(io, string(x))
-show(io::IO, x::AbstractBool) = print(io, string(x))
-showcompact(io::IO, x::AbstractBool) = print(io, string(x))

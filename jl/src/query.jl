@@ -3,7 +3,7 @@ import Distributions.pnormalize!
 
 # =======
 # Measure
-
+# REVIEW: Remove move this to where it belongs, BOX, maybe delete it
 measure{B<:Box}(bs::Vector{B}) = map(volume,bs)
 logmeasure{B<:Box}(bs::Vector{B}) = map(x->exp(logvolume(x)),bs)
 

@@ -67,14 +67,10 @@ export
   add_KL!,
   add_KL_church!
 
-
+include("domains.jl")
+include("controlflow.jl")
 include("util.jl")
 include("randomvariable.jl")
-include("bool.jl")
-include("box.jl")
-include("interval.jl")
-# include("intervaldisj.jl")
-include("envvar.jl")
 include("omega.jl")
 include("refinement.jl")
 include("query.jl")

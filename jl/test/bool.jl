@@ -1,12 +1,11 @@
 using Sigma
 using Base.Test
-import Sigma.flip, Sigma.abs
+import Sigma: overlap, ⊔, flip, abs
 
 @test T & F === F
 @test TF & F === F
 @test T & T === T
 @test TF & TF === TF
-@test (F == T) === false
 @test !T === F
 @test !TF === TF
 @test !F === T
@@ -15,10 +14,28 @@ import Sigma.flip, Sigma.abs
 @test F | T === T
 @test T | TF === T
 
-x = Interval(-5,-2)
-@While(x < 0,
-  begin
-    x = x + 1
-  end)
+# Lifted equality tests
+@test (T == T) === T
+@test (T == TF) === TF
+@test (TF == T) === TF
+@test (F == F) === T
+@test (T == F) === F
+@test (F == T) === F
 
-@test x == Interval(0,3)
+# Overlap
+@test overlap(T,F) == false
+@test overlap(F,T) == false
+@test overlap(T,T) == true
+@test overlap(F,F) == true
+@test overlap(TF,T) == true
+@test overlap(T,TF) == true
+@test overlap(TF,F) == true
+@test overlap(F,TF) == true
+@test overlap(TF,TF) == true
+
+@test ⊔(T,F) === ⊔(F,T) === TF
+@test ⊔(T,T) === T
+@test ⊔(F,F) === F
+@test ⊔(TF,T) === ⊔(T,TF) === TF
+@test ⊔(TF,F) === ⊔(F,TF) === TF
+@test ⊔(TF,TF) === TF

@@ -1,4 +1,6 @@
 # Disjunctive Interval Domain
+# REVIEW: Decide whether to keep this, or whether it is redundant
+
 using Iterators
 immutable IntervalDisj
   intervals::Array{Float64,2}
@@ -12,6 +14,7 @@ function IntervalDisj{T<:Real}(x::T,y::T)
   IntervalDisj(a)
 end
 
+# Eliminate redundancy with interval domain
 IntervalDisj(x::Interval) = IntervalDisj(x.l,x.u)
 IntervalDisj(x::Vector) = IntervalDisj(x[1],x[2])
 IntervalDisj(x::Interval,y::Interval) = ⊔(IntervalDisj([x.l y.l
