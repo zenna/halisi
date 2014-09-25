@@ -3,6 +3,73 @@
 make_rv(v, ω) = v
 make_rv(v::RandomVariable, ω) = v(ω)
 
+function ififs()
+  quote
+    a = $(esc(condition))
+    if isa(a, Bool)
+      a ? $(esc(conseq)) : $(esc(alt))
+    elseif c === T
+      $(esc(conseq))
+    elseif c === F
+      $(esc(alt))
+    elseif c === TF
+      a = $(esc(conseq))
+      b = $(esc(alt))
+      ⊔(a,b)
+    end
+  end
+end
+
+# If a then b else c
+macro If(condition,conseq,alt)
+  quote
+    a = $(esc(condition))
+    if isa(a, Bool)
+      a ? $(esc(conseq)) : $(esc(alt))
+    elseif c === T
+      $(esc(conseq))
+    elseif c === F
+      $(esc(alt))
+    elseif c === TF
+      a = $(esc(conseq))
+      b = $(esc(alt))
+      ⊔(a,b)
+    elseif isa(a,RandomVariable)
+
+    else
+      throw(DomainError())
+    end
+  end
+end
+
+macro IfRV(condition,conseq,alt)
+  quote
+    function(ω)
+      @If condition make_rv(conseq,ω) make_rv(alt,ω)
+  end
+end
+
+
+
+
+    if isa(d, Bool)
+      d ? make_rv($(esc(conseq)),ω) : make_rv($(esc(alt)),ω)
+    elseif d === T
+      make_rv($(esc(conseq)),ω)
+    elseif d === F
+      make_rv($(esc(alt)),ω)
+          elseif d === TF
+            a = make_rv($(esc(conseq)),ω)
+            b = make_rv($(esc(alt)),ω)
+            ⊔(a,b)
+          else
+            println("condition is " , d)
+            throw(DomainError())
+
+
+using Sigma
+Z = @If true flip(1,0.4) flip(2,0.4)
+Z
 # REVIEW SEPARATE THIS OUT INTO FUNCTIONS
 macro If(condition, conseq, alt)
   local idtrue = singleton(gensym())
