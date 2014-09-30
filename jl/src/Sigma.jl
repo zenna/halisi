@@ -2,6 +2,7 @@ module Sigma
 
 using Distributions
 
+import Base: ifelse
 import Base: sqrt, abs, promote_rule, convert, rand, getindex, string, size
 import Base: show, print, showcompact
 import Base: sum, dot, length, join

@@ -1,76 +1,110 @@
 # Control flow functions/operators
-# REVIEW: Make this a type dispatch
-make_rv(v, ω) = v
-make_rv(v::RandomVariable, ω) = v(ω)
+pipeomega(v, ω) = v
+pipeomega(v::RandomVariable, ω) = v(ω)
 
-function ififs()
-  quote
-    a = $(esc(condition))
-    if isa(a, Bool)
-      a ? $(esc(conseq)) : $(esc(alt))
-    elseif c === T
-      $(esc(conseq))
-    elseif c === F
-      $(esc(alt))
-    elseif c === TF
-      a = $(esc(conseq))
-      b = $(esc(alt))
-      ⊔(a,b)
-    end
+function ifelse(c::AbstractBool, x, y)
+  if c === T
+    x
+  elseif c === F
+    y
+  elseif c === TF
+    ⊔(x,y)
   end
 end
 
-# If a then b else c
-macro If(condition,conseq,alt)
-  quote
-    a = $(esc(condition))
-    if isa(a, Bool)
-      a ? $(esc(conseq)) : $(esc(alt))
-    elseif c === T
-      $(esc(conseq))
-    elseif c === F
-      $(esc(alt))
-    elseif c === TF
-      a = $(esc(conseq))
-      b = $(esc(alt))
-      ⊔(a,b)
-    elseif isa(a,RandomVariable)
-
-    else
-      throw(DomainError())
-    end
+function ifelse(c::RandomVariable, x, y)
+  function(ω)
+    ifelse(c(ω),pipeomega(x,ω),pipeomega(y,ω))
   end
 end
 
-macro IfRV(condition,conseq,alt)
-  quote
-    function(ω)
-      @If condition make_rv(conseq,ω) make_rv(alt,ω)
-  end
-end
+# function makeif(condition::Expr, conseq::Expr, alt::Expr)
+#   quote
+#     a = $(esc(condition))
+#     if isa(a, Bool)
+#       a ? $(esc(conseq)) : $(esc(alt))
+#     elseif c === T
+#       $(esc(conseq))
+#     elseif c === F
+#       $(esc(alt))
+#     elseif c === TF
+#       a = $(esc(conseq))
+#       b = $(esc(alt))
+#       ⊔(a,b)
+#     end
+#   end
+# end
+
+# # Add a clause b to an ifelse block a
+# function catifelse(a::Expr, b::Expr)
+# end
+
+
+# macro If2(a,b,c)
+#   x = makeif(a,b,c)
+#   rvinner = makeif(a,:(pipeomega($b,ω)),:(pipeomega($c,ω)))
+#   rv =
+#   quote
+#     if isa($a, RandomVariable)
+#       function(ω)
+#         $rvinner
+#       end
+#     end
+#   end
+#   catifelse(x,rv)
+# end
+
+# # If a then b else c
+# macro If(condition,conseq,alt)
+#   quote
+#     a = $(esc(condition))
+#     if isa(a, Bool)
+#       a ? $(esc(conseq)) : $(esc(alt))
+#     elseif c === T
+#       $(esc(conseq))
+#     elseif c === F
+#       $(esc(alt))ifelse([true,false,true],[1,2,3],[4,5,6])
+# -
+#     elseif c === TF
+#       a = $(esc(conseq))
+#       b = $(esc(alt))
+#       ⊔(a,b)
+#     elseif isa(a,RandomVariable)
+
+#     else
+#       throw(DomainError())
+#     end
+#   end
+# end
+
+# macro IfRV(condition,conseq,alt)
+#   quote
+#     function(ω)
+#       @If condition pipeomega(conseq,ω) pipeomega(alt,ω)
+#   end
+# end
 
 
 
 
-    if isa(d, Bool)
-      d ? make_rv($(esc(conseq)),ω) : make_rv($(esc(alt)),ω)
-    elseif d === T
-      make_rv($(esc(conseq)),ω)
-    elseif d === F
-      make_rv($(esc(alt)),ω)
-          elseif d === TF
-            a = make_rv($(esc(conseq)),ω)
-            b = make_rv($(esc(alt)),ω)
-            ⊔(a,b)
-          else
-            println("condition is " , d)
-            throw(DomainError())
+#     if isa(d, Bool)
+#       d ? pipeomega($(esc(conseq)),ω) : pipeomega($(esc(alt)),ω)
+#     elseif d === T
+#       pipeomega($(esc(conseq)),ω)
+#     elseif d === F
+#       pipeomega($(esc(alt)),ω)
+#           elseif d === TF
+#             a = pipeomega($(esc(conseq)),ω)
+#             b = pipeomega($(esc(alt)),ω)
+#             ⊔(a,b)
+#           else
+#             println("condition is " , d)
+#             throw(DomainError())
 
 
-using Sigma
-Z = @If true flip(1,0.4) flip(2,0.4)
-Z
-# REVIEW SEPARATE THIS OUT INTO FUNCTIONS
+# using Sigma
+# Z = @If true flip(1,0.4) flip(2,0.4)
+# Z
 macro If(condition, conseq, alt)
   local idtrue = singleton(gensym())
   local idfalse = singleton(gensym())
@@ -85,15 +119,15 @@ macro If(condition, conseq, alt)
             ret = EnvVar()
             for world in d.worlds
               if world[2] === T || world[2] === true
-                ret.worlds[world[1]] = make_rv($(esc(conseq)),ω)
+                ret.worlds[world[1]] = pipeomega($(esc(conseq)),ω)
               elseif world[2] === F || world[2] === false
-                ret.worlds[world[1]] = make_rv($(esc(alt)),ω)
+                ret.worlds[world[1]] = pipeomega($(esc(alt)),ω)
               elseif world[2] === TF
-                a = make_rv($(esc(conseq)),ω)
+                a = pipeomega($(esc(conseq)),ω)
                 constraintstrue = union(world[1],$idtrue)
                 update_ret!(a,ret, constraintstrue)
 
-                b = make_rv($(esc(alt)),ω)
+                b = pipeomega($(esc(alt)),ω)
                 constraintsfalse = union(world[1],$idfalse)
                 update_ret!(b,ret, constraintsfalse)
 
@@ -103,14 +137,14 @@ macro If(condition, conseq, alt)
               end
             end
           elseif isa(d, Bool)
-            d ? make_rv($(esc(conseq)),ω) : make_rv($(esc(alt)),ω)
+            d ? pipeomega($(esc(conseq)),ω) : pipeomega($(esc(alt)),ω)
           elseif d === T
-            make_rv($(esc(conseq)),ω)
+            pipeomega($(esc(conseq)),ω)
           elseif d === F
-            make_rv($(esc(alt)),ω)
+            pipeomega($(esc(alt)),ω)
           elseif d === TF
-            a = make_rv($(esc(conseq)),ω)
-            b = make_rv($(esc(alt)),ω)
+            a = pipeomega($(esc(conseq)),ω)
+            b = pipeomega($(esc(alt)),ω)
             ⊔(a,b)
           else
             println("condition is " , d)
