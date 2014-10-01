@@ -1,19 +1,60 @@
-# Open Interval
-immutable Interval <: Box
-  l::Real
-  u::Real
-  Interval(l,u) =  if u > l new(l, u) else new(u,l) end
+# Optiso 1. Make Interval and abstract type
+# Option 2. Make open/closed boundaries a property
+# Make just separate types
+
+# Interval
+# LInterval
+# RInterval
+# LRInterval
+
+# CODEREVIEW - DO I NEED OPEN/CLOSED INTERVAL
+immutable Interval{T <: Real} <: Domain{T}
+  l::T
+  u::T
+  Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
 end
 
+# Lower bound is open
+immutable LInterval{T <: Real} <: Domain{T}
+  l::T
+  u::T
+  Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
+end
+
+# Upper bound is open
+immutable UInterval{T <: Real} <: Domain{T}
+  l::T
+  u::T
+  Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
+end
+
+# Both bounds open
+immutable LUInterval{T <: Real} <: Domain{T}
+  l::T
+  u::T
+  Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
+end
+
+# >(x::Interval, y::Interval) = if overlap(x,y) TF elseif x.l > y.u T else F end
+
+
+
+# CODEREVIEW: SHOULD WE ASSERT SIZE?
 Interval(v::Vector) = Interval(v[1],v[2])
+
+# CODEREVIEW: SHOULDN'T THIS OVERLOAD CONVERT
 to_intervals(b::Box) = [Interval(b.intervals[:,i]) for i = 1:num_dims(b)]
 unitinterval(::Type{Interval}) = Interval(0.,1.)
 
+# FIX THESE ERROS
 INTERVAL_DIM_ERR = "Interval has only one single dimension"
 num_dims(i::Interval) = 1
 nth_dim_interval(i::Interval, dim_n::Uint) = if dim_n == 1 i else error(INTERVAL_DIM_ERR) end
 
+# CODEREVIEW: TESTME
 subsumes(x::Interval, y::Interval) = y.l >= x.l && y.u <= x.u
+
+# CODEREVIEW: TESTME
 overlap(x::Interval, y::Interval) = y.l < x.u && x.l < y.u
 
 promote_rule{T<:ConcreteReal}(::Type{T}, ::Type{Interval}) = Interval
@@ -23,6 +64,7 @@ convert(::Type{Interval}, c::ConcreteReal) = Interval(c, c)
 ## ====================================
 ## Interval Arithmetic and Inequalities
 
+# CODEREVIEW - TEST ALL OF THESE
 >(x::Interval, y::Interval) = if overlap(x,y) TF elseif x.l > y.u T else F end
 <(x::Interval, y::Interval) = if overlap(x,y) TF elseif x.u < y.l T else F end
 
@@ -50,6 +92,8 @@ convert(::Type{Interval}, c::ConcreteReal) = Interval(c, c)
 *(y::ConcreteReal, x::Interval) = x * y
 
 sqrt(x::Interval) = Interval(sqrt(x.l), sqrt(x.u))
+
+# CODEREVIEW: Generalise to even powers
 function sqr(x::Interval)
   a,b,c,d = x.l * x.l, x.l * x.u, x.u * x.l, x.u * x.u
   Interval(max(min(a,b,c,d),0),max(a,b,c,d,0))
@@ -60,7 +104,10 @@ function *(x::Interval, y::Interval)
   Interval(min(a,b,c,d),max(a,b,c,d))
 end
 
+# is c inside the interval
 in(c::ConcreteReal, y::Interval) = y.l <= c <= y.u
+
+# CODEREVIEW
 inv(x::Interval) = Interval(1/x.u,1/x.l)
 
  # Ratz Interval Division
@@ -100,7 +147,6 @@ end
 /(c::ConcreteReal, x::Interval) = convert(Interval,c) / x
 /(x::Interval, c::ConcreteReal) = x / convert(Interval,c)
 
-# Interval(0,10)/Interval(10,20)
 ## =========
 ## Merging
 function ⊔(a::Interval, b::Interval)

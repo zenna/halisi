@@ -8,7 +8,6 @@ typealias MPFIInterval Intervals.Interval
 
 (==)(x::Interval, y::MPFIInterval) = x.l == y.left && x.u == y.right
 
-Interval(-2,0)
 for i in [-2, 0, 4], j in [-2, 0, 4]
   if j >= i
     for a in [-2, 0, 4], b in [-2, 0, 4]

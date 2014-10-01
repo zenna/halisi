@@ -2,6 +2,8 @@
 pipeomega(v, ω) = v
 pipeomega(v::RandomVariable, ω) = v(ω)
 
+# When condition is TF we need to evaluate both branches
+# and merge with ⊔
 function ifelse(c::AbstractBool, x, y)
   if c === T
     x
@@ -12,6 +14,8 @@ function ifelse(c::AbstractBool, x, y)
   end
 end
 
+# When cond is a random variable, @If and ifelse return a random variable
+# Which also 'pipes' ω into x and y if they are random variables
 function ifelse(c::RandomVariable, x, y)
   function(ω)
     ifelse(c(ω),pipeomega(x,ω),pipeomega(y,ω))
@@ -105,6 +109,8 @@ end
 # using Sigma
 # Z = @If true flip(1,0.4) flip(2,0.4)
 # Z
+
+# Short circut version of ifelse, handles AbstractBool and RandomVariable
 macro If(condition, conseq, alt)
   local idtrue = singleton(gensym())
   local idfalse = singleton(gensym())
