@@ -7,35 +7,43 @@
 # RInterval
 # LRInterval
 
-# CODEREVIEW - DO I NEED OPEN/CLOSED INTERVAL
-immutable Interval{T <: Real} <: Domain{T}
-  l::T
-  u::T
-  Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
+immutable Interval <: Box
+  l::Real
+  u::Real
+  Interval(l,u) =  if u > l new(l, u) else new(u,l) end
 end
 
-# Lower bound is open
-immutable LInterval{T <: Real} <: Domain{T}
-  l::T
-  u::T
-  Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
-end
+# # CODEREVIEW - DO I NEED OPEN/CLOSED INTERVAL
+# immutable Interval{T <: Real} <: Domain{T}
+#   l::T
+#   u::T
+#   Interval{T <: Real}(l::T,u::T) =  if u > l new{T}(l, u) else {T}new(u,l) end
+# end
+# Interval{T}(l::T,u::T) = Interval{T}(u,l)
 
-# Upper bound is open
-immutable UInterval{T <: Real} <: Domain{T}
-  l::T
-  u::T
-  Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
-end
+# # Lower bound is open
+# immutable LInterval{T <: Real} <: Domain{T}
+#   l::T
+#   u::T
+#   LInterval{T <: Real}(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
+# end
+# LInterval{T <: Real}(l::T,u::T) =  if u > l LInterval{T}(l, u) else LInterval{T}(u,l) end
 
-# Both bounds open
-immutable LUInterval{T <: Real} <: Domain{T}
-  l::T
-  u::T
-  Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
-end
+# # Upper bound is open
+# immutable UInterval{T <: Real} <: Domain{T}
+#   l::T
+#   u::T
+#   Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
+# end
 
-# >(x::Interval, y::Interval) = if overlap(x,y) TF elseif x.l > y.u T else F end
+# # Both bounds open
+# immutable LUInterval{T <: Real} <: Domain{T}
+#   l::T
+#   u::T
+#   Interval(l::T,u::T) =  if u > l new(l, u) else new(u,l) end
+# end
+
+# # >(x::Interval, y::Interval) = if overlap(x,y) TF elseif x.l > y.u T else F end
 
 
 
