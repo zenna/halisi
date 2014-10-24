@@ -3,14 +3,6 @@
 Sigma is a probabilistic programming language.
 In it we can specify probabilstic models and perform inference.
 
-[Main Page](http://zenna.github.io/sigma/)
+Sigma now exists in another repository
 
-## Setup
-Check out the repository
-
-## Run
-Then to open a repl:
-
-```Clojure
-lein run repl
- ```
+[Main Page](https://github.com/zenna/Sigma.jl)
