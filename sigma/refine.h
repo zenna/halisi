@@ -1,6 +1,7 @@
 #pragma once
 #include "ibex/ibex.h"
 #include "sigma/rand.h"
+#include "sigma/types.h"
 #include <tuple>
 #include <limits>
 
@@ -62,19 +63,21 @@ theory_sample(const ibex::System &sys, ibex::Ctc & ctc, ibex::Bsc &bsc, mt19937 
   stack<Box> to_visit;          // Stack of boxes to visit (found through splits)
   bool box_is_empty;            // 
 
+  cout << "Initial box is" << box << endl;
   while (true) {
     box_is_empty = false;
     try {ctc.contract(box, last_bisected_var);}
     catch (ibex::EmptyBoxException) {box_is_empty = true;}
-    cout << "box is" << box << endl;
+    cout << "box is " << box << endl;
     cout << "last bisected var is " << last_bisected_var << endl;
     
     // 6 possible scenarios after contraction
-    if (box_is_empty) {
-      cout << "THE BOX IS EMPTY YOO" << endl;
+    if (box_is_empty || box.is_empty()) {
+      cout << "THE BOX IS EMPTY" << endl;
 
       // 1. All boxes (and hence problem) are UNSAT
       if (to_visit.size() == 0) {
+        cout << "Unsat" << endl;
         // When unsat return false and magic values for others 
         double minus_inf = -numeric_limits<double>::infinity();
         return make_tuple(CMSat::l_False, box, minus_inf, 0);

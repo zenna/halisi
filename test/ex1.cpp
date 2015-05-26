@@ -29,12 +29,16 @@ bool checkthashit (const Array<Ctc>& l)  {
 int main()
 {
     // std::cout << "Hello" << std::endl;
-    Variable x;
-    Variable y;
-    NumConstraint c1(x,y,x*2*y>0.8);
-    NumConstraint c2(x,y,x>0.5);
-    CtcFwdBwd ctc1(c1);
-    CtcFwdBwd ctc2(c2);
+      //Variable x;
+    // Variable y;
+    // NumConstraint c1(x,y,x*2*y>0.8);
+    // NumConstraint c2(x,y,x>0.5);
+    // CtcFwdBwd ctc1(c1);
+    // CtcFwdBwd ctc2(c2);
+
+    // const ExprSymbol& z=ExprSymbol::new_("z");
+    const ExprSymbol& xx = ibex::ExprSymbol::new_("z");
+    auto yy = xx = xx;
 
     SystemFactory fac;
     fac.add_var(x);
@@ -90,13 +94,11 @@ int main()
     cnf.push_back(clause);
 
     LiteralMap lmap;
-    int nvars = 2;
-    lmap.reserve(nvars*2);
+    lmap[clause[0]] =  &c1;
+    lmap[clause[1]] =  &c2;
     std::cout << clause[0].toInt() << std::endl;
     std::cout << clause[1].toInt() << std::endl;
-    lmap[clause[0].toInt()] = &c1;
-    lmap[clause[1].toInt()] = &c2;
-    // pre_tlmh(lmap, cnf, 100);
+    pre_tlmh(lmap, cnf, 100);
 
     return 0;
 }
