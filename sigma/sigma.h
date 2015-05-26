@@ -83,10 +83,10 @@ ibex::NormalizedSystem build_system(const ibex::ExprSymbol &omega, const std::ve
   return ibex::NormalizedSystem(ibex::System(fac));
 }
 
-std::make_tuple<Box,BoolModel,double, double, double>
-get_box(std::uniform_real_distribution<> &uniform, CMSat::SATSolver &solver, std::mt19937 &gen, int nsamples) {
+tuple<Box, BoolModel, double, double>
+get_box(const LiteralMap &lmap, const ibex::ExprSymbol &omega, const Box &init_box,
+        CMSat::SATSolver &solver, std::mt19937 &gen) {
   while (true) {
-    std::cout << samples.size() << std::endl;
     // Gets boolean model (if exists) using CMSat, convert to conjunction of constraints 
     CMSat::lbool res = solver.solve();
     if (res == CMSat::l_False) {throw std::domain_error("Cannot condition on unsatisfiable condition");}
@@ -98,7 +98,7 @@ get_box(std::uniform_real_distribution<> &uniform, CMSat::SATSolver &solver, std
     
     // Build system
     ibex::NormalizedSystem sys = build_system(omega, constraints);
-    sys.box = box;
+    sys.box = init_box;
     ibex::CtcHC4 hc4(sys);
     hc4.accumulate=true;
     ibex::SmearMaxRelative bsc(sys, 0.01);
@@ -106,12 +106,13 @@ get_box(std::uniform_real_distribution<> &uniform, CMSat::SATSolver &solver, std
     // Check constraints at theory level (may be logically SAT but UNSAT at theory level)
     auto sample = theory_sample(sys, hc4, bsc, gen);
     CMSat::lbool theory_sat = get<0>(sample);
-    Box box = get<1>(sample);
+    ibex::IntervalVector box = get<1>(sample);
     double logq = get<2>(sample);
     double prevolfrac = get<3>(sample);
+    double logp = logmeasure(box) + log(prevolfrac);
 
-    if theory_sat == l_True {
-       return std::make_tuple<Box,BoolModel,double,double,double >(box, bool_model, logp, logq, prevolfrac)
+    if (theory_sat == CMSat::l_True) {
+       return std::tuple<ibex::IntervalVector,BoolModel,double,double>{box, bool_model, logq, logp};
     }
     else if (theory_sat == CMSat::l_False) {
       solver.add_clause(model_to_conflict(bool_model));
@@ -122,47 +123,11 @@ get_box(std::uniform_real_distribution<> &uniform, CMSat::SATSolver &solver, std
   }
 }
 
-  //   // If we get back a valid box, then do MH step
-  //   if (theory_sat == CMSat::l_True) {
-  //     Box nextbox = get<1>(sample);
-  //     double nextlogq = get<2>(sample);
-  //     double prevolfrac = get<3>(sample);
-
-  //     double nextlogp = logmeasure(nextbox) + log(prevolfrac);
-  //     double loga = nextlogp + logq - logp - nextlogq;
-  //     double a = exp(loga);
-
-  //     std::cout << "oldp: " << logp << " oldq: " << logq << std::endl;
-  //     std::cout << "newp: " << nextlogp << "newq: " << nextlogq << std::endl;
-  //     std::cout << "a value: " << a << std::endl;
-
-
-  //     // MH accept/reject step
-  //     if (a >= 1 || uniform(gen) < a) {
-  //       cout << "switching" << endl;
-  //       box = nextbox;
-  //       logp = nextlogp;
-  //       logq = nextlogq;
-  //     }
-  //     else{
-  //       cout << "sticking" << endl;
-  //     }
-  //     samples.push_back(box);
-  //   }
-  //   else if (theory_sat == CMSat::l_False) {
-  //     solver.add_clause(model_to_conflict(bool_model));
-  //   }
-  //   else {
-  //     std::runtime_error("Theory Solver failed");
-  //   }
-  // }
-  // return samples
-
-
 // @doc "Main loop to construct preimage samples" ->
 std::vector<Box> pre_tlmh(const LiteralMap &lmap, const CNF &cnf,
                           const ibex::ExprSymbol &omega, const Box &init_box,
                           int nsamples) {
+  // Add CNF to solver
   CMSat::SATSolver solver;
   solver.new_vars(max_var(cnf)+1);
   solver.set_num_threads(1);
@@ -175,56 +140,30 @@ std::vector<Box> pre_tlmh(const LiteralMap &lmap, const CNF &cnf,
   std::mt19937 gen(rd());
   std::uniform_real_distribution<> uniform(0, 1);
 
-  // Log probability/proposal probability of "current" box in markov chain
-  // Set initially to -Inf, such that first proposed box will always be accepted - log(0) = -Inf.
-  double logp = -numeric_limits<double>::infinity();
-  double logq = -numeric_limits<double>::infinity();
+  // Try to find first satisfying box
+  Box omega_box = init_box;
+  auto sample = get_box(lmap, omega, omega_box, solver, gen);
+  Box box = get<0>(sample);
+  double logq = get<2>(sample);
+  double logp = get<3>(sample);
 
-  Box box = init_box;
-  auto = get_box();
+  // First box is a valid sample
   samples.push_back(box);
-  // Logic <-> theory loop
+
   while (samples.size() < nsamples) {
-    // std::cout << samples.size() << std::endl;
-    // // Gets boolean model (if exists) using CMSat, convert to conjunction of constraints 
-    // CMSat::lbool res = solver.solve();
-    // if (res == CMSat::l_False) {throw std::domain_error("Cannot condition on unsatisfiable condition");}
-    // if (res == CMSat::l_Undef) {throw std::runtime_error("SAT Solver failed");}
-
-    // BoolModel bool_model = solver.get_model();
-    // std::cout << "Got new model" << std::endl;
-    // std::vector<ibex::ExprCtr> constraints = conjoin_constraints(lmap, bool_model);
-    
-    // // Build system
-    // ibex::NormalizedSystem sys = build_system(omega, constraints);
-    // sys.box = box;
-    // ibex::CtcHC4 hc4(sys);
-    // hc4.accumulate=true;
-    // ibex::SmearMaxRelative bsc(sys, 0.01);
-
-    // Check constraints at theory level (may be logically SAT but UNSAT at theory level)
-    sample = get_box();
-    // auto sample = theory_sample(sys, hc4, bsc, gen);
-    // CMSat::lbool theory_sat = get<0>(sample);
-    std::cout << "old box is: " << box << std::endl;
-    std::cout << "Is SAT? " << theory_sat << std::endl;
-    std::cout << "Box output from theory sample is:" << get<1>(sample) << std::endl;
-    std::cout << "Prevolfrac is:" << get<3>(sample) << std::endl << std::endl;
-
-    // If we get back a valid box, then do MH step
-    // if (theory_sat == CMSat::l_True) {
-    Box nextbox = get<1>(sample);
+    auto sample = get_box(lmap, omega, omega_box, solver, gen);
+    Box nextbox = get<0>(sample);
     double nextlogq = get<2>(sample);
-    double prevolfrac = get<3>(sample);
+    double nextlogp = get<3>(sample);
 
-    double nextlogp = logmeasure(nextbox) + log(prevolfrac);
     double loga = nextlogp + logq - logp - nextlogq;
     double a = exp(loga);
-
+    
+    std::cout << "old box is: " << box << std::endl;
+    std::cout << "new box is:" << nextbox << std::endl;
     std::cout << "oldp: " << logp << " oldq: " << logq << std::endl;
     std::cout << "newp: " << nextlogp << "newq: " << nextlogq << std::endl;
     std::cout << "a value: " << a << std::endl;
-
 
     // MH accept/reject step
     if (a >= 1 || uniform(gen) < a) {
@@ -236,17 +175,10 @@ std::vector<Box> pre_tlmh(const LiteralMap &lmap, const CNF &cnf,
     else{
       cout << "sticking" << endl;
     }
+    std::cout << std::endl;
     samples.push_back(box);
   }
 
-  // }
-  //   else if (theory_sat == CMSat::l_False) {
-  //     solver.add_clause(model_to_conflict(bool_model));
-  //   }
-  //   else {
-  //     std::runtime_error("Theory Solver failed");
-  //   }
-  // }
   return samples;
 }
 
