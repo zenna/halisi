@@ -13,11 +13,24 @@
 #include <stdlib.h>
 #include <stdexcept>
 
-using namespace std;
-
 namespace sigma {
 
-// @doc "Creates a conjunction of constraints" ->
+
+void print_literal_map(const LiteralMap &lmap) {
+  for (const auto key_map : lmap) {
+    std::cout << key_map.first << " -> " << key_map.second << std::endl;
+  }
+  std::cout << std::endl;  
+}
+
+void print_bool_model(const BoolModel &bool_model) {
+  for (const auto lit : bool_model) {
+    std::cout << lit;
+  }
+  std::cout << std::endl;  
+}
+
+// Creates a conjunction of constraints
 std::vector<ibex::ExprCtr> conjoin_constraints(const LiteralMap &lmap, const BoolModel &model) {
   std::vector<ibex::ExprCtr> constraints;
 
@@ -32,7 +45,7 @@ std::vector<ibex::ExprCtr> conjoin_constraints(const LiteralMap &lmap, const Boo
         constraints.push_back(lmap.at(pos_lit));
       }
       else if (model[i] == CMSat::l_False) {
-        constraints.push_back(lmap.at(pos_lit));
+        constraints.push_back(lmap.at(neg_lit));
       }
       else {
         throw std::domain_error("Undefined Boolean Value in Model");
@@ -77,9 +90,12 @@ inline std::vector<CMSat::Lit> model_to_conflict(const BoolModel &model) {
 ibex::NormalizedSystem build_system(const ibex::ExprSymbol &omega, const std::vector<ibex::ExprCtr> &constraints) {
   ibex::SystemFactory fac;
   fac.add_var(omega);
+  std::cout << "Cosntraints are:" << std::endl;
   for (const auto &c: constraints) {
+    std::cout << c << std::endl;
     fac.add_ctr(c);
   }
+  std::cout << std::endl;
   return ibex::NormalizedSystem(ibex::System(fac));
 }
 
@@ -94,6 +110,7 @@ get_box(const LiteralMap &lmap, const ibex::ExprSymbol &omega, const Box &init_b
 
     BoolModel bool_model = solver.get_model();
     std::cout << "Got new model" << std::endl;
+    print_bool_model(bool_model);
     std::vector<ibex::ExprCtr> constraints = conjoin_constraints(lmap, bool_model);
     
     // Build system
@@ -123,10 +140,15 @@ get_box(const LiteralMap &lmap, const ibex::ExprSymbol &omega, const Box &init_b
   }
 }
 
+
 // @doc "Main loop to construct preimage samples" ->
 std::vector<Box> pre_tlmh(const LiteralMap &lmap, const CNF &cnf,
                           const ibex::ExprSymbol &omega, const Box &init_box,
                           int nsamples) {
+
+  std::cout << "Literal Map" << std::endl;
+  print_literal_map(lmap);
+
   // Add CNF to solver
   CMSat::SATSolver solver;
   solver.new_vars(max_var(cnf)+1);
@@ -150,6 +172,7 @@ std::vector<Box> pre_tlmh(const LiteralMap &lmap, const CNF &cnf,
   // First box is a valid sample
   samples.push_back(box);
 
+  // Run Markov Chain
   while (samples.size() < nsamples) {
     auto sample = get_box(lmap, omega, omega_box, solver, gen);
     Box nextbox = get<0>(sample);

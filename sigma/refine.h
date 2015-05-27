@@ -5,8 +5,6 @@
 #include <tuple>
 #include <limits>
 
-using namespace std;
-
 namespace sigma {
 
 Box unit_box(int n) {
@@ -64,6 +62,7 @@ theory_sample(const ibex::System &sys, ibex::Ctc & ctc, ibex::Bsc &bsc, mt19937 
   bool box_is_empty;            // 
 
   cout << "Initial box is" << box << endl;
+  cout << "System is" << sys << endl;
   while (true) {
     box_is_empty = false;
     try {ctc.contract(box, last_bisected_var);}
