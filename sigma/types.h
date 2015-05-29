@@ -1,5 +1,5 @@
 #pragma once
-#include <cryptominisat4/cryptominisat.h>
+#include <cmsat/Solver.h>
 #include "ibex/ibex.h"
 
 namespace sigma {

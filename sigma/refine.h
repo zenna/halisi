@@ -65,8 +65,12 @@ theory_sample(const ibex::System &sys, ibex::Ctc & ctc, ibex::Bsc &bsc, mt19937 
   cout << "System is" << sys << endl;
   while (true) {
     box_is_empty = false;
+    std::cout << "Trying Contraction" << std::endl;
     try {ctc.contract(box, last_bisected_var);}
-    catch (ibex::EmptyBoxException) {box_is_empty = true;}
+    catch (...) {
+      std::cout << "Contraction reduced box to empty, exception caught" << std::endl;
+      box_is_empty = true;
+    }
     cout << "box is " << box << endl;
     cout << "last bisected var is " << last_bisected_var << endl;
     

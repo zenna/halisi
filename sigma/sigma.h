@@ -1,6 +1,7 @@
 # pragma once
 
-#include <cryptominisat4/cryptominisat.h>
+#include <memory>
+#include <cmsat/Solver.h>
 #include "ibex/ibex.h"
 #include "sigma/refine.h"
 #include "sigma/types.h"
@@ -15,6 +16,25 @@
 
 namespace sigma {
 
+
+// Conversion Between CMSat and STL Vector
+template <typename T>
+std::vector<T> cmsat_to_stl_vec(const CMSat::vec<T> &input) {
+  std::vector<T> output(input.size());
+  for (int i = 0;i<input.size();++i) {
+    output[i] = input[i];
+  }
+  return output;
+}
+
+template <typename T>
+CMSat::vec<T> stl_vec_to_cmsat(const std::vector<T> &input) {
+  CMSat::vec<T> output(input.size());
+  for (int i = 0;i<input.size();++i) {
+    output[i] = input[i];
+  }
+  return output;
+}
 
 void print_literal_map(const LiteralMap &lmap) {
   for (const auto key_map : lmap) {
@@ -39,17 +59,15 @@ std::vector<ibex::ExprCtr> conjoin_constraints(const LiteralMap &lmap, const Boo
     CMSat::Lit neg_lit(i,true);
 
     // Some literals do not have corresponding constraint, so check
-    if (lmap.count(pos_lit) == 1) {
+    if ((lmap.count(pos_lit) == 1) && (model[i] == CMSat::l_True)) {
       // If model says A=0,B=1. Lookup constraints (inequalities) for !A and B
-      if (model[i] == CMSat::l_True) {
-        constraints.push_back(lmap.at(pos_lit));
-      }
-      else if (model[i] == CMSat::l_False) {
-        constraints.push_back(lmap.at(neg_lit));
-      }
-      else {
-        throw std::domain_error("Undefined Boolean Value in Model");
-      }
+      constraints.push_back(lmap.at(pos_lit));
+    }
+    if ((lmap.count(neg_lit) == 1) && (model[i] == CMSat::l_False)) {
+      constraints.push_back(lmap.at(neg_lit));
+    }
+    if (model[i] == CMSat::l_Undef) {
+      throw std::domain_error("Undefined Boolean Value in Model");
     }
   }
   return constraints;
@@ -66,10 +84,16 @@ int max_var(const CNF &cnf) {
   return maxvar;
 }
 
+
+void add_clause(CMSat::Solver &solver, const Clause &clause) {
+  CMSat::vec<CMSat::Lit> cmsat_clause = stl_vec_to_cmsat(clause);
+  solver.addClause(cmsat_clause);
+}
+
 // Add all the clauses
-void add_clauses(CMSat::SATSolver &solver, const CNF &cnf) {
+void add_clauses(CMSat::Solver &solver, const CNF &cnf) {
   for (auto &clause : cnf) {
-    solver.add_clause(clause);
+    add_clause(solver, clause);
   }
 }
 
@@ -87,34 +111,55 @@ inline std::vector<CMSat::Lit> model_to_conflict(const BoolModel &model) {
   return conflict;
 }
 
-ibex::NormalizedSystem build_system(const ibex::ExprSymbol &omega, const std::vector<ibex::ExprCtr> &constraints) {
+ibex::NormalizedSystem build_system(const ibex::ExprSymbol &omega,
+                                    const std::vector<std::shared_ptr<ibex::ExprSymbol>> &aux_vars,
+                                    const std::vector<ibex::ExprCtr> &constraints) {
   ibex::SystemFactory fac;
+  // Add variables
   fac.add_var(omega);
-  std::cout << "Cosntraints are:" << std::endl;
+  std::cout << "Got " << aux_vars.size() << " auxilariy variables" << std::endl;
+  for (const auto &aux_var: aux_vars) {
+    std::cout << "adding variable:" << *aux_var << std::endl;
+    fac.add_var(*aux_var);
+  }
+
+  std::cout << "contraints are:" << std::endl;
+  // Add onstraints
   for (const auto &c: constraints) {
     std::cout << c << std::endl;
     fac.add_ctr(c);
   }
   std::cout << std::endl;
+  // Normalize
   return ibex::NormalizedSystem(ibex::System(fac));
 }
 
+// Get a model from cryptominisat and convert to BoolModel
+BoolModel get_model(const CMSat::Solver &solver) {
+  return cmsat_to_stl_vec(solver.model);
+}
+
 tuple<Box, BoolModel, double, double>
-get_box(const LiteralMap &lmap, const ibex::ExprSymbol &omega, const Box &init_box,
-        CMSat::SATSolver &solver, std::mt19937 &gen) {
+get_box(const LiteralMap &lmap, const ibex::ExprSymbol &omega,
+        const std::vector<std::shared_ptr<ibex::ExprSymbol>> &aux_vars, const Box &init_box,
+        CMSat::Solver &solver, std::mt19937 &gen) {
+
+  int ndimsomega = init_box.size() - aux_vars.size();
+  assert(ndimsomega > 0);
+
   while (true) {
     // Gets boolean model (if exists) using CMSat, convert to conjunction of constraints 
     CMSat::lbool res = solver.solve();
     if (res == CMSat::l_False) {throw std::domain_error("Cannot condition on unsatisfiable condition");}
     if (res == CMSat::l_Undef) {throw std::runtime_error("SAT Solver failed");}
 
-    BoolModel bool_model = solver.get_model();
+    BoolModel bool_model = get_model(solver);
     std::cout << "Got new model" << std::endl;
     print_bool_model(bool_model);
     std::vector<ibex::ExprCtr> constraints = conjoin_constraints(lmap, bool_model);
     
     // Build system
-    ibex::NormalizedSystem sys = build_system(omega, constraints);
+    ibex::NormalizedSystem sys = build_system(omega, aux_vars, constraints);
     sys.box = init_box;
     ibex::CtcHC4 hc4(sys);
     hc4.accumulate=true;
@@ -126,13 +171,14 @@ get_box(const LiteralMap &lmap, const ibex::ExprSymbol &omega, const Box &init_b
     ibex::IntervalVector box = get<1>(sample);
     double logq = get<2>(sample);
     double prevolfrac = get<3>(sample);
-    double logp = logmeasure(box) + log(prevolfrac);
+    double logp = logmeasure(box, ndimsomega) + log(prevolfrac);
 
     if (theory_sat == CMSat::l_True) {
-       return std::tuple<ibex::IntervalVector,BoolModel,double,double>{box, bool_model, logq, logp};
+      std::cout << "Logmeasure " << logmeasure(box) << " log(prevolfrac): " << log(prevolfrac) << std::endl;
+      return std::tuple<ibex::IntervalVector,BoolModel,double,double>{box, bool_model, logq, logp};
     }
     else if (theory_sat == CMSat::l_False) {
-      solver.add_clause(model_to_conflict(bool_model));
+      add_clause(solver, model_to_conflict(bool_model));
     }
     else {
       std::runtime_error("Theory Solver failed");
@@ -140,19 +186,26 @@ get_box(const LiteralMap &lmap, const ibex::ExprSymbol &omega, const Box &init_b
   }
 }
 
+void new_vars(CMSat::Solver &solver, int n) {
+  for (int i =0; i<n; ++i) {
+    solver.newVar();
+  }
+}
 
 // @doc "Main loop to construct preimage samples" ->
 std::vector<Box> pre_tlmh(const LiteralMap &lmap, const CNF &cnf,
-                          const ibex::ExprSymbol &omega, const Box &init_box,
+                          const ibex::ExprSymbol &omega,
+                          const std::vector<std::shared_ptr<ibex::ExprSymbol>> &aux_vars,
+                          const Box &init_box,
                           int nsamples) {
 
   std::cout << "Literal Map" << std::endl;
   print_literal_map(lmap);
 
   // Add CNF to solver
-  CMSat::SATSolver solver;
-  solver.new_vars(max_var(cnf)+1);
-  solver.set_num_threads(1);
+  CMSat::Solver solver;
+  new_vars(solver, max_var(cnf)+1);
+  // solver.set_num_threads(1);
   add_clauses(solver, cnf);
   std::vector<Box> samples;
   samples.reserve(nsamples);
@@ -164,7 +217,7 @@ std::vector<Box> pre_tlmh(const LiteralMap &lmap, const CNF &cnf,
 
   // Try to find first satisfying box
   Box omega_box = init_box;
-  auto sample = get_box(lmap, omega, omega_box, solver, gen);
+  auto sample = get_box(lmap, omega, aux_vars, omega_box, solver, gen);
   Box box = get<0>(sample);
   double logq = get<2>(sample);
   double logp = get<3>(sample);
@@ -174,7 +227,8 @@ std::vector<Box> pre_tlmh(const LiteralMap &lmap, const CNF &cnf,
 
   // Run Markov Chain
   while (samples.size() < nsamples) {
-    auto sample = get_box(lmap, omega, omega_box, solver, gen);
+    std::cout << " \n \n Doing Markov Chain Loop Iteration " << samples.size() << " so far" << std::endl;
+    auto sample = get_box(lmap, omega, aux_vars, omega_box, solver, gen);
     Box nextbox = get<0>(sample);
     double nextlogq = get<2>(sample);
     double nextlogp = get<3>(sample);
