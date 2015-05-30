@@ -60,5 +60,12 @@ vector<ibex::IntervalVector> rand(const ibex::IntervalVector &box, const ibex::S
   return samples;
 }
 
+// Uniformly and randomly select an element from a vector of those elements
+template <typename T>
+T rand_select(const std::vector<T> &x, std::mt19937 &gen) {
+  uniform_int_distribution<> dist(x.size());
+  return x[dist(gen)];
+}
+
 }
 

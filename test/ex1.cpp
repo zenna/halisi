@@ -6,7 +6,6 @@
 
 
 using std::vector;
-using namespace CMSat;
 using namespace sigma;
 using namespace ibex;
 

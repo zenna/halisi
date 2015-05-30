@@ -3,6 +3,7 @@
 #include <memory>
 #include <cmsat/Solver.h>
 #include "ibex/ibex.h"
+#include "sigma/sat.h"
 #include "sigma/refine.h"
 #include "sigma/types.h"
 #include "sigma/measure.h"
@@ -17,35 +18,10 @@
 namespace sigma {
 
 
-// Conversion Between CMSat and STL Vector
-template <typename T>
-std::vector<T> cmsat_to_stl_vec(const CMSat::vec<T> &input) {
-  std::vector<T> output(input.size());
-  for (int i = 0;i<input.size();++i) {
-    output[i] = input[i];
-  }
-  return output;
-}
-
-template <typename T>
-CMSat::vec<T> stl_vec_to_cmsat(const std::vector<T> &input) {
-  CMSat::vec<T> output(input.size());
-  for (int i = 0;i<input.size();++i) {
-    output[i] = input[i];
-  }
-  return output;
-}
 
 void print_literal_map(const LiteralMap &lmap) {
   for (const auto key_map : lmap) {
     std::cout << key_map.first << " -> " << key_map.second << std::endl;
-  }
-  std::cout << std::endl;  
-}
-
-void print_bool_model(const BoolModel &bool_model) {
-  for (const auto lit : bool_model) {
-    std::cout << lit;
   }
   std::cout << std::endl;  
 }
@@ -71,44 +47,6 @@ std::vector<ibex::ExprCtr> conjoin_constraints(const LiteralMap &lmap, const Boo
     }
   }
   return constraints;
-}
-
-// Highest variable number in cnf
-int max_var(const CNF &cnf) {
-  int maxvar = 0;
-  for (Clause const &clause : cnf) {
-    for (CMSat::Lit const &lit : clause) {
-      if (lit.var() > maxvar) {maxvar = lit.var();}
-    }
-  }
-  return maxvar;
-}
-
-
-void add_clause(CMSat::Solver &solver, const Clause &clause) {
-  CMSat::vec<CMSat::Lit> cmsat_clause = stl_vec_to_cmsat(clause);
-  solver.addClause(cmsat_clause);
-}
-
-// Add all the clauses
-void add_clauses(CMSat::Solver &solver, const CNF &cnf) {
-  for (auto &clause : cnf) {
-    add_clause(solver, clause);
-  }
-}
-
-// Convert a Boolean model to a clause, such that the model is now unsatisfiable
-inline std::vector<CMSat::Lit> model_to_conflict(const BoolModel &model) {
-  std::vector<CMSat::Lit> conflict;
-  for (int i = 0; i < model.size(); ++i) {
-    // Why would it ever == CMSat::l_Undef?
-    if (model[i] != CMSat::l_Undef) {
-      // If model i A=1,B=0, conflict cause is !A or B
-      CMSat::Lit conflict_lit = model[i] == CMSat::l_True ? CMSat::Lit(i,true) : CMSat::Lit(i,false); 
-      conflict.push_back(conflict_lit);
-    }
-  } 
-  return conflict;
 }
 
 ibex::NormalizedSystem build_system(const ibex::ExprSymbol &omega,
