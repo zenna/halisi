@@ -17,7 +17,9 @@
 
 namespace sigma {
 
-
+// Type Aliases
+using LiteralMap = std::map<CMSat::Lit, ibex::ExprCtr>;
+using Box = ibex::IntervalVector;
 
 void print_literal_map(const LiteralMap &lmap) {
   for (const auto key_map : lmap) {
@@ -74,7 +76,7 @@ ibex::NormalizedSystem build_system(const ibex::ExprSymbol &omega,
 
 // Get a model from cryptominisat and convert to BoolModel
 BoolModel get_model(const CMSat::Solver &solver) {
-  return cmsat_to_stl_vec(solver.model);
+  return to_stl_vec(solver.model);
 }
 
 tuple<Box, BoolModel, double, double>
@@ -121,12 +123,6 @@ get_box(const LiteralMap &lmap, const ibex::ExprSymbol &omega,
     else {
       std::runtime_error("Theory Solver failed");
     }
-  }
-}
-
-void new_vars(CMSat::Solver &solver, int n) {
-  for (int i =0; i<n; ++i) {
-    solver.newVar();
   }
 }
 

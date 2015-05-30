@@ -2,8 +2,6 @@
 #include "ibex.h"
 #include <random>
 
-using namespace std;
-
 namespace sigma {
 
 // Generate a uniformly distributed point along an interval
@@ -58,13 +56,6 @@ vector<ibex::IntervalVector> rand(const ibex::IntervalVector &box, const ibex::S
     if (is_valid) {samples.push_back(point);}
   }
   return samples;
-}
-
-// Uniformly and randomly select an element from a vector of those elements
-template <typename T>
-T rand_select(const std::vector<T> &x, std::mt19937 &gen) {
-  uniform_int_distribution<> dist(x.size());
-  return x[dist(gen)];
 }
 
 }
