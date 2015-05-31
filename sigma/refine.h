@@ -7,6 +7,10 @@
 
 namespace sigma {
 
+  // Type Aliases
+using LiteralMap = std::map<CMSat::Lit, ibex::ExprCtr>;
+using Box = ibex::IntervalVector;
+
 Box unit_box(int n) {
   Box box(n);
   for (int i = 0; i<n; ++i) {
@@ -16,6 +20,7 @@ Box unit_box(int n) {
 }
 
 bool is_valid_box(const Box &box, const ibex::NormalizedSystem &normsys) {
+  std::cout << "Checking box validity" << std::endl;
   // For each normalised constraints, e.g. x - y < 0
   // Eval box and check whether constraint holds
   Box output = normsys.f.eval_vector(box);
@@ -34,17 +39,20 @@ bool is_valid_box(const Box &box, const ibex::System &sys) {
 
 // Can we accurately draw samples from this box?
 bool is_sampleable(const Box &box, const ibex::System &sys, mt19937 &gen) {
+  std::cout << "Checking Box is Sampleable" << std::endl;
   int ntries = 10;
   return rand(box, sys, gen, ntries).size() > 0;
 }
 
 // Fullness is estimate by ration of uniform samples which ard good over ntries
 double estimate_box_fullness(const Box &box, const ibex::System &sys, mt19937 &gen) {
+  std::cout << "Estimating box fullnesss" << std::endl;
   int ntries = 100;
   return double(rand(box, sys, gen, ntries).size()) / double(ntries);
 }
 
 bool too_small(const ibex::Bsc &bsc, const Box &box) {
+  std::cout << "Checking box is too small?" << std::endl;
   for (int i=0; i<box.size(); ++i) {
     if (!bsc.too_small(box, i)) {return false;} // std::logic_error("TODO");
   }
@@ -65,7 +73,7 @@ theory_sample(const ibex::System &sys, ibex::Ctc & ctc, ibex::Bsc &bsc, mt19937 
   cout << "System is" << sys << endl;
   while (true) {
     box_is_empty = false;
-    std::cout << "Trying Contraction" << std::endl;
+    std::cout << "Trying Contraction, depth is: "<< depth << std::endl;
     try {ctc.contract(box, last_bisected_var);}
     catch (...) {
       std::cout << "Contraction reduced box to empty, exception caught" << std::endl;
@@ -95,19 +103,19 @@ theory_sample(const ibex::System &sys, ibex::Ctc & ctc, ibex::Bsc &bsc, mt19937 
       }
     }
 
-    // 3. Current box is SAT
-    else if (is_valid_box(box, sys)) {
-      cout << "valid box" << endl;
-      // fraction_full = 1.0 when box subset of feasible region
-      return make_tuple(CMSat::l_True, box, logq, 1.0);
-    }
+    // // 3. Current box is SAT
+    // else if (is_valid_box(box, sys)) {
+    //   cout << "valid box" << endl;
+    //   // fraction_full = 1.0 when box subset of feasible region
+    //   return make_tuple(CMSat::l_True, box, logq, 1.0);
+    // }
 
-    // 4. Current box is partially SAT
-    else if (is_sampleable(box, sys, gen)) {
-      cout << "sampleable" << endl;
-      double fraction_full = estimate_box_fullness(box, sys, gen);
-      return make_tuple(CMSat::l_True, box, logq, fraction_full);
-    }
+    // // 4. Current box is partially SAT
+    // else if (is_sampleable(box, sys, gen)) {
+    //   cout << "sampleable" << endl;
+    //   double fraction_full = estimate_box_fullness(box, sys, gen);
+    //   return make_tuple(CMSat::l_True, box, logq, fraction_full);
+    // }
 
     // 5. Current box is smaller than precision
     else if (too_small(bsc, box)) {
@@ -117,13 +125,14 @@ theory_sample(const ibex::System &sys, ibex::Ctc & ctc, ibex::Bsc &bsc, mt19937 
 
     // 6. Otherwise we can split it further and continue
     else {
-      cout << "splittable" << endl;
       auto children = bsc.bisect(box);
       discrete_distribution<int> categorical{0.5, 0.5};
       logq += log(0.5);
       int rand_index = categorical(gen);
       box = rand_index == 0 ? get<0>(children) : get<1>(children);
       to_visit.push(rand_index == 0 ? get<1>(children) : get<0>(children));
+      cout << "Splitting, taking side" << rand_index << endl;
+      depth++;
     }
   }
 }

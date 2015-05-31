@@ -17,10 +17,6 @@
 
 namespace sigma {
 
-// Type Aliases
-using LiteralMap = std::map<CMSat::Lit, ibex::ExprCtr>;
-using Box = ibex::IntervalVector;
-
 void print_literal_map(const LiteralMap &lmap) {
   for (const auto key_map : lmap) {
     std::cout << key_map.first << " -> " << key_map.second << std::endl;
@@ -59,7 +55,6 @@ ibex::NormalizedSystem build_system(const ibex::ExprSymbol &omega,
   fac.add_var(omega);
   std::cout << "Got " << aux_vars.size() << " auxilariy variables" << std::endl;
   for (const auto &aux_var: aux_vars) {
-    std::cout << "adding variable:" << *aux_var << std::endl;
     fac.add_var(*aux_var);
   }
 
@@ -103,21 +98,34 @@ get_box(const LiteralMap &lmap, const ibex::ExprSymbol &omega,
     sys.box = init_box;
     ibex::CtcHC4 hc4(sys);
     hc4.accumulate=true;
+    ibex::CtcHC4 hc4_2(sys,0.1,true);
+    ibex::CtcAcid acid(sys, hc4_2);
+    // ibex::CtcNewton newton(sys.f, 5e+08, 0.01, 1e-04);
+    ibex::LinearRelaxCombo linear_relax(sys,LinearRelaxCombo::COMPO);
+    ibex::CtcPolytopeHull polytope(linear_relax,CtcPolytopeHull::ALL_BOX);
+    ibex::CtcCompo polytope_hc4(polytope, hc4);
+    ibex::CtcFixPoint fixpoint(polytope_hc4);
+    ibex::CtcCompo compo(hc4,acid,fixpoint);
+
     ibex::SmearMaxRelative bsc(sys, 0.01);
 
     // Check constraints at theory level (may be logically SAT but UNSAT at theory level)
-    auto sample = theory_sample(sys, hc4, bsc, gen);
+    auto sample = theory_sample(sys, compo, bsc, gen);
     CMSat::lbool theory_sat = get<0>(sample);
     ibex::IntervalVector box = get<1>(sample);
     double logq = get<2>(sample);
-    double prevolfrac = get<3>(sample);
-    double logp = logmeasure(box, ndimsomega) + log(prevolfrac);
+
+    // How full (as a fraction) is the box?
+    double box_fullness = get<3>(sample);
+    // Estimate of volume of feasible region within box = size(box) * fraction full
+    double logp = logmeasure(box, ndimsomega) + log(box_fullness);
 
     if (theory_sat == CMSat::l_True) {
-      std::cout << "Logmeasure " << logmeasure(box) << " log(prevolfrac): " << log(prevolfrac) << std::endl;
+      std::cout << "Logmeasure " << logmeasure(box) << " log(box_fullness): " << log(box_fullness) << std::endl;
       return std::tuple<ibex::IntervalVector,BoolModel,double,double>{box, bool_model, logq, logp};
     }
     else if (theory_sat == CMSat::l_False) {
+      // Unsat at theory level, add clause to avoid trying it again
       add_clause(solver, model_to_conflict(bool_model));
     }
     else {
@@ -183,7 +191,7 @@ std::vector<Box> pre_tlmh(const LiteralMap &lmap, const CNF &cnf,
       logp = nextlogp;
       logq = nextlogq;
     }
-    else{
+    else {
       cout << "sticking" << endl;
     }
     std::cout << std::endl;
