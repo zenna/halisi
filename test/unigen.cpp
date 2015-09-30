@@ -1,11 +1,11 @@
 #include <cmsat/Solver.h>
 #include "cmsat/DimacsParser.h"
 #include <iostream>
-#include "sigma/unigen.h"
+#include "halisi/unigen.h"
 #include <zlib.h>
 
 
-using namespace sigma;
+using namespace halisi;
 
 void readInAFile(const std::string& filename, Solver& solver)
 {

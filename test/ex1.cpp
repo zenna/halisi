@@ -1,11 +1,11 @@
 #include <iostream>
-#include "sigma/types.h"
-#include "sigma/refine.h"
+#include "halisi/types.h"
+#include "halisi/refine.h"
 #include "ibex/ibex.h"
 
 
 using std::vector;
-using namespace sigma;
+using namespace halisi;
 
 // Array<Ctc> convert(const Array<NumConstraint>& csp) {
 //     std::vector<Ctc*> vec;
